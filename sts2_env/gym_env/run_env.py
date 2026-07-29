@@ -226,6 +226,22 @@ OBS_ASCENSION_SCALE = 20.0
 REWARD_WIN = 1.0
 REWARD_DEATH = -1.0
 
+# Potential-based shaping, for the same reason the combat env has it: without it
+# the reward is +1 for winning and -1 for dying with nothing in between, and
+# nobody ever wins a full run. Every episode returns exactly -1.0, so the eval
+# curve is a flat line, best-model selection is a pile of ties, and the only
+# gradient arrives at the moment of death.
+#
+# phi = how far the run has got, plus how much health it kept. Applied as
+# gamma*phi(s') - phi(s), which is provably policy-invariant (Ng, Harada &
+# Russell 1999): it cannot change which policy is optimal, only how quickly the
+# signal arrives. Floors are the thing that actually distinguishes a good run
+# from a bad one here -- a random policy reaches floor 3.2, a briefly trained one
+# 6.1 -- and none of that was visible in the reward.
+SHAPING_FLOORS = 50.0   # a full run, roughly; only the scale matters
+SHAPING_FLOOR_WEIGHT = 1.0
+SHAPING_HP_WEIGHT = 0.5
+
 logger = logging.getLogger(__name__)
 
 
@@ -259,6 +275,7 @@ class STS2RunEnv(gymnasium.Env):
         max_steps: int = DEFAULT_MAX_STEPS,
         max_combat_turns: int = DEFAULT_MAX_COMBAT_TURNS,
         render_mode: str | None = None,
+        gamma: float = 0.99,
     ):
         super().__init__()
 
@@ -273,6 +290,10 @@ class STS2RunEnv(gymnasium.Env):
         self._character_id = character_id
         self._ascension_level = ascension_level
         self.max_steps = max_steps
+        # Must match the trainer's discount: potential-based shaping is only
+        # policy-invariant when the gamma here is the one the algorithm uses.
+        self.gamma = gamma
+        self._prev_potential = 0.0
         self.max_combat_turns = max_combat_turns
         self.render_mode = render_mode
 
@@ -298,6 +319,9 @@ class STS2RunEnv(gymnasium.Env):
             ascension_level=self._ascension_level,
         )
         self._step_count = 0
+        # Seed the shaping baseline from the starting state, so the first step is
+        # measured against where the run began rather than against zero.
+        self._prev_potential = self._potential()
 
         obs = self._encode_obs()
         info = self._build_info()
@@ -351,6 +375,12 @@ class STS2RunEnv(gymnasium.Env):
             reward = REWARD_WIN if self._mgr.player_won else REWARD_DEATH
         elif truncated:
             reward = REWARD_DEATH
+        else:
+            # No shaping on a terminal transition: phi of a finished run predicts
+            # nothing, and adding it would let a deep death outscore a shallow win.
+            potential = self._potential()
+            reward += self.gamma * potential - self._prev_potential
+            self._prev_potential = potential
 
         obs = self._encode_obs()
         info = self._build_info()
@@ -737,6 +767,15 @@ class STS2RunEnv(gymnasium.Env):
     # ------------------------------------------------------------------
     # Info dict
     # ------------------------------------------------------------------
+
+    def _potential(self) -> float:
+        """phi(s): how far the run has got, and how much health it kept."""
+        if self._mgr is None:
+            return 0.0
+        rs = self._mgr.run_state
+        floors = min(rs.total_floor / SHAPING_FLOORS, 1.0)
+        hp = rs.player.current_hp / rs.player.max_hp if rs.player.max_hp else 0.0
+        return SHAPING_FLOOR_WEIGHT * floors + SHAPING_HP_WEIGHT * hp
 
     def _build_info(self) -> dict[str, Any]:
         """Build the ``info`` dict returned by ``reset()`` and ``step()``."""

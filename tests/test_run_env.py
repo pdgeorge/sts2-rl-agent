@@ -684,17 +684,31 @@ class TestObservationEncoding:
 # ---------------------------------------------------------------------------
 
 class TestRewardStructure:
-    def test_sparse_reward_at_death(self, env):
-        """At death, cumulative reward should be -1."""
+    def test_dying_costs_and_shaping_stays_bounded(self, env):
+        """A random run dies, and that has to cost -- but not unboundedly.
+
+        This used to assert the cumulative return was exactly -1.0, which held
+        only while every non-terminal step paid 0. With potential-based shaping
+        the return is the -1 for dying plus a telescoping term, so the property
+        worth pinning is the shape rather than the exact number: death is
+        negative, and shaping cannot dominate it.
+        """
         done, steps, reward, info = _run_random_episode(env, seed=42)
         assert done
-        # Random agent almost always dies -> reward should be -1
-        assert reward == pytest.approx(-1.0) or reward == pytest.approx(1.0)
+        assert reward < 0.0, f"dying was not penalised: {reward}"
+        assert reward > -3.0, f"shaping is dominating the terminal reward: {reward}"
 
-    def test_mid_run_reward_is_zero(self, env):
-        """Before episode ends, individual step rewards should be 0."""
+    def test_mid_run_reward_tracks_progress(self, env):
+        """Mid-run reward is deliberately no longer 0.
+
+        It used to be, and since nobody ever wins a full run that made every
+        episode return exactly -1.0: a flat eval curve, and best-model selection
+        choosing between ties. Shaping is potential-based, so it cannot change
+        which policy is optimal, only when the signal arrives.
+        """
         obs, info = env.reset(seed=42)
         rng = np.random.RandomState(42)
+        rewards = []
         for _ in range(50):
             mask = info["action_mask"]
             valid = np.where(mask == 1)[0]
@@ -702,7 +716,12 @@ class TestRewardStructure:
             obs, reward, terminated, truncated, info = env.step(action)
             if terminated or truncated:
                 break
-            assert reward == 0.0, f"Non-zero mid-run reward: {reward}"
+            rewards.append(reward)
+        assert rewards, "episode ended before any mid-run step"
+        assert any(r != 0.0 for r in rewards), "shaping produced no signal at all"
+        # Potential-based shaping telescopes, so a mid-run step stays small next to
+        # the terminal +/-1 and cannot be farmed by playing forever.
+        assert max(abs(r) for r in rewards) < 1.0
 
 
 # ---------------------------------------------------------------------------
