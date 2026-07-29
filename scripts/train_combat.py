@@ -92,18 +92,24 @@ def train(args):
     def make_masked_env(seed: int):
         def _init():
             env = STS2CombatEnv()
+            # The seed used to be accepted and then dropped on the floor, so every
+            # env -- including the evaluation one, nominally seeded 9999 -- came up
+            # unseeded and no run could be reproduced or compared to another.
+            # Seeding once here is enough: later reset(seed=None) calls keep the
+            # generator rather than replacing it.
+            env.reset(seed=seed)
             env = ActionMasker(env, mask_fn)
             return env
         return _init
 
     # Create vectorized envs
     if args.n_envs > 1:
-        train_env = SubprocVecEnv([make_masked_env(i) for i in range(args.n_envs)])
+        train_env = SubprocVecEnv([make_masked_env(args.seed + i) for i in range(args.n_envs)])
     else:
-        train_env = DummyVecEnv([make_masked_env(0)])
+        train_env = DummyVecEnv([make_masked_env(args.seed)])
 
     # Eval env (always single)
-    eval_env = DummyVecEnv([make_masked_env(9999)])
+    eval_env = DummyVecEnv([make_masked_env(args.seed + 9999)])
 
     # Create model
     model = MaskablePPO(
@@ -119,6 +125,10 @@ def train(args):
         ent_coef=args.ent_coef,
         verbose=1,
         tensorboard_log=str(output_dir / "tb_logs"),
+        # Without this the network init and action sampling are unseeded, so two
+        # runs of the same command differ (measured: 83% and 79% win rate) and
+        # neither can be compared to the other.
+        seed=args.seed,
     )
 
     # Eval callback
@@ -214,6 +224,8 @@ def main():
                         help="Evaluate every N steps (default: 10000)")
     parser.add_argument("--eval-episodes", type=int, default=20,
                         help="Episodes per evaluation (default: 20)")
+    parser.add_argument("--seed", type=int, default=0,
+                        help="Seed for envs, network init and sampling (default: 0)")
     parser.add_argument("--allow-stale-decompile", action="store_true",
                         help="Train even if the decompile is not the installed game build")
     parser.add_argument("--output-dir", type=str, default="output/combat_ppo",
