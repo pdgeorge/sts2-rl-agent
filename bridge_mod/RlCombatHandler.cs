@@ -48,6 +48,16 @@ public class RlCombatHandler : IRoomHandler, IHandler
 
     public TimeSpan Timeout => TimeSpan.FromMinutes(10);
 
+    /// <summary>
+    /// True while the player may manually play cards. CombatManager.IsPlayPhase was
+    /// removed; the phase now lives on the player, as the game's own CombatRoomHandler does it.
+    /// </summary>
+    private static bool IsPlayPhase(Player player)
+    {
+        PlayerCombatState? phaseState = player.PlayerCombatState;
+        return phaseState != null && phaseState.Phase == PlayerTurnPhase.Play;
+    }
+
     public async Task HandleAsync(Rng random, CancellationToken ct)
     {
         Logger.Log("[RlCombat] Waiting for combat to start");
@@ -66,7 +76,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
 
             // Wait for play phase
             await WaitHelper.Until(
-                () => CombatManager.Instance.IsPlayPhase ||
+                () => IsPlayPhase(player) ||
                       !CombatManager.Instance.IsInProgress,
                 ct, TimeSpan.FromSeconds(30), "Play phase not started");
 
@@ -79,7 +89,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
             int cardsPlayed = 0;
             bool turnEnded = false;
 
-            while (!turnEnded && cardsPlayed < 50 && CombatManager.Instance.IsPlayPhase)
+            while (!turnEnded && cardsPlayed < 50 && IsPlayPhase(player))
             {
                 ct.ThrowIfCancellationRequested();
 
@@ -131,7 +141,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
             }
 
             // If we ran out of cards to play without ending turn, end it
-            if (CombatManager.Instance.IsPlayPhase && CombatManager.Instance.IsInProgress && !turnEnded)
+            if (IsPlayPhase(player) && CombatManager.Instance.IsInProgress && !turnEnded)
             {
                 PlayerCmd.EndTurn(player, canBackOut: false);
             }
@@ -268,7 +278,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
         if (card.TargetType != TargetType.AnyEnemy)
             return null;
 
-        CombatState combatState = card.CombatState;
+        CombatState combatState = (CombatState)card.CombatState;
         if (combatState == null)
             return null;
 
@@ -295,7 +305,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
         string targetType = "Self";
         try
         {
-            targetType = potion.TargetType?.ToString() ?? "Self";
+            targetType = potion.TargetType.ToString();
         }
         catch
         {
@@ -304,7 +314,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
 
         if (targetType == "AnyEnemy")
         {
-            CombatState? combatState = player.Creature?.CombatState;
+            CombatState? combatState = (CombatState?)player.Creature?.CombatState;
             if (combatState == null)
                 return null;
             List<Creature> allEnemies = combatState.Enemies.ToList();
@@ -328,7 +338,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
     {
         if (card.TargetType != TargetType.AnyEnemy)
             return null;
-        CombatState combatState = card.CombatState;
+        CombatState combatState = (CombatState)card.CombatState;
         if (combatState == null)
             return null;
         List<Creature> hittable = combatState.HittableEnemies.ToList();
@@ -351,7 +361,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
             int energyNow = player.PlayerCombatState?.Energy ?? -1;
             int handNow = PileType.Hand.GetPile(player).Cards.Count;
             if (energyNow != energyBefore || handNow != handBefore
-                || !CombatManager.Instance.IsPlayPhase
+                || !IsPlayPhase(player)
                 || !CombatManager.Instance.IsInProgress)
                 break;
             await Task.Delay(50, ct);
@@ -402,7 +412,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
                 potionNow = null;
             }
 
-            if (potionNow == null || !CombatManager.Instance.IsPlayPhase || !CombatManager.Instance.IsInProgress)
+            if (potionNow == null || !IsPlayPhase(player) || !CombatManager.Instance.IsInProgress)
                 break;
             await Task.Delay(50, ct);
             waitMs += 50;
@@ -569,7 +579,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
 
                     if (firstIntent is AttackIntent attackIntent)
                     {
-                        CombatState cs = enemy.CombatState;
+                        CombatState cs = (CombatState)enemy.CombatState;
                         if (cs != null)
                         {
                             try
@@ -607,7 +617,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
                     bool canUse = true;
                     try
                     {
-                        targetType = potion.TargetType?.ToString() ?? "Self";
+                        targetType = potion.TargetType.ToString();
                     }
                     catch { }
 

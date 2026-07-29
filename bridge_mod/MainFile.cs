@@ -25,6 +25,17 @@ public partial class MainFile : Node
     private static Harmony? _harmony;
     private static RlAutoSlayer? _autoSlayer;
 
+    /// <summary>
+    /// Lives for the whole session, unlike the 60s startup token. Cancelled on unload
+    /// to stop the run loop.
+    /// </summary>
+    private static CancellationTokenSource? _loopCts;
+
+    private const string MainMenuPath = "/root/Game/RootSceneContainer/MainMenu";
+    private const int MainMenuTimeoutSeconds = 120;
+    private const int RunTimeoutMinutes = 90;
+    private const int MenuSettleMs = 2000;
+
     public static void Initialize()
     {
         Logger.Log("=== STS2 RL Bridge Mod Initializing ===");
@@ -80,6 +91,11 @@ public partial class MainFile : Node
         {
             try
             {
+                _loopCts?.Cancel();
+            }
+            catch { }
+            try
+            {
                 _autoSlayer?.Stop();
             }
             catch { }
@@ -94,30 +110,79 @@ public partial class MainFile : Node
     }
 
     /// <summary>
-    /// Wait for the game to initialize, then start an AutoSlayer
-    /// with our RL agent handlers substituted in.
+    /// Wait for the game to initialize, then run runs back to back forever.
+    ///
+    /// This used to start exactly one run and return, which left a dead mod sitting
+    /// in a live game after the first death -- the only recovery was restarting the
+    /// whole game. A stream needs runs to keep coming, so this loops.
+    ///
+    /// RlGameOverScreenHandler already clicks Continue and then Return to Main Menu,
+    /// so the game is back at the menu by the time a run's task completes; all that
+    /// was missing was something to start the next one.
     /// </summary>
     private static async Task LaunchRlAutoSlayAsync()
     {
-        // Wait for NGame instance
+        // Startup gets a bounded token -- if the game never reaches a menu, failing
+        // fast is correct. Note this token EXPIRES after 60s, so it must not be
+        // reused for the run loop; doing so would cancel the loop one minute in.
         Logger.Log("[RlAutoSlay] Waiting for NGame.Instance...");
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-        await WaitHelper.Until(() => NGame.Instance != null, cts.Token,
+        var startupCts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        await WaitHelper.Until(() => NGame.Instance != null, startupCts.Token,
             TimeSpan.FromSeconds(60), "NGame.Instance not available");
         Logger.Log("[RlAutoSlay] NGame.Instance available.");
 
-        // Wait for main menu to be visible before starting
         Node root = ((SceneTree)Engine.GetMainLoop()).Root;
-        await WaitHelper.Until(
-            () => root.GetNodeOrNull<Control>("/root/Game/RootSceneContainer/MainMenu")?.IsVisibleInTree() ?? false,
-            cts.Token, TimeSpan.FromSeconds(60), "Main menu not visible");
-        Logger.Log("[RlAutoSlay] Main menu visible. Creating RL AutoSlayer...");
 
-        // Create and start the RL-driven AutoSlayer
-        _autoSlayer = new RlAutoSlayer();
-        string seed = SeedHelper.GetRandomSeed();
-        Logger.Log($"[RlAutoSlay] Starting RL run with seed: {seed}");
-        _autoSlayer.Start(seed);
+        _loopCts = new CancellationTokenSource();
+        CancellationToken ct = _loopCts.Token;
+
+        int runNumber = 0;
+        while (!ct.IsCancellationRequested)
+        {
+            runNumber++;
+            try
+            {
+                await WaitHelper.Until(
+                    () => root.GetNodeOrNull<Control>(MainMenuPath)?.IsVisibleInTree() ?? false,
+                    ct, TimeSpan.FromSeconds(MainMenuTimeoutSeconds), "Main menu not visible");
+
+                // A fresh slayer per run: RunAsync's finally tears its state down, and
+                // a new seed per run is the difference between a stream and a rerun.
+                _autoSlayer = new RlAutoSlayer();
+                string seed = SeedHelper.GetRandomSeed();
+                Logger.Log($"[RlAutoSlay] Starting RL run #{runNumber} with seed: {seed}");
+                _autoSlayer.Start(seed);
+
+                // Start() is fire-and-forget. RlAutoSlayer.IsActive is static, set true
+                // synchronously inside Start() and cleared in RunAsync's finally, so it
+                // is the completion signal.
+                await WaitHelper.Until(() => !RlAutoSlayer.IsActive, ct,
+                    TimeSpan.FromMinutes(RunTimeoutMinutes), "Run did not finish");
+
+                Logger.Log($"[RlAutoSlay] Run #{runNumber} finished.");
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                // One bad run must not end the stream. Log, settle, try again.
+                Logger.Log($"[RlAutoSlay] Run #{runNumber} aborted: {ex.Message}");
+                try { _autoSlayer?.Stop(); } catch { }
+            }
+
+            try
+            {
+                await Task.Delay(MenuSettleMs, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
+
+        Logger.Log("[RlAutoSlay] Run loop stopped.");
     }
 }
 

@@ -118,7 +118,11 @@
         <Message Text="Copying .dll and manifests to mods folder." Importance="high" />
         <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModsPath)$(MSBuildProjectName)/" />
         <Copy SourceFiles="STS2BridgeMod.json" DestinationFolder="$(ModsPath)$(MSBuildProjectName)/" />
-        <Copy SourceFiles="mod_manifest.json" DestinationFolder="$(ModsPath)$(MSBuildProjectName)/" />
+        <!-- Do NOT copy mod_manifest.json here. ModManager deserializes EVERY .json under
+             mods/ as a ModManifest; mod_manifest.json has no 'id' field, so the loader logs
+             "looks like a mod manifest but is missing the 'id' field! This is not allowed."
+             and throws out of ModManager.Initialize during GameStartup. BaseLib ships only
+             the id-named .json, .dll and .pck; match that layout. -->
         <Message Text="Copying BaseLib to mods folder." Importance="high" />
         <ItemGroup>
             <BaseLibFiles Include="$(NuGetPackageRoot)/alchyr.sts2.baselib/**/lib/**/BaseLib.dll;$(NuGetPackageRoot)/alchyr.sts2.baselib/**/Content/BaseLib.pck;$(NuGetPackageRoot)/alchyr.sts2.baselib/**/Content/BaseLib.json;"/>

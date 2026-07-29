@@ -95,12 +95,12 @@ public class RlCardSelector : ICardSelector
     /// <summary>
     /// Called specifically for card reward screens (post-combat card picks).
     /// </summary>
-    public CardModel? GetSelectedCardReward(
+    public CardRewardSelection GetSelectedCardReward(
         IReadOnlyList<CardCreationResult> options,
         IReadOnlyList<CardRewardAlternative> alternatives)
     {
         if (options.Count == 0)
-            return null;
+            return SkipReward();
 
         // Build the state message
         var cards = new List<Dictionary<string, object>>();
@@ -146,7 +146,7 @@ public class RlCardSelector : ICardSelector
                     if (action == NonCombatBridgeProtocol.SkipAction)
                     {
                         Logger.Log("[RlCardSelector] Agent chose to skip card reward");
-                        return null;
+                        return SkipReward();
                     }
 
                     if (action == NonCombatBridgeProtocol.ChooseAction &&
@@ -156,13 +156,13 @@ public class RlCardSelector : ICardSelector
                         if (idx >= options.Count)
                         {
                             Logger.Log("[RlCardSelector] Agent chose to skip card reward via out-of-range choose");
-                            return null;
+                            return SkipReward();
                         }
                         if (idx >= 0 && idx < options.Count)
                         {
                             Logger.Log(
                                 $"[RlCardSelector] Agent chose card reward: {options[idx].Card.Id.Entry}");
-                            return options[idx].Card;
+                            return PickCard(options[idx].Card);
                         }
                     }
                 }
@@ -175,7 +175,24 @@ public class RlCardSelector : ICardSelector
 
         // Fallback: pick the first card
         Logger.Log("[RlCardSelector] Falling back: picking first card reward");
-        return options[0].Card;
+        return PickCard(options[0].Card);
+    }
+
+    /// <summary>
+    /// Skip the reward entirely -- both fields null.
+    /// </summary>
+    private static CardRewardSelection SkipReward() => default;
+
+    /// <summary>
+    /// Take a card. The game added a second reward axis (CardRewardAlternative);
+    /// the bridge does not expose it to the agent yet, so alternative stays null.
+    /// </summary>
+    private static CardRewardSelection PickCard(CardModel card)
+    {
+        CardRewardSelection selection = default;
+        selection.card = card;
+        selection.alternative = null;
+        return selection;
     }
 
     // ----------------------------------------------------------------
