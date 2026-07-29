@@ -7,7 +7,7 @@ import argparse
 import ast
 import json
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Iterable
 
@@ -299,6 +299,31 @@ def alias_hits(index: AliasIndex, aliases: Iterable[str]) -> tuple[str, ...]:
     return tuple(hits)
 
 
+def display_path(path: Path, root: Path) -> str:
+    """Repo-relative when possible, absolute otherwise.
+
+    --decompiled-root can point outside the repository (the decompile is large and
+    Mega Crit's copyright, so it does not have to live here), in which case
+    relative_to would raise.
+    """
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
+
+
+def surfaces_rooted_at(decompiled_root: Path) -> dict[str, SurfaceConfig]:
+    """The same surfaces, but reading from a decompile elsewhere on disk.
+
+    The committed decompiled/ tree is a snapshot of whatever build it was taken
+    from, so auditing against it silently answers a question about the past.
+    """
+    return {
+        name: replace(cfg, reference_dir=str(decompiled_root / Path(cfg.reference_dir).name))
+        for name, cfg in SURFACES.items()
+    }
+
+
 def reference_files(root: Path, config: SurfaceConfig, include_deprecated: bool) -> list[Path]:
     reference_dir = root / config.reference_dir
     if not reference_dir.is_dir():
@@ -316,8 +341,9 @@ def build_report(
     *,
     direct_test_references: bool = False,
     code_implementation_references: bool = False,
+    surfaces: dict[str, SurfaceConfig] | None = None,
 ) -> SurfaceReport:
-    config = SURFACES[surface]
+    config = (surfaces or SURFACES)[surface]
     implementation_text = (
         collect_code_text(root, config.implementation_paths)
         if code_implementation_references
@@ -333,7 +359,7 @@ def build_report(
         items.append(
             ReferenceItem(
                 name=path.stem,
-                path=str(path.relative_to(root)),
+                path=display_path(path, root),
                 implementation_hits=alias_hits(implementation_index, aliases),
                 test_hits=alias_hits(test_index, aliases),
             )
@@ -359,6 +385,7 @@ def build_reports(
     *,
     direct_test_references: bool = False,
     code_implementation_references: bool = False,
+    surface_configs: dict[str, SurfaceConfig] | None = None,
 ) -> tuple[SurfaceReport, ...]:
     return tuple(
         build_report(
@@ -367,6 +394,7 @@ def build_reports(
             include_deprecated=include_deprecated,
             direct_test_references=direct_test_references,
             code_implementation_references=code_implementation_references,
+            surfaces=surface_configs,
         )
         for surface in surfaces
     )
@@ -438,6 +466,15 @@ def parse_args() -> argparse.Namespace:
         help="Repository root. Defaults to this script's parent repository.",
     )
     parser.add_argument(
+        "--decompiled-root",
+        type=Path,
+        help=(
+            "Read decompiled classes from here instead of the committed decompiled/ "
+            "tree. Point this at a fresh decompile of the installed build; the "
+            "committed one is a snapshot of whatever version it was taken from."
+        ),
+    )
+    parser.add_argument(
         "--surface",
         action="append",
         choices=sorted(SURFACES),
@@ -484,6 +521,11 @@ def main() -> int:
         include_deprecated=args.include_deprecated,
         direct_test_references=args.direct_test_references,
         code_implementation_references=args.code_implementation_references,
+        surface_configs=(
+            surfaces_rooted_at(args.decompiled_root.resolve())
+            if args.decompiled_root
+            else None
+        ),
     )
     if args.json:
         print(json.dumps([asdict(report) for report in reports], indent=2, sort_keys=True))
