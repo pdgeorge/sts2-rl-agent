@@ -74,6 +74,7 @@ from sts2_env.gym_env.action_space import (
     get_action_mask,
     is_potion_action,
 )
+from sts2_env.gym_env.run_level_encoding import RUN_LEVEL_SIZE, encode_run_level
 from sts2_env.gym_env.choice_encoding import (
     CHOICE_OBS_SIZE,
     choices_from_sim_actions,
@@ -738,49 +739,39 @@ class STS2RunEnv(gymnasium.Env):
             obs[:n] = combat_obs[:n]
 
         # ---- Run-level state (20 dims) ----
+        # Built by the shared encoder, not here. state_adapter needs the same 20
+        # dims from a JSON message, and two implementations of the same layout is
+        # how a policy ends up reading the live game differently from training --
+        # a scale of 50 in one and 20 in the other would never raise, it would
+        # just play worse.
         rs = mgr.run_state
         player = rs.player
         idx = COMBAT_OBS_SIZE
 
-        # Act / floor (3)
-        obs[idx + 0] = rs.current_act_index / OBS_CURRENT_ACT_SCALE
-        obs[idx + 1] = rs.total_floor / OBS_TOTAL_FLOOR_SCALE
-        obs[idx + 2] = rs.act_floor / OBS_ACT_FLOOR_SCALE
-
-        # HP ratio, gold (2)
-        obs[idx + 3] = (
-            player.current_hp / max(player.max_hp, 1)
-        )
-        obs[idx + 4] = player.gold / OBS_GOLD_SCALE
-
-        # Deck size, relic count (2)
-        obs[idx + 5] = len(player.deck) / OBS_DECK_SIZE_SCALE
-        obs[idx + 6] = len(rs.relics) / OBS_RELIC_COUNT_SCALE
-
-        # Potions (2)
-        num_potions = sum(1 for p in player.potions if p is not None)
-        max_slots = max(player.max_potion_slots, 1)
-        obs[idx + 7] = num_potions / max_slots
-        obs[idx + 8] = player.max_potion_slots / OBS_MAX_POTION_SLOTS_SCALE
-
-        # Phase one-hot (8)
-        phase_idx = _PHASE_INDEX.get(mgr.phase, 0)
-        obs[idx + 9 + phase_idx] = 1.0
-
-        # Ascension (1)
-        obs[idx + 17] = rs.ascension_level / OBS_ASCENSION_SCALE
-
-        # is_elite, is_boss flags (2)
         room = mgr._current_room_type
-        obs[idx + 18] = 1.0 if room == RoomType.ELITE else 0.0
-        obs[idx + 19] = 1.0 if room == RoomType.BOSS else 0.0
+        obs[idx:idx + RUN_LEVEL_SIZE] = encode_run_level(
+            act_index=rs.current_act_index,
+            total_floor=rs.total_floor,
+            act_floor=rs.act_floor,
+            hp=player.current_hp,
+            max_hp=player.max_hp,
+            gold=player.gold,
+            deck_size=len(player.deck),
+            relic_count=len(rs.relics),
+            potion_count=sum(1 for p in player.potions if p is not None),
+            max_potion_slots=player.max_potion_slots,
+            phase=mgr.phase,
+            ascension=rs.ascension_level,
+            is_elite=room == RoomType.ELITE,
+            is_boss=room == RoomType.BOSS,
+        )
+        idx += RUN_LEVEL_SIZE
 
         # ---- The options this decision is choosing between (126 dims) ----
         # Without this the agent is blind outside combat: a card reward's
         # observation was identical whatever three cards were offered, so it could
         # only learn a positional prior. Encoded from the same actions take_action
         # will receive, so the slots line up with the action indices.
-        idx += _RUN_STATE_SIZE
         try:
             extracted = choices_from_sim_actions(mgr.get_available_actions())
             obs[idx:idx + CHOICE_OBS_SIZE] = encode_choices(**extracted)

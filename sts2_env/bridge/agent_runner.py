@@ -31,8 +31,18 @@ from sts2_env.bridge.protocol import (
     MSG_TYPE_PONG,
     Phase,
 )
+from sts2_env.bridge.run_adapter import RunStateAdapter
 from sts2_env.bridge.state_adapter import StateAdapter
+from sts2_env.gym_env.observation import OBS_SIZE as COMBAT_OBS_SIZE
+from sts2_env.gym_env.run_env import RUN_OBS_SIZE
 from sts2_env.parity.bridge_replay import BridgeReplayRecorder
+
+# Bridge states a full-run model decides for itself. Combat is handled separately
+# because its decode is richer than choose-by-index.
+RUN_MODEL_STATES = frozenset({
+    "map_select", "card_reward", "card_bundle", "reward_screen",
+    "boss_relic", "rest_site", "event", "treasure",
+})
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +142,26 @@ def run_agent(
     model = load_model(model_path)
     adapter = StateAdapter()
 
+    # Which adapter to use is decided by the model, not a flag. A combat model
+    # wants 131 dims and a full-run model 277; guessing wrong produces a shape
+    # error at the first decision, and asking the model removes the guess.
+    run_adapter = None
+    expected_obs = int(model.observation_space.shape[0])
+    if expected_obs == RUN_OBS_SIZE:
+        run_adapter = RunStateAdapter()
+        adapter = run_adapter          # combat also goes through it, same layout
+        logger.info("Full-run model detected (%d dims): the model decides card "
+                    "rewards, map, rest and events as well as combat.", expected_obs)
+    elif expected_obs == COMBAT_OBS_SIZE:
+        logger.info("Combat model detected (%d dims): non-combat decisions use "
+                    "heuristics.", expected_obs)
+    else:
+        raise ValueError(
+            f"Model expects {expected_obs} observation dims, which is neither the "
+            f"combat size ({COMBAT_OBS_SIZE}) nor the full-run size ({RUN_OBS_SIZE}). "
+            "It was probably trained against a different observation layout."
+        )
+
     logger.info("Connecting to STS2 at %s:%d...", host, port)
 
     with STS2GameClient(host=host, port=port) as raw_client:
@@ -204,6 +234,26 @@ def run_agent(
                     break
                 if phase == MSG_TYPE_ERROR:
                     logger.warning("Game error: %s", state.get("message", ""))
+                    continue
+
+                # ---- Full-run model: it decides everything, not just combat ----
+                # A combat-shaped model leaves these to the heuristics below, which
+                # is why runs stalled around floor 8: the deck was built by
+                # ("power", "attack", "skill") and the map by room priority. A
+                # run-shaped model has been trained to see the options and choose.
+                if run_adapter is not None and msg_type in RUN_MODEL_STATES:
+                    obs = run_adapter.encode_observation(state)
+                    mask = run_adapter.compute_action_mask(state)
+                    action, _states = model.predict(
+                        obs, action_masks=mask, deterministic=deterministic,
+                    )
+                    decoded = run_adapter.decode_action(int(action), state)
+                    if verbose:
+                        logger.info("%s: model chose %s", msg_type.upper(), decoded)
+                    if decoded.get("action") == "skip":
+                        client.skip()
+                    else:
+                        client.choose(int(decoded.get("index", 0)))
                     continue
 
                 if phase in Phase.COMBAT_PHASES:

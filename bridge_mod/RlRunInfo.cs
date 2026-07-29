@@ -12,6 +12,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using MegaCrit.Sts2.Core.Context;
+using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Runs;
@@ -87,8 +88,20 @@ internal static class RlRunInfo
                 return;
             }
 
+            // act is 1-based here for readability; the Python side subtracts one
+            // to match RunState.current_act_index, which the observation uses.
             SetIfAbsent(state, "act", runState.CurrentActIndex + 1);
             SetIfAbsent(state, "floor", runState.TotalFloor);
+            SetIfAbsent(state, "act_floor", runState.ActFloor);
+            SetIfAbsent(state, "ascension", runState.AscensionLevel);
+
+            // The full-run observation carries is_elite and is_boss for the room
+            // she is standing in. Without them the bridge would leave two dims
+            // zero that training filled in, which is a train/deploy mismatch that
+            // shows up only as worse play.
+            MapPointType pointType =
+                runState.CurrentMapPointHistoryEntry?.MapPointType ?? MapPointType.Unassigned;
+            SetIfAbsent(state, "room_type", pointType.ToString());
 
             // LocalContext.GetMe is how the game itself resolves "the player this
             // client is". Walking runState.Players and taking the first non-null
@@ -112,6 +125,7 @@ internal static class RlRunInfo
             // Named potion_count, not potions: "potions" is already the combat
             // state's list of usable potions, and a count is a different thing.
             SetIfAbsent(state, "potion_count", player.Potions.Count());
+            SetIfAbsent(state, "max_potion_slots", player.MaxPotionCount);
         }
         catch (System.Exception ex)
         {
