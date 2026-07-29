@@ -36,7 +36,16 @@ def train(args):
         from sb3_contrib.common.wrappers import ActionMasker
         from sb3_contrib.common.maskable.utils import get_action_masks
         from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
-        from stable_baselines3.common.callbacks import EvalCallback
+        # MaskableEvalCallback, not stable_baselines3's EvalCallback. SB3's
+        # evaluate_policy has no action_masks parameter, so evaluation ran with no
+        # mask at all: the policy picked illegal actions, the env rejected them,
+        # and the episode went nowhere. Every strange number this project has
+        # produced came from that -- eval episode lengths of 1,814 rising to 8,351
+        # (read as the policy learning to stall), a hard hang once deterministic
+        # evaluation removed the resampling that had been escaping the loop, and a
+        # mean reward pinned at -1.09 for 500k steps while the masked final
+        # evaluation of the same weights reported an 83% win rate.
+        from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
     except ImportError:
         print("Training requires sb3-contrib and stable-baselines3.")
         print("Install with: pip install 'sts2-rl-agent[train]'")
@@ -113,7 +122,7 @@ def train(args):
     )
 
     # Eval callback
-    eval_callback = EvalCallback(
+    eval_callback = MaskableEvalCallback(
         eval_env,
         best_model_save_path=str(output_dir / "best_model"),
         log_path=str(output_dir / "eval_logs"),
