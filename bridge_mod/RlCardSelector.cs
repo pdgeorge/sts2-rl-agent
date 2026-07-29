@@ -70,7 +70,7 @@ public class RlCardSelector : ICardSelector
         {
             try
             {
-                string stateJson = JsonSerializer.Serialize(stateMsg);
+                string stateJson = RlRunInfo.Serialize(stateMsg);
                 using var cts = new CancellationTokenSource(AgentTimeout);
                 string responseJson = await BridgeServer.Instance.SendStateAndWaitForActionAsync(
                     stateJson,
@@ -131,7 +131,7 @@ public class RlCardSelector : ICardSelector
         {
             try
             {
-                string stateJson = JsonSerializer.Serialize(stateMsg);
+                string stateJson = RlRunInfo.Serialize(stateMsg);
                 using var cts = new CancellationTokenSource(AgentTimeout);
                 string responseJson = BridgeServer.Instance.SendStateAndWaitForActionAsync(
                     stateJson,

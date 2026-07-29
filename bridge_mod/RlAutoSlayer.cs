@@ -612,7 +612,7 @@ public class RlAutoSlayer
 
     private static string RunCompleteState(string result)
     {
-        return JsonSerializer.Serialize(new Dictionary<string, object>
+        return RlRunInfo.Serialize(new Dictionary<string, object>
         {
             [NonCombatBridgeProtocol.TypeField] = NonCombatBridgeProtocol.RunCompleteState,
             [NonCombatBridgeProtocol.ResultField] = result,
@@ -656,7 +656,7 @@ public class RlGameOverScreenHandler : IScreenHandler, IHandler
             (NGameOverScreen)NOverlayStack.Instance.Peek();
 
         // Notify Python that the game is over
-        BridgeServer.Instance.SendState(JsonSerializer.Serialize(
+        BridgeServer.Instance.SendState(RlRunInfo.Serialize(
             new Dictionary<string, object>
             {
                 [NonCombatBridgeProtocol.TypeField] = NonCombatBridgeProtocol.GameOverState,

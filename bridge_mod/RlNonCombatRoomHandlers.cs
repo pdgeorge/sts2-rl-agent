@@ -132,7 +132,7 @@ public class RlRestSiteRoomHandler : IRoomHandler, IHandler
 
         try
         {
-            string stateJson = JsonSerializer.Serialize(new Dictionary<string, object>
+            string stateJson = RlRunInfo.Serialize(new Dictionary<string, object>
             {
                 ["type"] = NonCombatBridgeProtocol.RestSiteState,
                 ["options"] = buttons.Select((button, index) => new Dictionary<string, object>
@@ -240,7 +240,7 @@ public class RlTreasureRoomHandler : IRoomHandler, IHandler
 
         try
         {
-            string stateJson = JsonSerializer.Serialize(new Dictionary<string, object>
+            string stateJson = RlRunInfo.Serialize(new Dictionary<string, object>
             {
                 ["type"] = NonCombatBridgeProtocol.TreasureState,
                 ["options"] = holders.Select((holder, index) => RelicOption(
@@ -339,7 +339,7 @@ public class RlChooseARelicScreenHandler : IScreenHandler, IHandler
 
         try
         {
-            string stateJson = JsonSerializer.Serialize(new Dictionary<string, object>
+            string stateJson = RlRunInfo.Serialize(new Dictionary<string, object>
             {
                 ["type"] = NonCombatBridgeProtocol.BossRelicState,
                 ["options"] = holders.Select((holder, index) => RelicOption(
@@ -496,7 +496,7 @@ public class RlShopRoomHandler : IRoomHandler, IHandler
             };
             options.AddRange(purchasableSlots.Select((slot, slotIndex) => ShopOption(slot, slotIndex + 1)));
 
-            string stateJson = JsonSerializer.Serialize(new Dictionary<string, object>
+            string stateJson = RlRunInfo.Serialize(new Dictionary<string, object>
             {
                 ["type"] = NonCombatBridgeProtocol.ShopState,
                 ["options"] = options,
@@ -702,7 +702,7 @@ public class RlEventRoomHandler : IRoomHandler, IHandler
 
         try
         {
-            string stateJson = JsonSerializer.Serialize(new Dictionary<string, object>
+            string stateJson = RlRunInfo.Serialize(new Dictionary<string, object>
             {
                 ["type"] = NonCombatBridgeProtocol.EventState,
                 ["options"] = options.Select((option, index) => new Dictionary<string, object>

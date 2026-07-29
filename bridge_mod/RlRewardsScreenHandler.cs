@@ -125,7 +125,7 @@ public class RlRewardsScreenHandler : IScreenHandler, IHandler
             }
 
             RunState runState = RunManager.Instance.DebugOnlyGetState();
-            string stateJson = JsonSerializer.Serialize(new Dictionary<string, object>
+            string stateJson = RlRunInfo.Serialize(new Dictionary<string, object>
             {
                 ["type"] = NonCombatBridgeProtocol.RewardScreenState,
                 ["options"] = options,

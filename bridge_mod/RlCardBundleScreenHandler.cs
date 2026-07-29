@@ -76,7 +76,7 @@ public class RlCardBundleScreenHandler : IScreenHandler, IHandler
         try
         {
             RunState runState = RunManager.Instance.DebugOnlyGetState();
-            string stateJson = JsonSerializer.Serialize(new Dictionary<string, object>
+            string stateJson = RlRunInfo.Serialize(new Dictionary<string, object>
             {
                 ["type"] = NonCombatBridgeProtocol.CardBundleState,
                 ["bundles"] = bundles.Select((bundle, index) => BundleOption(bundle, index)).ToList(),

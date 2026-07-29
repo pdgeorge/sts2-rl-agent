@@ -503,7 +503,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
                 ["act"] = (runState?.CurrentActIndex ?? 0) + 1,
             };
 
-            return JsonSerializer.Serialize(state);
+            return RlRunInfo.Serialize(state);
         }
         catch (Exception ex)
         {
