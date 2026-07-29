@@ -43,6 +43,7 @@ class STS2CombatEnv(gymnasium.Env):
         max_turns: int = 200,
         render_mode: str | None = None,
         gamma: float = 0.99,
+        max_idle_steps: int = 25,
     ):
         super().__init__()
         self.observation_space = spaces.Box(
@@ -58,12 +59,19 @@ class STS2CombatEnv(gymnasium.Env):
         # policy-invariant when the gamma in gamma*phi(s') - phi(s) is the same
         # one the algorithm discounts with.
         self.gamma = gamma
+        # Consecutive rejected actions before the episode is cut off. Rejected
+        # actions are meant to be impossible -- the action mask should exclude
+        # them -- so any run of them is a mask bug, and this is the backstop that
+        # keeps a mask bug from becoming an infinite episode.
+        self.max_idle_steps = max_idle_steps
+        self._idle_steps = 0
 
         self.combat: CombatState | None = None
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         reset_instance_counter()
+        self._idle_steps = 0
 
         rng_seed = int(self.np_random.integers(0, INT_MAX_EXCLUSIVE))
         rng = Rng(rng_seed)
@@ -99,6 +107,7 @@ class STS2CombatEnv(gymnasium.Env):
         # CombatState, and turn_count is what the per-turn cost is charged on.
         prev_potential = potential(self.combat)
         prev_turn_count = self.combat.turn_count
+        acted = True
         if self.combat.pending_choice is not None:
             if action == ACTION_END_TURN:
                 self.combat.resolve_pending_choice(None)
@@ -115,15 +124,28 @@ class STS2CombatEnv(gymnasium.Env):
                 )
                 if not success:
                     logger.debug("Ignored invalid potion action %d", action)
+                acted = bool(success)
             else:
                 hand_idx, target_idx = action_to_card_and_target(action)
                 success = hand_idx is not None and self.combat.play_card(hand_idx, target_idx)
                 if not success:
                     logger.debug("Ignored invalid card action %d", action)
+                acted = bool(success)
+
+        # A rejected action changes nothing -- including turn_count, which is what
+        # truncation is keyed to. So a policy that keeps choosing one runs forever:
+        # never terminating, never truncating, burning steps. Sampling used to hide
+        # this by eventually picking something else, so it showed up as absurd
+        # evaluation episode lengths rather than as a hang; a deterministic policy
+        # has no such escape and simply stops.
+        self._idle_steps = 0 if acted else self._idle_steps + 1
 
         obs = encode_observation(self.combat)
         terminated = self.combat.is_over
-        truncated = self.combat.turn_count > self.max_turns
+        truncated = (
+            self.combat.turn_count > self.max_turns
+            or self._idle_steps >= self.max_idle_steps
+        )
         reward = compute_reward(
             self.combat,
             prev_potential,
