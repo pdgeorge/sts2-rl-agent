@@ -73,22 +73,24 @@ from __future__ import annotations
 
 from sts2_env.core.combat import CombatState
 
-WIN_REWARD = 1.0
-LOSS_REWARD = -1.0
-TRUNCATION_REWARD = -1.0
+from sts2_env.gym_env.reward_config import (
+    COMBAT_ENEMY_WEIGHT,
+    COMBAT_HP_WEIGHT,
+    COMBAT_LOSS_REWARD,
+    COMBAT_SHAPING_SCALE,
+    COMBAT_TRUNCATION_REWARD,
+    COMBAT_TURN_COST,
+    COMBAT_WIN_REWARD,
+)
 
-# Fractional HP, so phi stays bounded and comparable across a 40 HP hallway fight
-# and a 500 HP boss. Player HP is weighted double: enemy HP resets every combat,
-# whereas HP you spend is gone for the rest of the run.
-HP_WEIGHT = 1.0
-ENEMY_WEIGHT = 0.5
-
-# Per turn, not per step: a turn with ten card plays is not ten times worse than a
-# turn with one. Calibrated against real combat length (~26 turns), not against
-# the truncation cap -- see the note above.
-TURN_COST = 0.005
-
-SHAPING_SCALE = 1.0
+# Module-level aliases, because tests and callers already import these names.
+WIN_REWARD = COMBAT_WIN_REWARD
+LOSS_REWARD = COMBAT_LOSS_REWARD
+TRUNCATION_REWARD = COMBAT_TRUNCATION_REWARD
+HP_WEIGHT = COMBAT_HP_WEIGHT
+ENEMY_WEIGHT = COMBAT_ENEMY_WEIGHT
+TURN_COST = COMBAT_TURN_COST
+SHAPING_SCALE = COMBAT_SHAPING_SCALE
 
 
 def potential(combat: CombatState) -> float:

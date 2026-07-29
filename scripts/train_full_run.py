@@ -67,6 +67,10 @@ def train(args):
         # max_steps=2000 would bound it rather than hang, but every eval episode
         # would still run to the cap and measure nothing.
         from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
+        from stable_baselines3.common.callbacks import (
+            BaseCallback,
+            StopTrainingOnNoModelImprovement,
+        )
     except ImportError:
         print("Training requires sb3-contrib and stable-baselines3.")
         print("Install with: pip install 'sts2-rl-agent[train]'")
@@ -154,6 +158,37 @@ def train(args):
             ),
         )
 
+    class FloorLogger(BaseCallback):
+        """Log floors reached, because reward alone does not say how far it got.
+
+        The eval callback reports mean_reward and nothing else, so the metric that
+        actually distinguishes a good run from a bad one -- depth -- was only
+        visible in the final evaluation after training ended. This puts it on the
+        tensorboard curve and in the console alongside everything else.
+        """
+
+        def _on_step(self) -> bool:
+            floors = [
+                info["floor"]
+                for info in self.locals.get("infos", [])
+                if isinstance(info, dict) and "floor" in info
+            ]
+            if floors:
+                self.logger.record("run/mean_floor", float(np.mean(floors)))
+                self.logger.record("run/max_floor", float(np.max(floors)))
+            return True
+
+    stop_callback = None
+    if args.stop_after_no_improvement:
+        # Early stopping, so a long budget can be set without guessing where the
+        # curve flattens. Patience is deliberately generous: RL plateaus are often
+        # temporary, and a stopper is only as good as the metric it watches.
+        stop_callback = StopTrainingOnNoModelImprovement(
+            max_no_improvement_evals=args.stop_after_no_improvement,
+            min_evals=args.stop_min_evals,
+            verbose=1,
+        )
+
     # Eval callback
     eval_callback = MaskableEvalCallback(
         eval_env,
@@ -162,13 +197,14 @@ def train(args):
         eval_freq=max(args.eval_freq // args.n_envs, 1),
         n_eval_episodes=args.eval_episodes,
         deterministic=True,
+        callback_after_eval=stop_callback,
     )
 
     # Train
     start = time.perf_counter()
     model.learn(
         total_timesteps=args.total_timesteps,
-        callback=eval_callback,
+        callback=[eval_callback, FloorLogger()],
         progress_bar=True,
     )
     elapsed = time.perf_counter() - start
@@ -310,6 +346,14 @@ def main():
     parser.add_argument(
         "--eval-episodes", type=int, default=10,
         help="Episodes per evaluation (default: 10)",
+    )
+    parser.add_argument(
+        "--stop-after-no-improvement", type=int, default=0,
+        help="Stop when this many consecutive evals bring no new best model (0 = never)",
+    )
+    parser.add_argument(
+        "--stop-min-evals", type=int, default=20,
+        help="Never stop before this many evaluations (default: 20)",
     )
     parser.add_argument(
         "--resume-from", type=str, default=None,

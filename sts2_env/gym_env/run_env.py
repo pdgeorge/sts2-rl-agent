@@ -42,7 +42,10 @@ Flat ``float32`` vector of size ``RUN_OBS_SIZE`` (151).
 
 Reward
 ------
-Sparse: **+1** for winning the run, **-1** for death or timeout.
+Event-based: paid when something happens rather than every step. Reaching a new
+floor, winning a combat, clearing an elite or a boss, and a large terminal
+payout for finishing the run or losing it. All the numbers live in
+:mod:`sts2_env.gym_env.reward_config`.
 
 Compatibility
 -------------
@@ -223,24 +226,18 @@ OBS_ASCENSION_SCALE = 20.0
 # Reward constants
 # ---------------------------------------------------------------------------
 
-REWARD_WIN = 1.0
-REWARD_DEATH = -1.0
+from sts2_env.gym_env.reward_config import (
+    BOSS_WON,
+    COMBAT_WON,
+    ELITE_WON,
+    FLOOR_REACHED,
+    RUN_DEATH,
+    RUN_WIN,
+)
 
-# Potential-based shaping, for the same reason the combat env has it: without it
-# the reward is +1 for winning and -1 for dying with nothing in between, and
-# nobody ever wins a full run. Every episode returns exactly -1.0, so the eval
-# curve is a flat line, best-model selection is a pile of ties, and the only
-# gradient arrives at the moment of death.
-#
-# phi = how far the run has got, plus how much health it kept. Applied as
-# gamma*phi(s') - phi(s), which is provably policy-invariant (Ng, Harada &
-# Russell 1999): it cannot change which policy is optimal, only how quickly the
-# signal arrives. Floors are the thing that actually distinguishes a good run
-# from a bad one here -- a random policy reaches floor 3.2, a briefly trained one
-# 6.1 -- and none of that was visible in the reward.
-SHAPING_FLOORS = 50.0   # a full run, roughly; only the scale matters
-SHAPING_FLOOR_WEIGHT = 1.0
-SHAPING_HP_WEIGHT = 0.5
+# Kept as module-level names because tests and callers import them.
+REWARD_WIN = RUN_WIN
+REWARD_DEATH = RUN_DEATH
 
 logger = logging.getLogger(__name__)
 
@@ -293,7 +290,6 @@ class STS2RunEnv(gymnasium.Env):
         # Must match the trainer's discount: potential-based shaping is only
         # policy-invariant when the gamma here is the one the algorithm uses.
         self.gamma = gamma
-        self._prev_potential = 0.0
         self.max_combat_turns = max_combat_turns
         self.render_mode = render_mode
 
@@ -319,9 +315,6 @@ class STS2RunEnv(gymnasium.Env):
             ascension_level=self._ascension_level,
         )
         self._step_count = 0
-        # Seed the shaping baseline from the starting state, so the first step is
-        # measured against where the run began rather than against zero.
-        self._prev_potential = self._potential()
 
         obs = self._encode_obs()
         info = self._build_info()
@@ -335,6 +328,12 @@ class STS2RunEnv(gymnasium.Env):
 
         reward = 0.0
         phase = self._mgr.phase
+        # Snapshot before acting: an event is a transition, so it can only be seen
+        # by comparing before with after. Room type is read here because by the
+        # time a combat is won the manager has already moved on.
+        floor_before = self._mgr.run_state.total_floor
+        room_before = self._mgr._current_room_type
+        in_combat_before = phase == RunManager.PHASE_COMBAT
         actions = self._mgr.get_available_actions()
 
         # ---- dispatch action to RunManager ----
@@ -376,11 +375,21 @@ class STS2RunEnv(gymnasium.Env):
         elif truncated:
             reward = REWARD_DEATH
         else:
-            # No shaping on a terminal transition: phi of a finished run predicts
-            # nothing, and adding it would let a deep death outscore a shallow win.
-            potential = self._potential()
-            reward += self.gamma * potential - self._prev_potential
-            self._prev_potential = potential
+            # Event rewards: paid once, when something happens. The previous
+            # potential-based shaping paid (gamma-1)*phi every step, which over a
+            # 400-step run drifted about -2.0 and made the reported return
+            # anti-correlated with surviving.
+            floors_gained = self._mgr.run_state.total_floor - floor_before
+            if floors_gained > 0:
+                reward += FLOOR_REACHED * floors_gained
+
+            # Leaving combat alive is a win. Elites and bosses pay on top.
+            if in_combat_before and self._mgr.phase != RunManager.PHASE_COMBAT:
+                reward += COMBAT_WON
+                if room_before == RoomType.ELITE:
+                    reward += ELITE_WON
+                elif room_before == RoomType.BOSS:
+                    reward += BOSS_WON
 
         obs = self._encode_obs()
         info = self._build_info()
@@ -767,15 +776,6 @@ class STS2RunEnv(gymnasium.Env):
     # ------------------------------------------------------------------
     # Info dict
     # ------------------------------------------------------------------
-
-    def _potential(self) -> float:
-        """phi(s): how far the run has got, and how much health it kept."""
-        if self._mgr is None:
-            return 0.0
-        rs = self._mgr.run_state
-        floors = min(rs.total_floor / SHAPING_FLOORS, 1.0)
-        hp = rs.player.current_hp / rs.player.max_hp if rs.player.max_hp else 0.0
-        return SHAPING_FLOOR_WEIGHT * floors + SHAPING_HP_WEIGHT * hp
 
     def _build_info(self) -> dict[str, Any]:
         """Build the ``info`` dict returned by ``reset()`` and ``step()``."""

@@ -698,18 +698,22 @@ class TestRewardStructure:
         assert reward < 0.0, f"dying was not penalised: {reward}"
         assert reward > -3.0, f"shaping is dominating the terminal reward: {reward}"
 
-    def test_mid_run_reward_tracks_progress(self, env):
-        """Mid-run reward is deliberately no longer 0.
+    def test_mid_run_reward_is_event_based(self, env):
+        """Mid-run reward is paid for events, and only for events.
 
-        It used to be, and since nobody ever wins a full run that made every
-        episode return exactly -1.0: a flat eval curve, and best-model selection
-        choosing between ties. Shaping is potential-based, so it cannot change
-        which policy is optimal, only when the signal arrives.
+        It used to be 0 throughout, which made every episode return exactly -1.0
+        since nobody wins a full run: a flat eval curve and best-model selection
+        between ties. Potential shaping fixed that and introduced a worse problem,
+        paying (gamma-1)*phi every step so a long run drifted about -2.0 and the
+        reported return became anti-correlated with surviving. Event rewards fire
+        once, when something happens, so they cannot drift.
         """
+        from sts2_env.gym_env.reward_config import BOSS_WON, COMBAT_WON, FLOOR_REACHED
+
         obs, info = env.reset(seed=42)
         rng = np.random.RandomState(42)
         rewards = []
-        for _ in range(50):
+        for _ in range(120):
             mask = info["action_mask"]
             valid = np.where(mask == 1)[0]
             action = int(rng.choice(valid))
@@ -717,11 +721,13 @@ class TestRewardStructure:
             if terminated or truncated:
                 break
             rewards.append(reward)
+
         assert rewards, "episode ended before any mid-run step"
-        assert any(r != 0.0 for r in rewards), "shaping produced no signal at all"
-        # Potential-based shaping telescopes, so a mid-run step stays small next to
-        # the terminal +/-1 and cannot be farmed by playing forever.
-        assert max(abs(r) for r in rewards) < 1.0
+        assert any(r != 0.0 for r in rewards), "no event ever paid out"
+        # Nothing mid-run is negative: progress is rewarded, and the only costs
+        # are terminal. A step cannot exceed the biggest single event either.
+        assert min(rewards) >= 0.0, f"a mid-run step was penalised: {min(rewards)}"
+        assert max(rewards) <= COMBAT_WON + BOSS_WON + FLOOR_REACHED
 
 
 # ---------------------------------------------------------------------------
