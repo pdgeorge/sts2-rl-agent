@@ -129,6 +129,21 @@ def _power_id(name: str) -> PowerId:
         return PowerId[name.removesuffix("_POWER")]
 
 
+def _card_id(name: str) -> CardId:
+    """Resolve a bridge card name to a simulator CardId.
+
+    Where a card and a power share a name the simulator suffixes the card --
+    Vicious the card is VICIOUS_CARD, because PowerId already has VICIOUS -- while
+    the bridge just says VICIOUS. Looking the raw name up made 24 steps of a real
+    trace uncomparable and had me report both cards as missing from the simulator
+    entirely. They were never missing.
+    """
+    for candidate in (name, f"{name}_CARD", f"{name}_STATUS"):
+        if candidate in CardId.__members__:
+            return CardId[candidate]
+    raise KeyError(name)
+
+
 def rebuild_combat(state: dict[str, Any], reasons: Counter | None = None) -> CombatState | None:
     """Best-effort simulator combat matching a recorded bridge state.
 
@@ -191,7 +206,7 @@ def rebuild_combat(state: dict[str, Any], reasons: Counter | None = None) -> Com
     hand = []
     for card_state in state.get("hand", []):
         try:
-            card = create_card(CardId[card_state["id"]], upgraded=bool(card_state.get("upgraded")))
+            card = create_card(_card_id(card_state["id"]), upgraded=bool(card_state.get("upgraded")))
         except (KeyError, ValueError):
             if reasons is not None:
                 reasons[f"no simulator card for {card_state.get('id')}"] += 1
