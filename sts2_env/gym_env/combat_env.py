@@ -21,7 +21,7 @@ from sts2_env.gym_env.action_space import (
     is_potion_action,
 )
 from sts2_env.gym_env.observation import OBS_SIZE, encode_observation
-from sts2_env.gym_env.reward import compute_reward
+from sts2_env.gym_env.reward import compute_reward, potential
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,7 @@ class STS2CombatEnv(gymnasium.Env):
         player_max_hp: int = IRONCLAD_STARTING_HP,
         max_turns: int = 200,
         render_mode: str | None = None,
+        gamma: float = 0.99,
     ):
         super().__init__()
         self.observation_space = spaces.Box(
@@ -53,6 +54,10 @@ class STS2CombatEnv(gymnasium.Env):
         self.player_max_hp = player_max_hp
         self.max_turns = max_turns
         self.render_mode = render_mode
+        # Must match the trainer's discount: potential-based shaping is only
+        # policy-invariant when the gamma in gamma*phi(s') - phi(s) is the same
+        # one the algorithm discounts with.
+        self.gamma = gamma
 
         self.combat: CombatState | None = None
 
@@ -90,7 +95,10 @@ class STS2CombatEnv(gymnasium.Env):
     def step(self, action: int):
         assert self.combat is not None, "Must call reset() first"
 
-        prev_hp = self.combat.player.current_hp
+        # Snapshot before the action: phi(s) cannot be recovered from a mutated
+        # CombatState, and turn_count is what the per-turn cost is charged on.
+        prev_potential = potential(self.combat)
+        prev_turn_count = self.combat.turn_count
         if self.combat.pending_choice is not None:
             if action == ACTION_END_TURN:
                 self.combat.resolve_pending_choice(None)
@@ -114,9 +122,15 @@ class STS2CombatEnv(gymnasium.Env):
                     logger.debug("Ignored invalid card action %d", action)
 
         obs = encode_observation(self.combat)
-        reward = compute_reward(self.combat, prev_hp)
         terminated = self.combat.is_over
         truncated = self.combat.turn_count > self.max_turns
+        reward = compute_reward(
+            self.combat,
+            prev_potential,
+            truncated=truncated,
+            turns_elapsed=max(0, self.combat.turn_count - prev_turn_count),
+            gamma=self.gamma,
+        )
         info = {"action_mask": get_action_mask(self.combat)}
 
         return obs, reward, terminated, truncated, info

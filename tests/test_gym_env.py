@@ -89,11 +89,44 @@ class TestStep:
         obs, reward, terminated, truncated, info = seeded_env.step(0)
         assert "action_mask" in info
 
-    def test_step_reward_zero_when_not_over(self, seeded_env):
-        """Mid-combat steps should have reward 0."""
+    def test_ending_a_turn_is_not_free(self, seeded_env):
+        """Mid-combat reward is deliberately no longer 0.
+
+        It used to be, and that is what made stalling profitable: truncating at
+        200 turns scored 0 while losing scored -1, so a policy that could not
+        reliably win did better by never ending combat. Ending a turn now costs
+        TURN_COST -- small enough that setup turns stay affordable, large enough
+        that 200 of them beat dying.
+        """
+        from sts2_env.gym_env.reward import TURN_COST
+
         obs, reward, terminated, truncated, info = seeded_env.step(0)
-        if not terminated:
-            assert reward == 0.0
+        if not (terminated or truncated):
+            assert reward < TURN_COST
+
+    def test_stalling_to_truncation_is_worse_than_losing(self, env):
+        """The property the old reward had backwards."""
+        from sts2_env.gym_env.reward import LOSS_REWARD, TRUNCATION_REWARD, TURN_COST
+
+        stall_return = TRUNCATION_REWARD - TURN_COST * env.max_turns
+        assert stall_return < LOSS_REWARD
+
+    def test_overkill_earns_nothing(self, env):
+        """Damage past 0 HP must not pay, per Creature.lose_hp clamping."""
+        from sts2_env.gym_env.reward import potential
+
+        env.reset(seed=3)
+        enemy = env.combat.enemies[0]
+        enemy.current_hp = 1
+        before = potential(env.combat)
+        enemy.lose_hp(1)
+        one_hp_worth = potential(env.combat) - before
+
+        enemy.current_hp = 1
+        enemy.lose_hp(9999)
+        overkill_worth = potential(env.combat) - before
+
+        assert overkill_worth == pytest.approx(one_hp_worth)
 
     def test_step_play_card_action(self, seeded_env):
         """Playing a valid card should return valid results."""

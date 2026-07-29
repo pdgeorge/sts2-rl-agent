@@ -119,7 +119,13 @@ def train(args):
         log_path=str(output_dir / "eval_logs"),
         eval_freq=max(args.eval_freq // args.n_envs, 1),
         n_eval_episodes=args.eval_episodes,
-        deterministic=False,
+        # Deterministic evaluation, for two reasons. It is what the bridge will do
+        # when Cyra actually plays, so it measures the thing that ships. And
+        # sampled evaluation here was dominated by a heavy tail: a couple of
+        # runaway episodes out of twenty pushed the reported mean episode length
+        # into the thousands while the policy's real behaviour was 26 turns, and
+        # burned 2.17M env steps against 250k of training.
+        deterministic=True,
     )
 
     # Train
