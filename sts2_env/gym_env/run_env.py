@@ -74,6 +74,11 @@ from sts2_env.gym_env.action_space import (
     get_action_mask,
     is_potion_action,
 )
+from sts2_env.gym_env.choice_encoding import (
+    CHOICE_OBS_SIZE,
+    choices_from_sim_actions,
+    encode_choices,
+)
 from sts2_env.gym_env.observation import OBS_SIZE as COMBAT_OBS_SIZE, encode_observation
 from sts2_env.core.rng import INT_MAX_EXCLUSIVE
 from sts2_env.run.run_manager import RunManager
@@ -206,7 +211,7 @@ NUM_PHASES = len(_PHASE_INDEX)
 # ---------------------------------------------------------------------------
 
 _RUN_STATE_SIZE = 20   # see module docstring
-RUN_OBS_SIZE = COMBAT_OBS_SIZE + _RUN_STATE_SIZE  # 131 + 20 = 151
+RUN_OBS_SIZE = COMBAT_OBS_SIZE + _RUN_STATE_SIZE + CHOICE_OBS_SIZE  # 131 + 20 + 126 = 277
 
 DEFAULT_MAX_STEPS = 10_000
 DEFAULT_MAX_COMBAT_TURNS = 200
@@ -769,6 +774,22 @@ class STS2RunEnv(gymnasium.Env):
         room = mgr._current_room_type
         obs[idx + 18] = 1.0 if room == RoomType.ELITE else 0.0
         obs[idx + 19] = 1.0 if room == RoomType.BOSS else 0.0
+
+        # ---- The options this decision is choosing between (126 dims) ----
+        # Without this the agent is blind outside combat: a card reward's
+        # observation was identical whatever three cards were offered, so it could
+        # only learn a positional prior. Encoded from the same actions take_action
+        # will receive, so the slots line up with the action indices.
+        idx += _RUN_STATE_SIZE
+        try:
+            extracted = choices_from_sim_actions(mgr.get_available_actions())
+            obs[idx:idx + CHOICE_OBS_SIZE] = encode_choices(**extracted)
+        except Exception:  # noqa: BLE001
+            # A phase whose actions cannot be read leaves the block zero, which
+            # reads as "nothing on offer" -- the same as a non-choice phase. Logged
+            # rather than swallowed, because a silently blind agent is what this
+            # whole block exists to stop.
+            logger.exception("Could not encode run choices for phase %s", mgr.phase)
 
         np.clip(obs, OBS_VALUE_LOW, OBS_VALUE_HIGH, out=obs)
         return obs
