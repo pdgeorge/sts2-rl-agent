@@ -325,8 +325,34 @@ def _normalize_card_bundles(bundles: list[dict[str, Any]] | None) -> list[dict[s
     return normalized
 
 
+RUN_LEVEL_FIELDS = (
+    "act", "floor", "gold", "deck_size", "relic_count", "potion_count",
+    "run_hp", "run_max_hp",
+)
+
+
+def _with_run_fields(normalized: dict[str, Any], state: dict[str, Any]) -> dict[str, Any]:
+    """Carry the run-level scalars through normalisation.
+
+    This function rebuilds each state from an explicit whitelist, so a field the
+    mod starts sending is dropped unless it is named here. That cost three
+    rebuilds: the mod was sending gold, deck_size and the rest correctly, every
+    recorded trace showed them absent, and the obvious reading was that the mod
+    was broken. The instrument was.
+    """
+    for key in RUN_LEVEL_FIELDS:
+        if key in state:
+            normalized[key] = state[key]
+    return normalized
+
+
 def normalize_bridge_state(state: dict[str, Any]) -> dict[str, Any]:
     """Normalize a raw bridge message into a stable comparison shape."""
+    normalized = _normalize_bridge_state_inner(state)
+    return _with_run_fields(normalized, state)
+
+
+def _normalize_bridge_state_inner(state: dict[str, Any]) -> dict[str, Any]:
     state_type = state.get("type")
     if state_type == STATE_TYPE_COMBAT:
         player = state.get("player", {})

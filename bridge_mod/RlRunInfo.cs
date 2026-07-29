@@ -49,6 +49,18 @@ internal static class RlRunInfo
     /// count. compute_action_mask then tried to slice an int and the run died.
     /// A handler's own value is always the more specific one, so it wins.
     /// </summary>
+    private static readonly HashSet<string> _logged = new HashSet<string>();
+
+    /// <summary>Log a reason once per session. Attach runs on every state, so an
+    /// unconditional log would bury the game's own output.</summary>
+    private static void LogOnce(string message)
+    {
+        if (_logged.Add(message))
+        {
+            Logger.Log($"[RlRunInfo] {message}");
+        }
+    }
+
     private static void SetIfAbsent(Dictionary<string, object> state, string key, object value)
     {
         if (!state.ContainsKey(key))
@@ -59,11 +71,19 @@ internal static class RlRunInfo
 
     public static void Attach(Dictionary<string, object> state)
     {
+        // Confirms Attach is reached at all. Two rebuilds were spent on whether
+        // this ran or returned early, and the log could not tell them apart.
+        LogOnce("attach reached");
         try
         {
             RunState runState = RunManager.Instance?.DebugOnlyGetState();
             if (runState == null)
             {
+                // Logged, not silent. The first version returned here without a
+                // word, so a recorded run showed every player field absent from
+                // all 63 states with nothing in the log to say why -- which cost
+                // two rebuilds of guessing.
+                LogOnce("run state unavailable; run fields omitted");
                 return;
             }
 
@@ -79,7 +99,7 @@ internal static class RlRunInfo
             Player player = LocalContext.GetMe(runState);
             if (player == null)
             {
-                Logger.Log("[RlRunInfo] LocalContext.GetMe returned null; player fields omitted.");
+                LogOnce("LocalContext.GetMe returned null; player fields omitted");
                 return;
             }
 
@@ -95,7 +115,7 @@ internal static class RlRunInfo
         }
         catch (System.Exception ex)
         {
-            Logger.Log($"[RlRunInfo] Could not attach run info: {ex.Message}");
+            LogOnce($"could not attach run info: {ex.GetType().Name}: {ex.Message}");
         }
     }
 }
