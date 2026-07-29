@@ -13,6 +13,13 @@ train = [
     "stable-baselines3>=2.3.0",
     "sb3-contrib>=2.3.0",
     "torch>=2.0",
+    # scripts/train_combat.py passes tensorboard_log and progress_bar=True, so
+    # these are required rather than nice-to-have. Leaving them out meant the run
+    # died after the 2.5GB torch download and after CUDA init -- the most
+    # expensive possible place to discover a missing dependency.
+    "tensorboard>=2.14",
+    "tqdm>=4.66",
+    "rich>=13.0",
 ]
 dev = [
     "pytest>=8.0",

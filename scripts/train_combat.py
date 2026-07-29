@@ -42,7 +42,23 @@ def train(args):
         print("Install with: pip install 'sts2-rl-agent[train]'")
         sys.exit(1)
 
+    from sts2_env.core.game_build import check_decompile_matches_installed, write_fingerprint
     from sts2_env.gym_env.combat_env import STS2CombatEnv
+
+    # Card values are read from a decompile on disk. If that is not the installed
+    # build, this run trains on the previous patch and says nothing about it --
+    # the logs, the reward curve and the saved model all look exactly right. Worth
+    # refusing over, because the cost of a wrong run is the whole run.
+    matches, reason = check_decompile_matches_installed()
+    if not matches:
+        print("Refusing to train: the decompile in use is not the installed game build.\n")
+        print(reason)
+        if not args.allow_stale_decompile:
+            print("\n  --allow-stale-decompile overrides this, if the mismatch is deliberate.")
+            sys.exit(2)
+        print("\n  --allow-stale-decompile given; continuing anyway.")
+    else:
+        print(f"Game build: {reason}")
 
     print(f"Training MaskablePPO on STS2 combat")
     print(f"  n_envs:          {args.n_envs}")
@@ -54,6 +70,11 @@ def train(args):
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Stamp the build before training rather than after saving, so a run that is
+    # interrupted still leaves a directory that can say what it was learning.
+    stamp_path = write_fingerprint(output_dir)
+    print(f"  build stamp:     {stamp_path}")
 
     # Wrap env with action masker
     def mask_fn(env):
@@ -178,6 +199,8 @@ def main():
                         help="Evaluate every N steps (default: 10000)")
     parser.add_argument("--eval-episodes", type=int, default=20,
                         help="Episodes per evaluation (default: 20)")
+    parser.add_argument("--allow-stale-decompile", action="store_true",
+                        help="Train even if the decompile is not the installed game build")
     parser.add_argument("--output-dir", type=str, default="output/combat_ppo",
                         help="Output directory (default: output/combat_ppo)")
     args = parser.parse_args()
