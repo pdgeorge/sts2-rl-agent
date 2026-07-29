@@ -18,7 +18,6 @@ from sts2_env.cards.silent import (
     make_flick_flack,
     make_finisher,
     make_flanking,
-    make_follow_through,
     make_haze,
     make_hidden_daggers,
     make_infinite_blades,
@@ -275,46 +274,6 @@ class TestSilentCardEffectsReferenceParity:
 
         assert combat.play_card(0, 0)
         assert enemy.current_hp == 91
-
-    def test_follow_through_only_applies_weak_after_owner_skill(self):
-        combat = _make_combat()
-        enemy = combat.enemies[0]
-        enemy.max_hp = 100
-        enemy.current_hp = 100
-        combat.hand = [make_follow_through(upgraded=True)]
-        combat.energy = 1
-
-        assert combat.play_card(0)
-        assert enemy.current_hp == 92
-        assert enemy.get_power_amount(PowerId.WEAK) == 0
-
-        combat = _make_combat()
-        enemy = combat.enemies[0]
-        enemy.max_hp = 100
-        enemy.current_hp = 100
-        combat.hand = [make_deflect(), make_follow_through(upgraded=True)]
-        combat.energy = 1
-
-        assert combat.play_card(0)
-        assert combat.play_card(0)
-        assert enemy.current_hp == 92
-        assert enemy.get_power_amount(PowerId.WEAK) == 2
-
-    def test_follow_through_replay_uses_prior_started_card_for_weak(self):
-        combat = _make_combat()
-        enemy = combat.enemies[0]
-        enemy.max_hp = 100
-        enemy.current_hp = 100
-        follow_through = make_follow_through(upgraded=True)
-        follow_through.base_replay_count = 1
-        combat.hand = [make_deflect(), follow_through]
-        combat.energy = 1
-
-        assert combat.play_card(0)
-        assert combat.play_card(0)
-
-        assert enemy.current_hp == 84
-        assert enemy.get_power_amount(PowerId.WEAK) == 4
 
     def test_murder_scales_with_cards_drawn_this_combat(self):
         combat = _make_combat()

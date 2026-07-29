@@ -1258,21 +1258,6 @@ class TestPowerAmountChangedHooks:
         assert ally.get_power_amount(PowerId.GUARDED) == 1
         assert getattr(ally.powers[PowerId.GUARDED], "_appliers") == [simple_combat.player]
 
-    def test_grapple_keeps_separate_appliers_like_reference(self, simple_combat):
-        ally = simple_combat.add_ally_player(PlayerState(player_id=2, character_id="Ironclad", max_hp=70, current_hp=70))
-        enemy = simple_combat.enemies[0]
-        starting_hp = enemy.current_hp
-        simple_combat.apply_power_to(enemy, PowerId.GRAPPLE, 5, applier=simple_combat.player)
-        simple_combat.apply_power_to(enemy, PowerId.GRAPPLE, 7, applier=ally)
-
-        simple_combat.player.gain_block(4)
-        fire_after_block_gained(simple_combat.player, 4, simple_combat)
-        assert enemy.current_hp == starting_hp - 5
-
-        ally.gain_block(4)
-        fire_after_block_gained(ally, 4, simple_combat)
-        assert enemy.current_hp == starting_hp - 12
-
     def test_rolling_boulder_keeps_separate_instances_like_reference(self, simple_combat):
         enemy = simple_combat.enemies[0]
         starting_hp = enemy.current_hp

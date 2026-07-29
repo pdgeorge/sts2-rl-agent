@@ -36,12 +36,12 @@ class _FirstRng:
         return list(lst)[0]
 
 
-def _make_combat(deck, character_id: str) -> CombatState:
+def _make_combat(deck, character_id: str, rng_seed: int = 42) -> CombatState:
     combat = CombatState(
         player_hp=80,
         player_max_hp=80,
         deck=deck,
-        rng_seed=42,
+        rng_seed=rng_seed,
         character_id=character_id,
     )
     creature, ai = create_shrinker_beetle(Rng(42))
@@ -227,8 +227,15 @@ class TestGeneratedChoiceParity:
         assert CardId.STRIKE_IRONCLAD not in {card.card_id for card in generated}
 
     def test_splash_makes_only_selected_generated_attack_free(self):
-        """Matches Splash.cs: SetToFreeThisTurn runs after choosing the generated card."""
-        combat = _make_combat(create_ironclad_starter_deck(), "Ironclad")
+        """Matches Splash.cs: SetToFreeThisTurn runs after choosing the generated card.
+
+        Seeded 43 rather than the file default of 42. The property is only
+        observable when at least one generated card costs something -- "becomes
+        free" says nothing about a card that was already free. Seed 42 happened to
+        produce a paid card until Grapple and FollowThrough were removed from the
+        pool (the game deleted them), which shifted the draw to three 0-cost cards.
+        """
+        combat = _make_combat(create_ironclad_starter_deck(), "Ironclad", rng_seed=43)
         splash = create_card(CardId.SPLASH)
         combat.hand = [splash]
         combat.energy = 1

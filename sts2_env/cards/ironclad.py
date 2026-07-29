@@ -1077,29 +1077,6 @@ def make_forgotten_ritual(upgraded: bool = False) -> CardInstance:
     )
 
 
-# --- Grapple ---
-@register_effect(CardId.GRAPPLE)
-def grapple(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
-    assert target is not None
-    _deal_damage_to_target(card, combat, target)
-    grapple_amount = card.effect_vars.get("grapple_power", 5)
-    combat.apply_power_to(target, PowerId.GRAPPLE, grapple_amount)
-
-
-def make_grapple(upgraded: bool = False) -> CardInstance:
-    return CardInstance(
-        card_id=CardId.GRAPPLE,
-        cost=1,
-        card_type=CardType.ATTACK,
-        target_type=TargetType.ANY_ENEMY,
-        rarity=CardRarity.UNCOMMON,
-        base_damage=9 if upgraded else 7,
-        effect_vars={"grapple_power": 7 if upgraded else 5},
-        upgraded=upgraded,
-        instance_id=_get_next_id(),
-    )
-
-
 # --- Hemokinesis ---
 @register_effect(CardId.HEMOKINESIS)
 def hemokinesis(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
@@ -1107,6 +1084,8 @@ def hemokinesis(card: CardInstance, combat: CombatState, target: Creature | None
     hp_loss = card.effect_vars.get("hp_loss", 2)
     _self_hp_loss(card, combat, hp_loss)
     _deal_damage_to_target(card, combat, target)
+
+
 
 
 def make_hemokinesis(upgraded: bool = False) -> CardInstance:
@@ -2322,7 +2301,6 @@ IRONCLAD_CARD_POOL = {
         make_fight_me,
         make_flame_barrier,
         make_forgotten_ritual,
-        make_grapple,
         make_hemokinesis,
         make_howl_from_beyond,
         make_infernal_blade,

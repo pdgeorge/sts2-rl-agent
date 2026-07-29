@@ -412,20 +412,6 @@ def flechettes(card: CardInstance, combat: CombatState, target: Creature | None)
         apply_damage(target, dmg, ValueProp.MOVE, combat, owner)
 
 
-@register_effect(CardId.FOLLOW_THROUGH)
-def follow_through(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
-    owner = _owner(card, combat)
-    for enemy in combat.hittable_enemies:
-        dmg = calculate_damage(card.base_damage, owner, enemy, ValueProp.MOVE, combat)
-        apply_damage(enemy, dmg, ValueProp.MOVE, combat, owner)
-    previous = combat.last_card_play_started_this_turn(owner, exclude_card=card)
-    if previous is None or previous.card_type != CardType.SKILL:
-        return
-    weak = card.effect_vars.get("weak", 1)
-    for enemy in combat.hittable_enemies:
-        combat.apply_power_to(enemy, PowerId.WEAK, weak)
-
-
 @register_effect(CardId.FOOTWORK)
 def footwork(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
     combat.apply_power_to(_owner(card, combat), PowerId.DEXTERITY, card.effect_vars.get("dexterity", 2))
@@ -1291,17 +1277,6 @@ def make_flechettes(upgraded: bool = False) -> CardInstance:
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.UNCOMMON,
         base_damage=7 if upgraded else 5, effect_vars={"calc_base": 0, "calc_extra": 1},
         upgraded=upgraded, instance_id=_get_next_id(),
-    )
-
-
-def make_follow_through(upgraded: bool = False) -> CardInstance:
-    return CardInstance(
-        card_id=CardId.FOLLOW_THROUGH, cost=1, card_type=CardType.ATTACK,
-        target_type=TargetType.ALL_ENEMIES, rarity=CardRarity.UNCOMMON,
-        base_damage=8 if upgraded else 6,
-        effect_vars={"weak": 2 if upgraded else 1},
-        upgraded=upgraded,
-        instance_id=_get_next_id(),
     )
 
 

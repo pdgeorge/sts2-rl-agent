@@ -1821,66 +1821,8 @@ class GigantificationPower(PowerInstance):
                 owner.powers.pop(self.power_id, None)
 
 
-# =====================================================================
-#  46. GrapplePower
-# =====================================================================
-class GrapplePower(PowerInstance):
-    """Debuff. When the applier gains block, deal Amount damage (unpowered)
-    to the owner. Removed at end of any turn.
-
-    C# ref: GrapplePower.cs
-    - AfterBlockGained: if creature == applier and amount > 0, deal Amount
-      damage to owner.
-    - AfterTurnEnd: remove self (any side).
-    StackType.Counter. Instanced.
-    """
-
-    power_type = PowerType.DEBUFF
-    stack_type = PowerStackType.COUNTER
-
-    def __init__(self, amount: int):
-        super().__init__(PowerId.GRAPPLE, amount)
-        self._instances: list[tuple[int, Creature | None]] = [(amount, None)]
-
-    def after_power_amount_changed(
-        self,
-        owner: Creature,
-        target: Creature,
-        power_id: PowerId,
-        amount: int,
-        applier: Creature | None,
-        source: object | None,
-        combat: CombatState,
-    ) -> None:
-        if owner is not target or power_id != self.power_id or amount <= 0:
-            return
-        if len(self._instances) == 1 and self._instances[0][1] is None:
-            self._instances[0] = (self._instances[0][0], applier)
-            return
-        self._instances.append((amount, applier))
-
-    def after_block_gained(self, owner: Creature, creature: Creature,
-                           amount: int, combat: CombatState) -> None:
-        if amount <= 0:
-            return
-        damage = sum(instance_amount for instance_amount, applier in self._instances if creature is (applier or self.applier))
-        if damage <= 0:
-            return
-        combat.deal_damage(
-            dealer=owner,
-            target=owner,
-            amount=damage,
-            props=ValueProp.UNPOWERED,
-        )
-
-    def after_turn_end(self, owner: Creature, side: CombatSide, combat: CombatState) -> None:
-        self.amount = 0  # signal removal
-
-
-# =====================================================================
-#  Registration
-# =====================================================================
 from sts2_env.core.creature import register_power_class  # noqa: E402
+
 
 _ALL_POWERS: dict[PowerId, type[PowerInstance]] = {
     PowerId.ACCELERANT: AccelerantPower,
@@ -1928,7 +1870,6 @@ _ALL_POWERS: dict[PowerId, type[PowerInstance]] = {
     PowerId.FURNACE: FurnacePower,
     PowerId.GENESIS: GenesisPower,
     PowerId.GIGANTIFICATION: GigantificationPower,
-    PowerId.GRAPPLE: GrapplePower,
 }
 
 for _pid, _cls in _ALL_POWERS.items():

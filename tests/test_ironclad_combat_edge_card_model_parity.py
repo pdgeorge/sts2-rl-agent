@@ -30,7 +30,6 @@ from sts2_env.cards.ironclad import (
     make_fight_me,
     make_flame_barrier,
     make_forgotten_ritual,
-    make_grapple,
     make_hemokinesis,
     make_howl_from_beyond,
     make_impervious,
@@ -232,22 +231,6 @@ class TestIroncladCombatEdgeCardModelParity:
         assert combat.play_card(0)
         assert combat.is_over
         assert combat.player.block == 0
-
-    def test_grapple_applies_power_that_triggers_when_applier_gains_block(self):
-        combat = _make_combat()
-        enemy = combat.enemies[0]
-        starting_hp = enemy.current_hp
-        combat.hand = [make_grapple()]
-        combat.energy = 1
-
-        assert combat.play_card(0, 0)
-        assert enemy.get_power_amount(PowerId.GRAPPLE) == 5
-        assert enemy.current_hp == starting_hp - 7
-
-        combat.player.gain_block(4)
-        fire_after_block_gained(combat.player, 4, combat)
-
-        assert enemy.current_hp == starting_hp - 12
 
     def test_setup_strike_grants_temporary_strength_until_turn_end(self):
         combat = _make_combat()
