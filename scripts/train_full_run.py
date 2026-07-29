@@ -120,26 +120,39 @@ def train(args):
     ])
 
     # Create model
-    model = MaskablePPO(
-        "MlpPolicy",
-        train_env,
-        learning_rate=args.lr,
-        n_steps=args.n_steps,
-        batch_size=args.batch_size,
-        n_epochs=args.n_epochs,
-        gamma=args.gamma,
-        gae_lambda=0.95,
-        clip_range=0.2,
-        ent_coef=args.ent_coef,
-        verbose=1,
-        tensorboard_log=str(output_dir / "tb_logs"),
-        # Without this, network init and action sampling are unseeded and two runs
-        # of the same command differ by more than most changes worth testing.
-        seed=args.seed,
-        policy_kwargs=dict(
-            net_arch=dict(pi=[256, 256], vf=[256, 256]),
-        ),
-    )
+    if args.resume_from:
+        # Fine-tune rather than start over. A patch changes card values, not the
+        # shape of the game, so the previous model's learned structure is still
+        # broadly right and only needs re-fitting to the new numbers.
+        #
+        # load() checks the observation and action spaces against this env and
+        # raises if they disagree, which is the failure we want: it means the
+        # env changed shape and a warm start would be silently meaningless.
+        print(f"  resuming from:   {args.resume_from}")
+        model = MaskablePPO.load(args.resume_from, env=train_env, device="auto")
+        model.set_env(train_env)
+        model.tensorboard_log = str(output_dir / "tb_logs")
+    else:
+        model = MaskablePPO(
+            "MlpPolicy",
+            train_env,
+            learning_rate=args.lr,
+            n_steps=args.n_steps,
+            batch_size=args.batch_size,
+            n_epochs=args.n_epochs,
+            gamma=args.gamma,
+            gae_lambda=0.95,
+            clip_range=0.2,
+            ent_coef=args.ent_coef,
+            verbose=1,
+            tensorboard_log=str(output_dir / "tb_logs"),
+            # Without this, network init and action sampling are unseeded and two runs
+            # of the same command differ by more than most changes worth testing.
+            seed=args.seed,
+            policy_kwargs=dict(
+                net_arch=dict(pi=[256, 256], vf=[256, 256]),
+            ),
+        )
 
     # Eval callback
     eval_callback = MaskableEvalCallback(
@@ -297,6 +310,10 @@ def main():
     parser.add_argument(
         "--eval-episodes", type=int, default=10,
         help="Episodes per evaluation (default: 10)",
+    )
+    parser.add_argument(
+        "--resume-from", type=str, default=None,
+        help="Fine-tune from an existing model .zip instead of starting over",
     )
     parser.add_argument(
         "--seed", type=int, default=0,

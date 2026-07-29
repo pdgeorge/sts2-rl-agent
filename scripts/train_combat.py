@@ -112,24 +112,37 @@ def train(args):
     eval_env = DummyVecEnv([make_masked_env(args.seed + 9999)])
 
     # Create model
-    model = MaskablePPO(
-        "MlpPolicy",
-        train_env,
-        learning_rate=args.lr,
-        n_steps=args.n_steps,
-        batch_size=args.batch_size,
-        n_epochs=args.n_epochs,
-        gamma=args.gamma,
-        gae_lambda=0.95,
-        clip_range=0.2,
-        ent_coef=args.ent_coef,
-        verbose=1,
-        tensorboard_log=str(output_dir / "tb_logs"),
-        # Without this the network init and action sampling are unseeded, so two
-        # runs of the same command differ (measured: 83% and 79% win rate) and
-        # neither can be compared to the other.
-        seed=args.seed,
-    )
+    if args.resume_from:
+        # Fine-tune rather than start over. A patch changes card values, not the
+        # shape of the game, so the previous model's learned structure is still
+        # broadly right and only needs re-fitting to the new numbers.
+        #
+        # load() checks the observation and action spaces against this env and
+        # raises if they disagree, which is the failure we want: it means the
+        # env changed shape and a warm start would be silently meaningless.
+        print(f"  resuming from:   {args.resume_from}")
+        model = MaskablePPO.load(args.resume_from, env=train_env, device="auto")
+        model.set_env(train_env)
+        model.tensorboard_log = str(output_dir / "tb_logs")
+    else:
+        model = MaskablePPO(
+            "MlpPolicy",
+            train_env,
+            learning_rate=args.lr,
+            n_steps=args.n_steps,
+            batch_size=args.batch_size,
+            n_epochs=args.n_epochs,
+            gamma=args.gamma,
+            gae_lambda=0.95,
+            clip_range=0.2,
+            ent_coef=args.ent_coef,
+            verbose=1,
+            tensorboard_log=str(output_dir / "tb_logs"),
+            # Without this the network init and action sampling are unseeded, so two
+            # runs of the same command differ (measured: 83% and 79% win rate) and
+            # neither can be compared to the other.
+            seed=args.seed,
+        )
 
     # Eval callback
     eval_callback = MaskableEvalCallback(
@@ -224,6 +237,8 @@ def main():
                         help="Evaluate every N steps (default: 10000)")
     parser.add_argument("--eval-episodes", type=int, default=20,
                         help="Episodes per evaluation (default: 20)")
+    parser.add_argument("--resume-from", type=str, default=None,
+                        help="Fine-tune from an existing model .zip instead of starting over")
     parser.add_argument("--seed", type=int, default=0,
                         help="Seed for envs, network init and sampling (default: 0)")
     parser.add_argument("--allow-stale-decompile", action="store_true",
