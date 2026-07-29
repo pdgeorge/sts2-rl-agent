@@ -114,6 +114,8 @@ def run_agent(
     verbose: bool = False,
     record_replay_path: str | None = None,
     replay_factory: str | None = None,
+    speed: str = "turbo",
+    allow_random_fallback: bool = False,
 ) -> None:
     """Main agent loop.
 
@@ -146,6 +148,21 @@ def run_agent(
             logger.info("Recording supported bridge states to %s", record_replay_path)
         else:
             client = raw_client
+
+        # Session options, sent once before the game starts a run. The mod now
+        # waits for a client rather than beginning on its own, so this arrives in
+        # time to apply to the first run rather than the second.
+        raw_client.send_action({
+            "action": "configure",
+            "speed": speed,
+            # Off by default: with the fallback on, the mod plays randomly when the
+            # agent does not answer, logs only to the game's own log, and the trace
+            # records those actions as the model's. Silence in this console should
+            # mean nothing is happening.
+            "allow_random_fallback": allow_random_fallback,
+        })
+        logger.info("Requested speed=%s, random_fallback=%s", speed, allow_random_fallback)
+
         logger.info("Connected. Starting agent loop.")
 
         step_count = 0
@@ -697,6 +714,26 @@ def main() -> None:
         default=None,
         help="Optional module:function factory to store in replay metadata for later comparison.",
     )
+    parser.add_argument(
+        "--speed",
+        choices=["turbo", "fast", "normal", "slow"],
+        default="turbo",
+        help=(
+            "How fast the game plays itself. turbo is for gathering traces and is "
+            "unwatchable; normal is the game's own pace with fast mode on; slow "
+            "pauses between actions so a viewer can follow along."
+        ),
+    )
+    parser.add_argument(
+        "--allow-random-fallback",
+        action="store_true",
+        help=(
+            "Let the game keep playing randomly when the agent does not answer. Off "
+            "by default: the fallback logs only to the game's log, so this console "
+            "stays silent while the mod plays on, and the trace records those "
+            "actions as the model's."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -716,6 +753,8 @@ def main() -> None:
         verbose=args.verbose,
         record_replay_path=args.record_replay,
         replay_factory=args.replay_factory,
+        speed=args.speed,
+        allow_random_fallback=args.allow_random_fallback,
     )
 
 

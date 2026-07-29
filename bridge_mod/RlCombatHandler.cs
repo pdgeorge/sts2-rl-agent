@@ -122,22 +122,36 @@ public class RlCombatHandler : IRoomHandler, IHandler
                     }
                 }
 
-                // Parse and execute the response, or fall back to random
                 if (responseJson != null)
                 {
                     turnEnded = await ExecuteAgentAction(
                         responseJson, player, random, ct);
                 }
-                else
+                else if (RlSpeed.AllowRandomFallback)
                 {
                     Logger.Log("[RlCombat] No agent response, falling back to random");
                     turnEnded = await PlayRandomFallback(player, random, ct);
+                }
+                else
+                {
+                    // Stop rather than play on without the agent. The fallback ran
+                    // silently on the Python side -- your console showed nothing at
+                    // all -- and the recorded trace attributed the random action to
+                    // the model. A halted run is honest; a randomly-played one that
+                    // looks agent-driven is not.
+                    Logger.Log("[RlCombat] No agent response and fallback disabled; "
+                               + "ending the run rather than playing without the agent.");
+                    return;
                 }
 
                 if (!turnEnded)
                     cardsPlayed++;
 
-                await Task.Delay(100, ct);
+                // Baseline settle, plus the speed preset's deliberate pause. Slow
+                // modes wait here, on a completed action -- not by timing out on a
+                // change they already missed, which is what made combat take three
+                // seconds a card before.
+                await Task.Delay(100 + RlSpeed.Current.ActionDelayMs, ct);
             }
 
             // If we ran out of cards to play without ending turn, end it

@@ -146,6 +146,20 @@ public partial class MainFile : Node
                     () => root.GetNodeOrNull<Control>(MainMenuPath)?.IsVisibleInTree() ?? false,
                     ct, TimeSpan.FromSeconds(MainMenuTimeoutSeconds), "Main menu not visible");
 
+                // Wait for an agent before starting. Runs used to begin the moment
+                // the game reached a menu, so you always joined one already in
+                // progress, and a run started with nobody attached was played
+                // entirely by the random fallback while looking like a real run.
+                if (!BridgeServer.Instance.IsClientConnected)
+                {
+                    Logger.Log("[RlAutoSlay] Waiting for an agent to connect before starting a run...");
+                    await WaitHelper.Until(() => BridgeServer.Instance.IsClientConnected, ct,
+                        TimeSpan.FromHours(12), "No agent connected");
+                    Logger.Log("[RlAutoSlay] Agent connected.");
+                    // Let the client send its start options before the run begins.
+                    await Task.Delay(250, ct);
+                }
+
                 // A fresh slayer per run: RunAsync's finally tears its state down, and
                 // a new seed per run is the difference between a stream and a rerun.
                 _autoSlayer = new RlAutoSlayer();

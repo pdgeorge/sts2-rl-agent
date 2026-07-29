@@ -328,6 +328,28 @@ public class BridgeServer
                     SendState("{\"type\":\"pong\"}");
                     return;
                 }
+
+                // Session options, sent once on connect. Handled here rather than as
+                // a game action because they configure the session rather than a
+                // turn, and must not be mistaken for a pending action response.
+                if (action.Equals("configure", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (root.TryGetProperty("speed", out var speedProp))
+                    {
+                        RlSpeed.Set(speedProp.GetString() ?? "");
+                    }
+                    if (root.TryGetProperty("allow_random_fallback", out var fbProp)
+                        && (fbProp.ValueKind == JsonValueKind.True
+                            || fbProp.ValueKind == JsonValueKind.False))
+                    {
+                        RlSpeed.AllowRandomFallback = fbProp.GetBoolean();
+                        Logger.Log("[BridgeServer] Random fallback "
+                                   + (RlSpeed.AllowRandomFallback ? "enabled." : "disabled."));
+                    }
+                    SendState("{\"type\":\"configured\",\"speed\":\""
+                              + RlSpeed.Current.Name + "\"}");
+                    return;
+                }
             }
 
             // Also support legacy "type" field for ping
