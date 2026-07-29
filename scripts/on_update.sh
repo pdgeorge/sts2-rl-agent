@@ -7,7 +7,7 @@
 # matching and a policy that trains confidently against a game that no longer
 # exists. The mod fails loudly; the simulator does not. This script is the noise.
 #
-# It does five things, in order:
+# It does six things, in order:
 #
 #   1. Notices whether the installed build actually changed.
 #   2. Decompiles it, keeping the previous decompile so there is something to
@@ -15,6 +15,8 @@
 #   3. Diffs the two game builds -- the short list of what this patch did.
 #   4. Diffs card values against the simulator.
 #   5. Diffs content inventory (cards, relics, monsters, ...) against the simulator.
+#   6. Reports content the simulator has no name for at all -- the enum members
+#      scripts/sync_content.py --write would add.
 #
 # What it deliberately does NOT do is edit sts2_env/ for you. Auto-applying the
 # value diffs was the obvious next step and it is a trap: the extractor reads a
@@ -81,7 +83,7 @@ DLL="$DATA_DIR/sts2.dll"
 [ -f "$DLL" ] || die "sts2.dll not found at $DLL"
 
 # ---------------------------------------------------------------------------
-step "1/5  Installed build"
+step "1/6  Installed build"
 # ---------------------------------------------------------------------------
 
 DLL_HASH="$(sha256sum "$DLL" | cut -d' ' -f1)"
@@ -104,7 +106,7 @@ if [ "$DLL_HASH" = "$PREV_HASH" ] && [ "$FORCE" -eq 0 ] && [ "$DO_DECOMPILE" -eq
 fi
 
 # ---------------------------------------------------------------------------
-step "2/5  Decompile"
+step "2/6  Decompile"
 # ---------------------------------------------------------------------------
 
 PREV_DIR="$DECOMPILE_DIR.prev"
@@ -162,7 +164,7 @@ mkdir -p "$OUT"
 drift=0
 
 # ---------------------------------------------------------------------------
-step "3/5  What the patch changed (game vs game)"
+step "3/6  What the patch changed (game vs game)"
 # ---------------------------------------------------------------------------
 
 # The committed decompiled/ tree is a snapshot of some older build, which makes it
@@ -195,7 +197,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-step "4/5  Card values (game vs simulator)"
+step "4/6  Card values (game vs simulator)"
 # ---------------------------------------------------------------------------
 
 set +e
@@ -207,12 +209,21 @@ set -e
 [ "$rc" -eq 2 ] && die "card parity check could not run"
 
 # ---------------------------------------------------------------------------
-step "5/5  Content inventory (game vs simulator)"
+step "5/6  Content inventory (game vs simulator)"
 # ---------------------------------------------------------------------------
 
 "$PYTHON" "$REPO/scripts/parity_reference_audit.py" \
     --decompiled-root "$DECOMPILE_DIR" \
     --code-implementation-references --show-missing | tee "$OUT/inventory.txt"
+
+# ---------------------------------------------------------------------------
+step "6/6  Content the simulator has no name for"
+# ---------------------------------------------------------------------------
+
+# Report only. Adding enum members is additive and safe, but it edits tracked
+# source, so it stays an explicit choice rather than something a refresh does to
+# you: run scripts/sync_content.py --write when you want it.
+"$PYTHON" "$REPO/scripts/sync_content.py" | tee "$OUT/unnamed-content.txt"
 
 # ---------------------------------------------------------------------------
 echo

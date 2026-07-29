@@ -334,6 +334,20 @@ class RelicId(Enum):
     CIRCLET = auto()
     DEPRECATED_RELIC = auto()
 
+    # Present in the game, not yet implemented here. Added by
+    # scripts/sync_content.py so the reference parser can map every
+    # decompiled class; a member is a name, not an implementation.
+    DOWSING_ROD = auto()
+    FISHING_ROD = auto()
+    HEFTY_TABLET = auto()
+    KALEIDOSCOPE = auto()
+    NEOWS_BONES = auto()
+    NEOWS_SACRIFICE = auto()
+    NEOWS_TALISMAN = auto()
+    PHIAL_HOLSTER = auto()
+    SILKEN_TRESS = auto()
+    WINGED_BOOTS = auto()
+
 
 class RelicPool(Enum):
     """Which character pool a relic belongs to."""

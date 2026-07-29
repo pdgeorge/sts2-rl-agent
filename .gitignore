@@ -61,3 +61,8 @@ reports/
 # binary you own is fine, republishing the decompilation is not. Regenerate with
 # scripts/on_update.sh, or point STS2_DECOMPILED_ROOT at a copy elsewhere.
 decompiled/
+
+# Review stubs written by scripts/sync_content.py. Deliberately not importable:
+# they carry decompiled Mega Crit source for reference while behaviour is written
+# by hand, and must not become part of the package.
+scaffold/

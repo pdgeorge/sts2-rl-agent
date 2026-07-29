@@ -487,6 +487,23 @@ class PowerId(Enum):
     # Generic placeholder
     GENERIC = auto()
 
+    # Present in the game, not yet implemented here. Added by
+    # scripts/sync_content.py so the reference parser can map every
+    # decompiled class; a member is a name, not an implementation.
+    AMBERGRIS = auto()
+    BORROWED_TIME = auto()
+    CACOPHONY = auto()
+    CONCOCT = auto()
+    FADE = auto()
+    HIBERNATE = auto()
+    IMITATION_LEARNING = auto()
+    NO_ENERGY_GAIN = auto()
+    ONE_FOR_ALL = auto()
+    SOULBOUND = auto()
+    TAINTED = auto()
+    UNDERWORLD = auto()
+    WITHERING_PRESENCE = auto()
+
 
 class CardId(Enum):
     # Ironclad basic
