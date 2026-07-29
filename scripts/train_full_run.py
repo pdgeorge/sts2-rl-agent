@@ -168,10 +168,17 @@ def train(args):
         """
 
         def _on_step(self) -> bool:
+            # Only on episode end. Reading every step averaged "what floor is each
+            # env currently on", which weights by time spent rather than by depth
+            # reached -- a run that lingers on floor 3 drags the number down. On a
+            # done step the vec env still carries the terminating step's info, so
+            # info["floor"] there is the floor the run actually ended on.
+            dones = self.locals.get("dones", [])
+            infos = self.locals.get("infos", [])
             floors = [
                 info["floor"]
-                for info in self.locals.get("infos", [])
-                if isinstance(info, dict) and "floor" in info
+                for info, done in zip(infos, dones)
+                if done and isinstance(info, dict) and "floor" in info
             ]
             if floors:
                 self.logger.record("run/mean_floor", float(np.mean(floors)))
@@ -181,8 +188,18 @@ def train(args):
     stop_callback = None
     if args.stop_after_no_improvement:
         # Early stopping, so a long budget can be set without guessing where the
-        # curve flattens. Patience is deliberately generous: RL plateaus are often
-        # temporary, and a stopper is only as good as the metric it watches.
+        # curve flattens.
+        #
+        # Be careful with this. It stops when no eval beats the best one ever
+        # seen, which is not the same as "the trend flattened". Measured on a real
+        # run: eval reward has a standard deviation around 4.0, so at 30 episodes
+        # the standard error is ~0.73 and a single lucky eval lands 2-3 SE high.
+        # One did (+5.63 at step 960k against a running mean near 3), nothing beat
+        # it, and training stopped 16 evals later while the mean was still
+        # climbing -- first half +1.93, second half +3.11.
+        #
+        # So: raise --eval-episodes before trusting it, keep the patience
+        # generous, and check the curve rather than assuming the stop was right.
         stop_callback = StopTrainingOnNoModelImprovement(
             max_no_improvement_evals=args.stop_after_no_improvement,
             min_evals=args.stop_min_evals,
