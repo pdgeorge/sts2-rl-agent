@@ -226,10 +226,15 @@ public static class AnimationSpeedPatch
 {
     public static float AnimMultiplier = 5.0f;
 
+    // The parameter must be named `scale`, not `timeScale`. Harmony binds prefix
+    // parameters to the original method's by NAME, and the original is
+    // `SetTimeScale(float scale)` -- so the old name threw at patch time and the
+    // mod logged "SKIP: AnimationSpeedPatch". Two of three patches applied, the
+    // game reported no error, and animations simply ran at 1x forever.
     [HarmonyPrefix]
-    static void Prefix(ref float timeScale)
+    static void Prefix(ref float scale)
     {
-        timeScale *= AnimMultiplier;
+        scale *= AnimMultiplier;
     }
 }
 
