@@ -158,6 +158,13 @@ def rebuild_combat(state: dict[str, Any], reasons: Counter | None = None) -> Com
         creature.max_hp = int(enemy_state.get("max_hp", creature.max_hp))
         creature.current_hp = int(enemy_state.get("hp", creature.current_hp))
         creature.block = int(enemy_state.get("block", 0))
+        # The recorded state is authoritative about powers, so whatever the
+        # factory granted innately has to go first. Inklets are created with
+        # Slippery; by the time the game reached this state one of them had spent
+        # it, and layering the recorded powers on top of the factory's left the
+        # simulator dodging a hit the game took -- 1 damage where the game dealt
+        # 6, which read as simulator drift and was this.
+        creature.powers.clear()
         for power in enemy_state.get("powers", []):
             try:
                 combat.apply_power_to(creature, _power_id(power["id"]), int(power["amount"]))
@@ -204,9 +211,14 @@ def _keyed(entries: list[tuple[str, int, int]]) -> dict[str, int]:
     """
     seen: Counter = Counter()
     snap: dict[str, int] = {}
-    for monster_id, hp, block in entries:
-        key = f"{monster_id}#{seen[monster_id]}"
-        seen[monster_id] += 1
+    for monster_id, max_hp, hp, block in entries:
+        # max_hp is part of the key because an encounter can hold several of the
+        # same monster -- three INKLETs at 14, 12 and 16 -- and an ordinal alone
+        # still shifts when one of them dies, which read as the survivors taking
+        # 1 damage from a 6-damage Strike.
+        base = f"{monster_id}@{max_hp}"
+        key = f"{base}#{seen[base]}"
+        seen[base] += 1
         snap[f"{key}_hp"] = hp
         snap[f"{key}_block"] = block
     return snap
@@ -219,7 +231,7 @@ def _snapshot(state: dict[str, Any]) -> dict[str, int]:
         "player_block": int(player.get("block", 0)),
     }
     snap.update(_keyed([
-        (e.get("id", "?"), int(e.get("hp", 0)), int(e.get("block", 0)))
+        (e.get("id", "?"), int(e.get("max_hp", 0)), int(e.get("hp", 0)), int(e.get("block", 0)))
         for e in state.get("enemies", [])
         if e.get("is_alive", True)
     ]))
@@ -232,7 +244,7 @@ def _sim_snapshot(combat: CombatState) -> dict[str, int]:
         "player_block": combat.player.block,
     }
     snap.update(_keyed([
-        (e.monster_id or "?", e.current_hp, e.block)
+        (e.monster_id or "?", e.max_hp, e.current_hp, e.block)
         for e in combat.enemies
         if e.is_alive
     ]))
