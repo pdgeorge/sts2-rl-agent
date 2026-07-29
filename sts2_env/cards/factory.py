@@ -279,6 +279,23 @@ def _coerce_reference_rarity(rarity_name: str) -> CardRarity:
     return CardRarity[normalized]
 
 
+def _decompiled_effect_vars(card_id: CardId, upgraded: bool) -> dict[str, int] | None:
+    """The card's dynamic vars as the game declares them, or None if it has none.
+
+    None means "the decompile cannot answer for this card" -- a simulator-only
+    construct, or one deleted upstream -- not "this card has no values", so callers
+    fall back rather than treating it as an empty set.
+    """
+    from sts2_env.cards.reference_static_metadata import (
+        reference_dynamic_vars_by_card_id,
+        upgraded_reference_dynamic_vars_by_card_id,
+    )
+
+    table = (upgraded_reference_dynamic_vars_by_card_id() if upgraded
+             else reference_dynamic_vars_by_card_id())
+    return table.get(card_id)
+
+
 def _build_reference_effect_vars(vars_text: str) -> dict[str, int]:
     effect_vars: dict[str, int] = {}
     for key, value_text in re.findall(r"([A-Za-z][A-Za-z0-9]*): ([^,}]+)", vars_text):
@@ -355,8 +372,16 @@ def _build_reference_card(
             cost = -1
         else:
             cost = 0 if has_energy_cost_x else int(cost_text)
-    effect_vars = _build_reference_effect_vars(definition.vars_text)
-    card_type = CardType[definition.card_type.upper()]
+    # Values come from the decompile. docs/CARDS_REFERENCE.md is prose and routing
+    # only -- it used to define these as well, which made it a third copy of every
+    # number, needing hand-edits in lockstep with the factories and the decompile.
+    # It fell behind, and since the tests read it as an oracle they stayed green
+    # against it while the simulator disagreed with the game that shipped.
+    decompiled_vars = _decompiled_effect_vars(card_id, upgraded)
+    effect_vars = (dict(decompiled_vars) if decompiled_vars is not None
+                   else _build_reference_effect_vars(definition.vars_text))
+    card_type = (static_metadata.card_type if static_metadata is not None
+                 else CardType[definition.card_type.upper()])
     base_damage = effect_vars.get("damage", effect_vars.get("calc_base"))
     base_block = effect_vars.get("block")
     if base_damage is None and card_type == CardType.ATTACK:
@@ -364,13 +389,17 @@ def _build_reference_card(
     if base_block is None and card_type in {CardType.SKILL, CardType.POWER}:
         base_block = 0
 
+    # Upgraded values are already resolved when they come from the decompile; the
+    # upgrade text only has to be replayed for cards it could not supply.
     can_upgrade = definition.upgrade_text != "Cannot be upgraded"
     card = CardInstance(
         card_id=card_id,
         cost=cost,
         card_type=card_type,
-        target_type=TargetType[_camel_to_snake(definition.target).upper()],
-        rarity=_coerce_reference_rarity(definition.rarity),
+        target_type=(static_metadata.target_type if static_metadata is not None
+                     else TargetType[_camel_to_snake(definition.target).upper()]),
+        rarity=(static_metadata.rarity if static_metadata is not None
+                else _coerce_reference_rarity(definition.rarity)),
         base_damage=base_damage,
         base_block=base_block,
         upgraded=upgraded and can_upgrade,
@@ -384,7 +413,7 @@ def _build_reference_card(
             static_metadata.has_turn_end_in_hand_effect if static_metadata is not None else False
         ),
     )
-    if upgraded and can_upgrade:
+    if upgraded and can_upgrade and decompiled_vars is None:
         _apply_upgrade_text(card, effect_vars, definition.upgrade_text)
     card = _apply_decompiled_static_metadata(card)
     if not allow_generation:

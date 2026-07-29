@@ -1260,7 +1260,7 @@ def make_reave(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.REAVE, cost=1, card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.COMMON,
-        base_damage=11 if upgraded else 9, upgraded=upgraded,
+        base_damage=13 if upgraded else 10, upgraded=upgraded,
         effect_vars={"cards": 1}, instance_id=_get_next_id(),
     )
 
@@ -1279,7 +1279,7 @@ def make_sculpting_strike(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.SCULPTING_STRIKE, cost=1, card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.COMMON,
-        base_damage=11 if upgraded else 8, upgraded=upgraded,
+        base_damage=12 if upgraded else 9, upgraded=upgraded,
         instance_id=_get_next_id(),
     )
 
@@ -1316,7 +1316,7 @@ def make_wisp(upgraded: bool = False) -> CardInstance:
 def make_seance(upgraded: bool = False) -> CardInstance:
     kw = frozenset({"ethereal"})
     return CardInstance(
-        card_id=CardId.SEANCE, cost=0, card_type=CardType.SKILL,
+        card_id=CardId.SEANCE, cost=1, card_type=CardType.SKILL,
         target_type=TargetType.SELF, rarity=CardRarity.RARE,
         upgraded=upgraded, keywords=kw,
         effect_vars={"cards": 1},

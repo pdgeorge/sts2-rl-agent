@@ -461,7 +461,7 @@ def rip_and_tear_effect(card: CardInstance, combat: CombatState, target: Creatur
 def make_rip_and_tear(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.RIP_AND_TEAR, cost=1, card_type=CardType.ATTACK,
-        target_type=TargetType.RANDOM_ENEMY, rarity=CardRarity.UNCOMMON,
+        target_type=TargetType.RANDOM_ENEMY, rarity=CardRarity.EVENT,
         base_damage=9 if upgraded else 7, upgraded=upgraded,
         instance_id=_get_next_id(),
     )
@@ -1091,7 +1091,7 @@ def make_giant_rock(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.GIANT_ROCK, cost=1, card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.STATUS,
-        base_damage=20 if upgraded else 16, upgraded=upgraded,
+        base_damage=24 if upgraded else 20, upgraded=upgraded,
         instance_id=_get_next_id(),
     )
 
@@ -1121,7 +1121,7 @@ def minion_dive_bomb_effect(card: CardInstance, combat: CombatState, target: Cre
 
 def make_minion_dive_bomb(upgraded: bool = False) -> CardInstance:
     return CardInstance(
-        card_id=CardId.MINION_DIVE_BOMB, cost=1, card_type=CardType.ATTACK,
+        card_id=CardId.MINION_DIVE_BOMB, cost=0, card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.STATUS,
         base_damage=16 if upgraded else 13, upgraded=upgraded,
         keywords=frozenset({"exhaust"}), instance_id=_get_next_id(),
@@ -1137,7 +1137,7 @@ def make_minion_sacrifice(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.MINION_SACRIFICE, cost=0, card_type=CardType.SKILL,
         target_type=TargetType.SELF, rarity=CardRarity.STATUS,
-        base_block=12 if upgraded else 9, upgraded=upgraded,
+        base_block=10 if upgraded else 7, upgraded=upgraded,
         keywords=frozenset({"exhaust"}), instance_id=_get_next_id(),
     )
 
@@ -1154,7 +1154,7 @@ def make_minion_strike(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.MINION_STRIKE, cost=0, card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.STATUS,
-        base_damage=10 if upgraded else 7, upgraded=upgraded,
+        base_damage=9 if upgraded else 6, upgraded=upgraded,
         keywords=frozenset({"exhaust"}),
         effect_vars={"cards": 1}, instance_id=_get_next_id(),
     )

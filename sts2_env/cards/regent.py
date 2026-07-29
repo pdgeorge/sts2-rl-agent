@@ -991,7 +991,7 @@ def make_falling_star(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.FALLING_STAR, cost=0, card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.BASIC,
-        base_damage=11 if upgraded else 7, upgraded=upgraded,
+        base_damage=12 if upgraded else 8, upgraded=upgraded,
         effect_vars={"weak": 1, "vulnerable": 1},
         star_cost=2,
         instance_id=_get_next_id(),
@@ -1060,7 +1060,7 @@ def make_collision_course(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.COLLISION_COURSE, cost=0, card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.COMMON,
-        base_damage=12 if upgraded else 9, upgraded=upgraded,
+        base_damage=14 if upgraded else 10, upgraded=upgraded,
         instance_id=_get_next_id(),
     )
 
@@ -1078,7 +1078,7 @@ def make_gather_light(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.GATHER_LIGHT, cost=1, card_type=CardType.SKILL,
         target_type=TargetType.SELF, rarity=CardRarity.COMMON,
-        base_block=10 if upgraded else 7, upgraded=upgraded,
+        base_block=11 if upgraded else 8, upgraded=upgraded,
         effect_vars={"stars": 1},
         instance_id=_get_next_id(),
     )
@@ -1150,7 +1150,7 @@ def make_solar_strike(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.SOLAR_STRIKE, cost=1, card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.COMMON,
-        base_damage=9 if upgraded else 8, upgraded=upgraded,
+        base_damage=10 if upgraded else 9, upgraded=upgraded,
         effect_vars={"stars": 2 if upgraded else 1},
         instance_id=_get_next_id(),
     )
@@ -1201,7 +1201,7 @@ def make_big_bang(upgraded: bool = False) -> CardInstance:
 
 def make_bundle_of_joy(upgraded: bool = False) -> CardInstance:
     return CardInstance(
-        card_id=CardId.BUNDLE_OF_JOY, cost=2, card_type=CardType.SKILL,
+        card_id=CardId.BUNDLE_OF_JOY, cost=1, card_type=CardType.SKILL,
         target_type=TargetType.SELF, rarity=CardRarity.RARE,
         upgraded=upgraded, keywords=frozenset({"exhaust"}),
         effect_vars={"cards": 4 if upgraded else 3},
@@ -1222,7 +1222,7 @@ def make_bulwark(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.BULWARK, cost=2, card_type=CardType.SKILL,
         target_type=TargetType.SELF, rarity=CardRarity.UNCOMMON,
-        base_block=16 if upgraded else 13, upgraded=upgraded,
+        base_block=15 if upgraded else 12, upgraded=upgraded,
         effect_vars={"forge": 13 if upgraded else 10},
         instance_id=_get_next_id(),
     )

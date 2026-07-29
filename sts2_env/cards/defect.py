@@ -2015,7 +2015,7 @@ def make_ice_lance(upgraded: bool = False) -> CardInstance:
 def make_ignition(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.IGNITION, cost=1, card_type=CardType.SKILL,
-        target_type=TargetType.ANY_ALLY, rarity=CardRarity.RARE,
+        target_type=TargetType.ANY_ALLY, rarity=CardRarity.UNCOMMON,
         keywords=frozenset() if upgraded else frozenset({"exhaust"}),
         upgraded=upgraded, instance_id=_get_next_id(),
     )
@@ -2144,7 +2144,7 @@ def make_trash_to_treasure(upgraded: bool = False) -> CardInstance:
 
 def make_voltaic(upgraded: bool = False) -> CardInstance:
     return CardInstance(
-        card_id=CardId.VOLTAIC, cost=2, card_type=CardType.SKILL,
+        card_id=CardId.VOLTAIC, cost=3, card_type=CardType.SKILL,
         target_type=TargetType.SELF, rarity=CardRarity.RARE,
         keywords=frozenset() if upgraded else frozenset({"exhaust"}),
         effect_vars={

@@ -989,7 +989,7 @@ def make_survivor(upgraded: bool = False) -> CardInstance:
 def make_acrobatics(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.ACROBATICS, cost=1, card_type=CardType.SKILL,
-        target_type=TargetType.SELF, rarity=CardRarity.COMMON,
+        target_type=TargetType.SELF, rarity=CardRarity.UNCOMMON,
         effect_vars={"cards": 4 if upgraded else 3},
         upgraded=upgraded, instance_id=_get_next_id(),
     )
@@ -1089,7 +1089,7 @@ def make_leading_strike(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.LEADING_STRIKE, cost=1, card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.COMMON,
-        base_damage=10 if upgraded else 7,
+        base_damage=6 if upgraded else 3,
         effect_vars={"shivs": LEADING_STRIKE_SHIVS},
         upgraded=upgraded, instance_id=_get_next_id(),
     )
@@ -1166,7 +1166,7 @@ def make_untouchable(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.UNTOUCHABLE, cost=2, card_type=CardType.SKILL,
         target_type=TargetType.SELF, rarity=CardRarity.COMMON,
-        base_block=12 if upgraded else 9, keywords=frozenset({"sly"}),
+        base_block=9 if upgraded else 6, keywords=frozenset({"sly"}),
         upgraded=upgraded, instance_id=_get_next_id(),
     )
 
@@ -1278,7 +1278,7 @@ def make_finisher(upgraded: bool = False) -> CardInstance:
 def make_flanking(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.FLANKING, cost=1 if upgraded else 2, card_type=CardType.SKILL,
-        target_type=TargetType.ANY_ENEMY, rarity=CardRarity.UNCOMMON,
+        target_type=TargetType.ANY_ENEMY, rarity=CardRarity.RARE,
         effect_vars={"flanking_power": 2},
         upgraded=upgraded,
         instance_id=_get_next_id(),
@@ -1413,7 +1413,7 @@ def make_pinpoint(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.PINPOINT, cost=3, card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.UNCOMMON,
-        base_damage=22 if upgraded else 17,
+        base_damage=19 if upgraded else 15,
         upgraded=upgraded, instance_id=_get_next_id(),
     )
 
@@ -1422,7 +1422,7 @@ def make_pounce(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.POUNCE, cost=2, card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.UNCOMMON,
-        base_damage=18 if upgraded else 12,
+        base_damage=20 if upgraded else 14,
         upgraded=upgraded, instance_id=_get_next_id(),
     )
 
@@ -1441,7 +1441,7 @@ def make_precise_cut(upgraded: bool = False) -> CardInstance:
 def make_predator(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.PREDATOR, cost=2, card_type=CardType.ATTACK,
-        target_type=TargetType.ANY_ENEMY, rarity=CardRarity.UNCOMMON,
+        target_type=TargetType.ANY_ENEMY, rarity=CardRarity.COMMON,
         base_damage=20 if upgraded else 15,
         upgraded=upgraded, instance_id=_get_next_id(),
     )
@@ -1506,7 +1506,7 @@ def make_up_my_sleeve(upgraded: bool = False) -> CardInstance:
 def make_well_laid_plans(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.WELL_LAID_PLANS, cost=1, card_type=CardType.POWER,
-        target_type=TargetType.SELF, rarity=CardRarity.UNCOMMON,
+        target_type=TargetType.SELF, rarity=CardRarity.RARE,
         effect_vars={"retain_amount": 2 if upgraded else 1},
         upgraded=upgraded, instance_id=_get_next_id(),
     )
@@ -1525,7 +1525,7 @@ def make_abrasive(upgraded: bool = False) -> CardInstance:
 def make_accelerant(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.ACCELERANT, cost=1, card_type=CardType.POWER,
-        target_type=TargetType.SELF, rarity=CardRarity.RARE,
+        target_type=TargetType.SELF, rarity=CardRarity.UNCOMMON,
         effect_vars={"accelerant": 2 if upgraded else 1},
         upgraded=upgraded, instance_id=_get_next_id(),
     )
@@ -1628,7 +1628,7 @@ def make_grand_finale(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.GRAND_FINALE, cost=0, card_type=CardType.ATTACK,
         target_type=TargetType.ALL_ENEMIES, rarity=CardRarity.RARE,
-        base_damage=60 if upgraded else 50,
+        base_damage=75 if upgraded else 60,
         upgraded=upgraded, instance_id=_get_next_id(),
     )
 

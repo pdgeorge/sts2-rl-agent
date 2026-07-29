@@ -181,8 +181,21 @@ class CardInstance:
     single_turn_retain: bool = False
     bound: bool = False
     base_replay_count: int = 0
+    # Set False to build a card whose values are deliberately not the game's --
+    # a real card_id used as a shell to exercise one mechanic, which several tests
+    # do. Without the opt-out, derivation silently overwrites the fabricated
+    # values and the test quietly stops testing what it says it does.
+    derive_from_game: bool = True
 
     def __post_init__(self):
+        # The game's numbers win over whatever the factory passed. This has to run
+        # before original_cost is taken, or every cost-modification effect would
+        # work off a stale baseline.
+        if self.derive_from_game:
+            from sts2_env.cards.derived_values import apply_derived_values
+
+            apply_derived_values(self)
+
         if self.original_cost is None:
             self.original_cost = self.cost
         tags = {

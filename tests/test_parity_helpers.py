@@ -1890,6 +1890,9 @@ class TestPendingChoiceFlow:
             rarity=CardRarity.UNCOMMON,
             base_damage=6,
             effect_vars={"cards": 2},
+            # Exactly two revealed cards is the point of the test, so the reveal
+            # count must not follow the game's.
+            derive_from_game=False,
         )
         card_a = make_strike_ironclad()
         card_b = make_gather_light()

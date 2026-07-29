@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
 from dataclasses import replace
@@ -14,6 +15,27 @@ from sts2_env.core.enums import CardId, CardRarity, CardTag, CardType, OrbEvokeT
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_CARD_DIR = Path("decompiled/MegaCrit.Sts2.Core.Models.Cards")
+
+# The committed decompiled/ tree is a snapshot of whatever build it was taken
+# from, which quietly turns this reference -- and every test comparing against it
+# -- into a statement about the past. "4,609 tests pass" then means "the sim
+# agrees with a decompile from some earlier patch", not "the sim matches the
+# game". Point STS2_DECOMPILED_ROOT at a fresh decompile of the installed build
+# and the suite becomes a live parity check instead.
+#
+# Not switchable on yet: a fresh tree contains cards CardId has no member for, and
+# card_id_for_reference_class raises on the first one, which kills collection
+# before a single test runs. Those members have to be added first.
+DECOMPILED_ROOT_ENV = "STS2_DECOMPILED_ROOT"
+
+
+def reference_card_dir() -> Path:
+    override = os.environ.get(DECOMPILED_ROOT_ENV)
+    if override:
+        return Path(override) / REFERENCE_CARD_DIR.name
+    return REPO_ROOT / REFERENCE_CARD_DIR
+
+
 MULTIPLAYER_CONSTRAINT_NONE = "None"
 MULTIPLAYER_CONSTRAINT_MULTIPLAYER_ONLY = "MultiplayerOnly"
 MULTIPLAYER_CONSTRAINT_SINGLEPLAYER_ONLY = "SingleplayerOnly"
@@ -540,7 +562,7 @@ def reference_metadata_by_card_id() -> dict[CardId, ReferenceCardStaticMetadata]
         metadata.card_id: metadata
         for metadata in (
             reference_metadata_from_source(path)
-            for path in sorted((REPO_ROOT / REFERENCE_CARD_DIR).glob("*.cs"))
+            for path in sorted(reference_card_dir().glob("*.cs"))
         )
     }
 
@@ -551,7 +573,7 @@ def upgraded_reference_metadata_by_card_id() -> dict[CardId, ReferenceCardStatic
         metadata.card_id: metadata
         for metadata in (
             upgraded_reference_metadata_from_source(path)
-            for path in sorted((REPO_ROOT / REFERENCE_CARD_DIR).glob("*.cs"))
+            for path in sorted(reference_card_dir().glob("*.cs"))
         )
     }
 
@@ -560,7 +582,7 @@ def upgraded_reference_metadata_by_card_id() -> dict[CardId, ReferenceCardStatic
 def reference_dynamic_vars_by_card_id() -> dict[CardId, dict[str, int]]:
     return {
         card_id_for_reference_class(path.stem): reference_dynamic_vars_from_source(path)
-        for path in sorted((REPO_ROOT / REFERENCE_CARD_DIR).glob("*.cs"))
+        for path in sorted(reference_card_dir().glob("*.cs"))
     }
 
 
@@ -568,5 +590,5 @@ def reference_dynamic_vars_by_card_id() -> dict[CardId, dict[str, int]]:
 def upgraded_reference_dynamic_vars_by_card_id() -> dict[CardId, dict[str, int]]:
     return {
         card_id_for_reference_class(path.stem): upgraded_reference_dynamic_vars_from_source(path)
-        for path in sorted((REPO_ROOT / REFERENCE_CARD_DIR).glob("*.cs"))
+        for path in sorted(reference_card_dir().glob("*.cs"))
     }

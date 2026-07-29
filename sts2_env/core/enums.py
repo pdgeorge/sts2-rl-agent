@@ -1114,6 +1114,34 @@ class CardId(Enum):
     LANTERN_KEY = auto()
     SPOILS_MAP = auto()
 
+    # Cards the game has that the simulator does not implement yet. They are named
+    # here only so reference_static_metadata can parse a current decompile at all:
+    # card_id_for_reference_class raises on the first unknown class, which kills
+    # test collection before a single test runs. A member here is a name, not an
+    # implementation -- nothing deals these, and the coverage tests will keep
+    # saying so until the behaviour is written.
+    ABUNDANCE = auto()
+    BLADE_SYMPHONY = auto()
+    BLAZE = auto()
+    CACOPHONY = auto()
+    CONCOCT = auto()
+    CONSTELLATION = auto()
+    DOWSING = auto()
+    FADE = auto()
+    HIBERNATE = auto()
+    IMITATION_LEARNING = auto()
+    MIDNIGHT = auto()
+    NOT_YET = auto()
+    ONE_FOR_ALL = auto()
+    OUTRAGE = auto()
+    PLOT = auto()
+    SCARE = auto()
+    SOULBOUND = auto()
+    THE_BALL = auto()
+    TUTOR = auto()
+    UNDERWORLD = auto()
+    WITHER = auto()
+
     DEPRECATED_CARD = auto()
 
     GENERIC = auto()

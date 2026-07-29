@@ -149,6 +149,9 @@ def test_any_ally_targeting_indices_resolve_from_ally_owner_perspective():
         target_type=TargetType.ANY_ALLY,
         rarity=CardRarity.UNCOMMON,
         base_block=8,
+        # Fixed block: the assertion is about ally-perspective targeting, not about
+        # whatever Lift happens to block for this patch.
+        derive_from_game=False,
     )
     card.owner = ally
     ally_combat_state.hand = [card]

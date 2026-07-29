@@ -96,6 +96,9 @@ class TestEndTurn:
             rarity=CardRarity.BASIC,
             base_damage=6,
             keywords=frozenset({"ethereal"}),
+            # A Strike used as a shell for an ethereal card. Strike is not ethereal
+            # in the game, so these values must not be derived from it.
+            derive_from_game=False,
         )
         simple_combat.hand.clear()
         simple_combat.hand.append(ethereal)
