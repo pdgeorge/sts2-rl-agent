@@ -40,6 +40,22 @@ internal static class RlRunInfo
         return System.Text.Json.JsonSerializer.Serialize(state);
     }
 
+    /// <summary>
+    /// Set a field only if the handler has not already provided one.
+    ///
+    /// The first version of this assigned unconditionally and clobbered the
+    /// combat state's "potions", which is a *list* of potion objects, with a
+    /// count. compute_action_mask then tried to slice an int and the run died.
+    /// A handler's own value is always the more specific one, so it wins.
+    /// </summary>
+    private static void SetIfAbsent(Dictionary<string, object> state, string key, object value)
+    {
+        if (!state.ContainsKey(key))
+        {
+            state[key] = value;
+        }
+    }
+
     public static void Attach(Dictionary<string, object> state)
     {
         try
@@ -50,8 +66,8 @@ internal static class RlRunInfo
                 return;
             }
 
-            state["act"] = runState.CurrentActIndex + 1;
-            state["floor"] = runState.TotalFloor;
+            SetIfAbsent(state, "act", runState.CurrentActIndex + 1);
+            SetIfAbsent(state, "floor", runState.TotalFloor);
 
             // The run holds several players in multiplayer; the agent plays one.
             Player player = null;
@@ -68,14 +84,15 @@ internal static class RlRunInfo
                 return;
             }
 
-            state["gold"] = player.Gold;
-            state["hp"] = player.Creature?.CurrentHp ?? 0;
-            state["max_hp"] = player.Creature?.MaxHp ?? 0;
-
-            state["deck_size"] = player.Deck.Cards.Count;
+            SetIfAbsent(state, "gold", player.Gold);
+            SetIfAbsent(state, "run_hp", player.Creature?.CurrentHp ?? 0);
+            SetIfAbsent(state, "run_max_hp", player.Creature?.MaxHp ?? 0);
+            SetIfAbsent(state, "deck_size", player.Deck.Cards.Count);
             // Melted relics are spent, so they should not count toward what she has.
-            state["relics"] = player.Relics.Count(r => !r.IsMelted);
-            state["potions"] = player.Potions.Count();
+            SetIfAbsent(state, "relic_count", player.Relics.Count(r => !r.IsMelted));
+            // Named potion_count, not potions: "potions" is already the combat
+            // state's list of usable potions, and a count is a different thing.
+            SetIfAbsent(state, "potion_count", player.Potions.Count());
         }
         catch (System.Exception ex)
         {
