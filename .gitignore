@@ -52,3 +52,12 @@ extracted_pck/
 
 # NuGet
 nuget.config
+
+# Drift reports written by scripts/on_update.sh, one directory per game build.
+reports/
+
+# Mega Crit's decompiled assembly. Kept on disk as the reference the simulator
+# derives card values from, but never committed or redistributed: inspecting a
+# binary you own is fine, republishing the decompilation is not. Regenerate with
+# scripts/on_update.sh, or point STS2_DECOMPILED_ROOT at a copy elsewhere.
+decompiled/
