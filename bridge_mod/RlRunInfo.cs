@@ -11,6 +11,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Runs;
@@ -69,18 +70,16 @@ internal static class RlRunInfo
             SetIfAbsent(state, "act", runState.CurrentActIndex + 1);
             SetIfAbsent(state, "floor", runState.TotalFloor);
 
-            // The run holds several players in multiplayer; the agent plays one.
-            Player player = null;
-            foreach (Player candidate in runState.Players)
-            {
-                if (candidate != null)
-                {
-                    player = candidate;
-                    break;
-                }
-            }
+            // LocalContext.GetMe is how the game itself resolves "the player this
+            // client is". Walking runState.Players and taking the first non-null
+            // looked equivalent and was not: it produced nothing, so act and floor
+            // arrived and every player-derived field was silently absent. No
+            // exception, because returning early is not an error -- which is
+            // exactly why it needed a trace to catch.
+            Player player = LocalContext.GetMe(runState);
             if (player == null)
             {
+                Logger.Log("[RlRunInfo] LocalContext.GetMe returned null; player fields omitted.");
                 return;
             }
 

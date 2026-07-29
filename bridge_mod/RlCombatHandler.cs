@@ -350,11 +350,17 @@ public class RlCombatHandler : IRoomHandler, IHandler
     private static async Task PlayCardAndWaitAsync(
         Player player, CardModel card, Creature? target, CancellationToken ct)
     {
+        // Snapshot BEFORE enqueuing. This used to enqueue first and sample after,
+        // which is a race: when the play resolved before the sample ran, the
+        // "before" values already held the post-play state, nothing ever looked
+        // changed, and the loop burned its full 3000ms timeout. That was roughly
+        // three seconds per card, and it read as animation cost rather than a bug.
+        int energyBefore = player.PlayerCombatState?.Energy ?? -1;
+        int handBefore = PileType.Hand.GetPile(player).Cards.Count;
+
         var playAction = new PlayCardAction(card, target);
         RunManager.Instance.ActionQueueSynchronizer.RequestEnqueue(playAction);
 
-        int energyBefore = player.PlayerCombatState?.Energy ?? -1;
-        int handBefore = PileType.Hand.GetPile(player).Cards.Count;
         int waitMs = 0;
         while (waitMs < 3000)
         {
