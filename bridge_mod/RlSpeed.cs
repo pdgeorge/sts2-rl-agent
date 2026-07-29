@@ -44,11 +44,11 @@ internal static class RlSpeed
         },
         ["fast"] = new SpeedPreset
         {
-            Name = "fast", WaitMultiplier = 0.25f, AnimMultiplier = 3.0f, ActionDelayMs = 150,
+            Name = "fast", WaitMultiplier = 0.25f, AnimMultiplier = 3.0f, ActionDelayMs = 50,
         },
         ["normal"] = new SpeedPreset
         {
-            Name = "normal", WaitMultiplier = 1.0f, AnimMultiplier = 1.0f, ActionDelayMs = 0,
+            Name = "normal", WaitMultiplier = 1.0f, AnimMultiplier = 1.0f, ActionDelayMs = 150,
         },
         ["slow"] = new SpeedPreset
         {
