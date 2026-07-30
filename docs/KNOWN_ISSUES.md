@@ -17,6 +17,13 @@ log stayed clean. That distinction is the whole diagnostic value here.
 | Run sits on a map after beating a boss, and every subsequent run logs "Main menu not visible" | A transition timed out mid-run, leaving the game inside the run. The loop then waits for a menu that will never appear. | Logged plainly once; needs manual return to menu |
 | Everything looks fine but a decision is silently mistranslated | Simulator and bridge agree on the observation but disagree on what an action index means. No error either side. | Card-reward slot fixed; the parity suites exist for this class |
 
+**Confirmed at the act 1 -> act 2 boundary.** `FindAll<NMapPoint>` returned two
+candidates reporting the same coord (row 0, col 3), which a map cannot contain,
+so one was stale or duplicated across the transition and could never be clicked.
+The agent chose it, the 10s "Map point not enabled" wait threw, and a throw in
+the map handler reaches `PlayRunAsync`'s catch-all whose finally reports
+`run_complete` / `terminated`. The run was alive at 26 HP. Fixed in `4fc36c0`.
+
 **The loop is the one to watch for.** It produces no exception, no timeout and no
 error line -- just a run that stops advancing. It is caused by claiming an action
 the game cannot perform, so the fix is always the same: do not advertise it, and
