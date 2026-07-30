@@ -8,6 +8,58 @@ Add a row when a model is worth keeping. A model with no row is a scratch run.
 
 ---
 
+## run_ppo_v4 — 2026-07-30 — a null result, kept as one
+
+`output/run_ppo_v4/best_model/best_model.zip`
+
+**Learned nothing.** Recorded so the same resume is not attempted again.
+
+| | |
+|---|---|
+| training | 20,499,672 steps, ~3 h, resumed from `output/alpha` |
+| observation | 277 dims |
+| actions | 157 |
+| selection | `best_model`, saved at ~4M steps |
+
+Eval reward across 41 evaluations, 100 episodes each:
+
+```
+first 8 evals   4.94
+last 8 evals    4.90        change -0.03  (-0.1 sem)
+range      3.68 - 5.53      spread 3.1 sem -- entirely eval noise
+linear trend    -0.05 reward over the whole 20.5M steps
+```
+
+200 deterministic runs, against alpha on the same measure:
+
+```
+             mean   median   max   wins
+alpha         9.7      8      29     0
+v4 best       9.5     10      19     0
+```
+
+**Why it stalled.** `--lr` was silently ignored on `--resume-from`: `load()`
+restores the checkpoint's own rate, so this ran at alpha's original 3e-4 rather
+than a fine-tuning rate. Over the whole run `approx_kl` held at 0.037 and
+`clip_fraction` at 0.20 -- both high -- while entropy stayed flat at -0.79 and
+`explained_variance` sat near 0.87. Large updates every step, landing back where
+they started: thrashing at a plateau rather than refining it. Fixed in
+`f43a45f`; `--lr` now applies on resume.
+
+**`best_model` here is a noise artifact.** It was selected as the max of 41 noisy
+evaluations whose sem is 0.59, and the max of 41 such draws sits ~1.8 sem above
+the mean by construction. 5.53 against a 4.9 baseline is exactly that. It is not
+a better policy, which is why its floors are no better than alpha's.
+
+**The one useful number.** A win is 3 acts x 15 rooms + 3 bosses, ~48 floors. A
+mean of 9.5 floors implies ~0.895 per-floor survival, so P(win) is about 0.5% --
+one win per ~200 runs. Reaching 1-in-20 needs 0.939, and a coin flip needs 0.986.
+The gap is multiplicative over 48 floors, which is why small per-floor gains
+matter far more than they look, and why more steps at the same strength do not
+help.
+
+---
+
 ## alpha — 2026-07-30
 
 `output/alpha/alpha_model.zip`
