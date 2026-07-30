@@ -211,6 +211,7 @@ def run_agent(
         # the floor a run ended on is remembered as it goes rather than read off
         # the final message.
         progress: dict[str, Any] = {}
+        _relic_warning_done = False
 
         try:
             while True:
@@ -243,6 +244,21 @@ def run_agent(
 
                 if phase == MSG_TYPE_PONG:
                     continue
+                # A mod older than the relic observation sends no "relics" field,
+                # and the encoder then reads "owns nothing" -- wrong rather than
+                # absent, and completely silent. The model would play every fight
+                # relic-blind while the log looked healthy, so say it once, loudly.
+                if not _relic_warning_done and "relic_count" in state:
+                    _relic_warning_done = True
+                    if "relics" not in state:
+                        logger.error(
+                            "This mod sends relic_count but not `relics`, so the "
+                            "observation will read as owning NO relics. Rebuild the "
+                            "mod; results from this run are not comparable.")
+                    elif "potion_slots" not in state:
+                        logger.warning(
+                            "Mod sends no `potion_slots`; potions will read as empty.")
+
                 for field in ("floor", "act", "act_floor", "run_hp", "run_max_hp",
                               "deck_size", "gold", "relic_count", "potion_count"):
                     if field in state:

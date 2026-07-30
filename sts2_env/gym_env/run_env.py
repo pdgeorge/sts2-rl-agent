@@ -74,6 +74,12 @@ from sts2_env.gym_env.action_space import (
     get_action_mask,
     is_potion_action,
 )
+from sts2_env.gym_env.relic_potion_encoding import (
+    RELIC_POTION_OBS_SIZE,
+    encode_relics_and_potions,
+    potion_slots_from_player_state,
+    relics_from_player_state,
+)
 from sts2_env.gym_env.run_level_encoding import RUN_LEVEL_SIZE, encode_run_level
 from sts2_env.gym_env.choice_encoding import (
     CHOICE_OBS_SIZE,
@@ -212,7 +218,12 @@ NUM_PHASES = len(_PHASE_INDEX)
 # ---------------------------------------------------------------------------
 
 _RUN_STATE_SIZE = 20   # see module docstring
-RUN_OBS_SIZE = COMBAT_OBS_SIZE + _RUN_STATE_SIZE + CHOICE_OBS_SIZE  # 131 + 20 + 126 = 277
+# 131 + 20 + 126 + 619 = 896. The relic/potion block is the largest single part
+# on purpose: it is identity, not summary. relic_count stays in the run-level
+# block because "how many" is still a useful cheap feature, but it was all the
+# agent had, and no amount of it distinguishes Snecko Eye from Ice Cream.
+RUN_OBS_SIZE = (COMBAT_OBS_SIZE + _RUN_STATE_SIZE + CHOICE_OBS_SIZE
+                + RELIC_POTION_OBS_SIZE)
 
 DEFAULT_MAX_STEPS = 10_000
 DEFAULT_MAX_COMBAT_TURNS = 200
@@ -781,6 +792,16 @@ class STS2RunEnv(gymnasium.Env):
             # rather than swallowed, because a silently blind agent is what this
             # whole block exists to stop.
             logger.exception("Could not encode run choices for phase %s", mgr.phase)
+        idx += CHOICE_OBS_SIZE
+
+        # ---- Which relics and which potions (619 dims) ----
+        # The observation used to say only how many. A relic-blind policy cannot
+        # play near-perfectly however long it trains, because a large share of
+        # strong Spire decisions are relic-driven.
+        obs[idx:idx + RELIC_POTION_OBS_SIZE] = encode_relics_and_potions(
+            relics_from_player_state(player),
+            potion_slots_from_player_state(player),
+        )
 
         np.clip(obs, OBS_VALUE_LOW, OBS_VALUE_HIGH, out=obs)
         return obs

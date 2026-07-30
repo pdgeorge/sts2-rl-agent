@@ -126,6 +126,39 @@ internal static class RlRunInfo
             // state's list of usable potions, and a count is a different thing.
             SetIfAbsent(state, "potion_count", player.Potions.Count());
             SetIfAbsent(state, "max_potion_slots", player.MaxPotionCount);
+
+            // WHICH relics, not just how many. A count cannot tell Snecko Eye from
+            // Ice Cream, and the agent had nothing else -- so every fight was played
+            // relic-blind and near-perfect play was impossible however long it
+            // trained. Melted relics are spent and excluded, matching relic_count.
+            var relicIds = new List<object>();
+            foreach (var relic in player.Relics)
+            {
+                if (relic.IsMelted) continue;
+                try { relicIds.Add(relic.Id.Entry); }
+                catch (System.Exception ex) { LogOnce($"relic id unreadable: {ex.GetType().Name}"); }
+            }
+            SetIfAbsent(state, "relics", relicIds);
+
+            // Positional: one entry per slot, null where empty. NOT the combat
+            // "potions" list, which is only the usable ones and is not slot
+            // indexed -- reading that would put a potion in the wrong column
+            // whenever an earlier slot was empty, and the agent picks by slot.
+            var potionSlots = new List<object>();
+            try
+            {
+                foreach (dynamic potion in player.PotionSlots)
+                {
+                    if (potion == null) { potionSlots.Add(null); continue; }
+                    try { potionSlots.Add((string)potion.Id.Entry); }
+                    catch { potionSlots.Add(null); }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                LogOnce($"potion slots unreadable: {ex.GetType().Name}");
+            }
+            SetIfAbsent(state, "potion_slots", potionSlots);
         }
         catch (System.Exception ex)
         {

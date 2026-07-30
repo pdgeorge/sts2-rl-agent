@@ -44,6 +44,12 @@ from sts2_env.gym_env.run_env import (
     RUN_OBS_SIZE,
     TOTAL_ACTIONS,
 )
+from sts2_env.gym_env.relic_potion_encoding import (
+    RELIC_POTION_OBS_SIZE,
+    encode_relics_and_potions,
+    potion_slots_from_bridge_state,
+    relics_from_bridge_state,
+)
 from sts2_env.gym_env.run_level_encoding import (
     RUN_LEVEL_SIZE,
     encode_run_level,
@@ -85,7 +91,7 @@ class RunStateAdapter:
         self._combat = StateAdapter()
 
     def encode_observation(self, state: dict[str, Any]) -> np.ndarray:
-        """The 277-dim observation, laid out exactly as run_env writes it."""
+        """The 896-dim observation, laid out exactly as run_env writes it."""
         obs = np.zeros(RUN_OBS_SIZE, dtype=np.float32)
 
         # Combat block. Only meaningful in combat; elsewhere it stays zero, which
@@ -99,6 +105,17 @@ class RunStateAdapter:
         idx += RUN_LEVEL_SIZE
 
         obs[idx:idx + CHOICE_OBS_SIZE] = encode_choices(**choices_from_bridge_state(state))
+        idx += CHOICE_OBS_SIZE
+
+        # Relics and potions by identity, the same block run_env writes. The mod
+        # has to send "relics" and "potion_slots"; an older mod sends neither and
+        # this block stays zero, which reads as "she owns nothing". That is wrong
+        # rather than absent, so agent_runner checks for the fields on connect
+        # instead of letting a relic-blind run look normal.
+        obs[idx:idx + RELIC_POTION_OBS_SIZE] = encode_relics_and_potions(
+            relics_from_bridge_state(state),
+            potion_slots_from_bridge_state(state),
+        )
         return obs
 
     def compute_action_mask(self, state: dict[str, Any]) -> np.ndarray:
