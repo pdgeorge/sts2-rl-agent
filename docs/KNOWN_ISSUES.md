@@ -4,6 +4,33 @@ Current known issues, bugs, and limitations of the STS2 RL Agent project.
 
 ---
 
+## Live-run failure modes
+
+How a live run actually stops. Kept as a list because twice now a run was
+reported as "crashed" when nothing crashed -- it stopped making progress and the
+log stayed clean. That distinction is the whole diagnostic value here.
+
+| What you see | What it is | Status |
+|---|---|---|
+| Python exits after the player dies and the game returns to the main menu | Expected. The runner has no menu state, so it stops. | By design |
+| Same action chosen over and over inside one screen | The mod advertised an action it cannot execute. The screen never closes, so it re-presents, and a deterministic policy makes the same choice again. | Fixed for card rewards |
+| Run sits on a map after beating a boss, and every subsequent run logs "Main menu not visible" | A transition timed out mid-run, leaving the game inside the run. The loop then waits for a menu that will never appear. | Logged plainly once; needs manual return to menu |
+| Everything looks fine but a decision is silently mistranslated | Simulator and bridge agree on the observation but disagree on what an action index means. No error either side. | Card-reward slot fixed; the parity suites exist for this class |
+
+**The loop is the one to watch for.** It produces no exception, no timeout and no
+error line -- just a run that stops advancing. It is caused by claiming an action
+the game cannot perform, so the fix is always the same: do not advertise it, and
+never return from a handler leaving the screen open.
+
+Concretely, on card rewards: `NCardRewardSelectionScreen` has no skip control and
+the game's own `CardRewardScreenHandler` always picks a card, so a card reward on
+the screen-driven path cannot be skipped at all. `RlCardSelector` is a different
+path that hooks the game's own selection API, where a skip *is* real
+(`SkipReward() => default`, meaning no card taken). The two disagree; only the
+selector may claim `can_skip`.
+
+---
+
 ## Fixed Issues
 
 ### 1. Energy always displayed as 3 with CardCmd.AutoPlay
