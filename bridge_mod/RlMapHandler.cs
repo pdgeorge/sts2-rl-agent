@@ -79,6 +79,41 @@ public class RlMapHandler : IScreenHandler, IHandler
             return;
         }
 
+        // Offer only nodes that can actually be clicked.
+        //
+        // FindAll returns NMapPoints that are parented but not interactable --
+        // observed at the act 1 -> act 2 boundary as two candidates reporting the
+        // SAME coord (row 0, col 3), which a map cannot contain. One of them was
+        // never going to enable. The agent picked index 0, the wait below timed
+        // out after 10s, and PlayRunAsync's catch-all reported the run terminated
+        // while the player was alive at 26 HP standing on the act 2 map.
+        //
+        // Wait for the map to become interactive first, or on a slow transition
+        // everything looks disabled and every node gets filtered out.
+        try
+        {
+            await WaitHelper.Until(() => availableNodes.Any(mp => mp.IsEnabled), ct,
+                TimeSpan.FromSeconds(10), "No map point became enabled");
+        }
+        catch (Exception ex)
+        {
+            // Best effort: fall through with the unfiltered list rather than
+            // ending a live run over a UI readiness check.
+            Logger.Log($"[RlMap] No node reported enabled ({ex.GetType().Name}); "
+                       + "offering all candidates anyway.");
+        }
+
+        List<NMapPoint> clickable = availableNodes.Where(mp => mp.IsEnabled).ToList();
+        if (clickable.Count > 0 && clickable.Count < availableNodes.Count)
+        {
+            Logger.Log($"[RlMap] {availableNodes.Count - clickable.Count} of "
+                       + $"{availableNodes.Count} candidates are not clickable; dropping them.");
+        }
+        if (clickable.Count > 0)
+        {
+            availableNodes = clickable;
+        }
+
         // Build the state message for Python
         var nodes = new List<Dictionary<string, object>>();
         for (int i = 0; i < availableNodes.Count; i++)
@@ -148,25 +183,62 @@ public class RlMapHandler : IScreenHandler, IHandler
             chosenNode = random.NextItem(availableNodes);
         }
 
-        // Wait for the node to be enabled and click it
-        await WaitHelper.Until(() => chosenNode.IsEnabled, ct,
-            TimeSpan.FromSeconds(10), "Map point not enabled");
+        // Try the agent's choice first, then any other clickable node. A map click
+        // that does not land used to throw, and a throw here ends the whole run --
+        // so one unclickable node discarded a run that had just beaten a boss.
+        // Entering a different room is a worse decision than the agent's; losing
+        // the run is worse than both.
+        var order = new List<NMapPoint> { chosenNode };
+        order.AddRange(availableNodes.Where(mp => mp != chosenNode && mp.IsEnabled));
 
-        _roomEnteredTcs = new TaskCompletionSource();
-        RunManager.Instance.RoomEntered += OnRoomEntered;
-        try
+        for (int attempt = 0; attempt < order.Count; attempt++)
         {
-            await UiHelper.Click(chosenNode);
-            await WaitHelper.ForTask(_roomEnteredTcs.Task, ct,
-                AutoSlayConfig.mapScreenTimeout, "Room not entered after map click");
-        }
-        finally
-        {
-            RunManager.Instance.RoomEntered -= OnRoomEntered;
-            _roomEnteredTcs = null;
+            NMapPoint node = order[attempt];
+            if (attempt > 0)
+            {
+                Logger.Log($"[RlMap] Retrying with {node.Point.PointType} at "
+                           + $"({node.Point.coord.row},{node.Point.coord.col})");
+            }
+
+            try
+            {
+                await WaitHelper.Until(() => node.IsEnabled, ct,
+                    TimeSpan.FromSeconds(10), "Map point not enabled");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"[RlMap] {node.Point.PointType} at "
+                           + $"({node.Point.coord.row},{node.Point.coord.col}) never enabled: "
+                           + ex.GetType().Name);
+                continue;
+            }
+
+            _roomEnteredTcs = new TaskCompletionSource();
+            RunManager.Instance.RoomEntered += OnRoomEntered;
+            try
+            {
+                await UiHelper.Click(node);
+                await WaitHelper.ForTask(_roomEnteredTcs.Task, ct,
+                    AutoSlayConfig.mapScreenTimeout, "Room not entered after map click");
+                Logger.Log("[RlMap] Map navigation complete");
+                return;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"[RlMap] Click did not enter a room ({ex.GetType().Name}).");
+            }
+            finally
+            {
+                RunManager.Instance.RoomEntered -= OnRoomEntered;
+                _roomEnteredTcs = null;
+            }
         }
 
-        Logger.Log("[RlMap] Map navigation complete");
+        // Returning rather than throwing: the run is still alive and the map screen
+        // is still up, so the caller gets another attempt. Throwing reported the
+        // run as terminated.
+        Logger.Log("[RlMap] No map node could be entered; leaving the screen for "
+                   + "another attempt rather than ending the run.");
     }
 
     private void OnRoomEntered()
