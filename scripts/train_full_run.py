@@ -96,7 +96,11 @@ def train(args):
 
     print(f"  n_envs:          {args.n_envs}")
     print(f"  total_timesteps: {args.total_timesteps}")
-    print(f"  learning_rate:   {args.lr}")
+    if args.lr is None:
+        print("  learning_rate:   "
+              + ("from the checkpoint" if args.resume_from else f"{_DEFAULT_LR}"))
+    else:
+        print(f"  learning_rate:   {args.lr}")
     print(f"  batch_size:      {args.batch_size}")
     print(f"  output_dir:      {args.output_dir}")
     print()
@@ -136,18 +140,37 @@ def train(args):
         model = MaskablePPO.load(args.resume_from, env=train_env, device="auto")
         model.set_env(train_env)
         model.tensorboard_log = str(output_dir / "tb_logs")
+
+        # load() restores the checkpoint's own hyperparameters, so --lr and
+        # --ent-coef used to be accepted, printed in the banner above, and then
+        # silently ignored -- there was no way to fine-tune at a lower rate.
+        #
+        # That is what a converged resume needs. Resuming alpha at its original
+        # 3e-4 ran 20.5M steps for a reward change of -0.03 (-0.1 sem) while
+        # approx_kl sat at 0.037 and clip_fraction at 0.20: large updates every
+        # step, tearing down and rebuilding the same policy instead of refining
+        # it. Lower the rate to fine-tune rather than thrash.
+        if args.lr is not None:
+            model.learning_rate = args.lr
+            # Assigning learning_rate alone changes nothing -- the optimizer is
+            # already built and reads lr_schedule, which must be rebuilt.
+            model._setup_lr_schedule()
+            print(f"  learning_rate:   overridden to {args.lr}")
+        if args.ent_coef is not None:
+            model.ent_coef = args.ent_coef
+            print(f"  ent_coef:        overridden to {args.ent_coef}")
     else:
         model = MaskablePPO(
             "MlpPolicy",
             train_env,
-            learning_rate=args.lr,
+            learning_rate=_DEFAULT_LR if args.lr is None else args.lr,
             n_steps=args.n_steps,
             batch_size=args.batch_size,
             n_epochs=args.n_epochs,
             gamma=args.gamma,
             gae_lambda=0.95,
             clip_range=0.2,
-            ent_coef=args.ent_coef,
+            ent_coef=_DEFAULT_ENT_COEF if args.ent_coef is None else args.ent_coef,
             verbose=1,
             tensorboard_log=str(output_dir / "tb_logs"),
             # Without this, network init and action sampling are unseeded and two runs
@@ -320,6 +343,10 @@ def random_baseline(n_episodes: int = 100):
     print(f"Max floors:       {max(floors_reached)}")
 
 
+_DEFAULT_LR = 3e-4
+_DEFAULT_ENT_COEF = 0.02
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Train MaskablePPO on STS2 full run"
@@ -333,8 +360,9 @@ def main():
         help="Number of parallel environments (default: 4)",
     )
     parser.add_argument(
-        "--lr", type=float, default=3e-4,
-        help="Learning rate (default: 3e-4)",
+        "--lr", type=float, default=None,
+        help="Learning rate (default: 3e-4 fresh; on --resume-from, the "
+             "checkpoint's own rate unless given here)",
     )
     parser.add_argument(
         "--batch-size", type=int, default=256,
@@ -353,8 +381,9 @@ def main():
         help="Discount factor (default: 0.995, higher for long episodes)",
     )
     parser.add_argument(
-        "--ent-coef", type=float, default=0.02,
-        help="Entropy coefficient (default: 0.02)",
+        "--ent-coef", type=float, default=None,
+        help="Entropy coefficient (default: 0.02 fresh; on --resume-from, the "
+             "checkpoint's own value unless given here)",
     )
     parser.add_argument(
         "--eval-freq", type=int, default=20_000,
