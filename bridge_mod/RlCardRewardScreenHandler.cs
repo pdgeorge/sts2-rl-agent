@@ -77,7 +77,17 @@ public class RlCardRewardScreenHandler : IScreenHandler, IHandler
         {
             ["type"] = NonCombatBridgeProtocol.CardRewardState,
             ["cards"] = cards,
-            ["can_skip"] = true,
+            // Advertised as false because the mod cannot actually skip a card
+            // reward. NCardRewardSelectionScreen has no skip control, the game's
+            // own CardRewardScreenHandler always picks, and TrySkipCardReward's
+            // reflection guesses (.Skip()/.Dismiss() on a type found by name) do
+            // not resolve -- observed live as "Skip action could not be executed"
+            // three times in a row while the screen re-presented and a deterministic
+            // policy chose skip again each time, until the run timed out.
+            //
+            // Claiming an action the game cannot perform is worse than not offering
+            // it: the mask offers it, the model learns to want it, and the run hangs.
+            ["can_skip"] = false,
         };
 
         NCardHolder chosenHolder = null;
@@ -100,9 +110,17 @@ public class RlCardRewardScreenHandler : IScreenHandler, IHandler
                     if (action == NonCombatBridgeProtocol.SkipAction)
                     {
                         Logger.Log("[RlCardReward] Agent chose to skip");
-                        if (!TrySkipCardReward())
-                            Logger.Log("[RlCardReward] Skip action could not be executed");
-                        return;
+                        if (TrySkipCardReward())
+                        {
+                            return;
+                        }
+                        // Falling through to a pick rather than returning. Returning
+                        // left the screen open, so it re-presented, and a
+                        // deterministic policy asked to skip again -- forever. Taking
+                        // a card is a worse decision than skipping; hanging the run
+                        // is worse than both.
+                        Logger.Log("[RlCardReward] Skip could not be executed; "
+                                   + "taking the first card instead so the run continues.");
                     }
 
                     if (action == NonCombatBridgeProtocol.ChooseAction &&

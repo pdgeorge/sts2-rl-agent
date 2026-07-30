@@ -132,13 +132,28 @@ class RunStateAdapter:
             mask[start] = 1
             return mask
 
+        # The last card_reward slot is the skip, always -- run_env's
+        # _step_card_reward treats local==3 as skip unconditionally and puts a
+        # fourth card in the separate card_reward_extra region. So the cards here
+        # get width-1 slots, not width.
+        #
+        # Without this cap, a reward offering four cards unmasked the skip slot as
+        # "card 4". The model, trained on the simulator's meaning, would select it
+        # intending to skip and the bridge would pick a card -- a silent
+        # mistranslation of the policy's actual decision, with nothing logged.
+        if state_type == "card_reward":
+            count = min(count, width - 1)
+
         for offset in range(count):
             mask[start + offset] = 1
 
-        # A card reward that can be skipped has the skip in its last slot, which is
-        # how run_env's _step_card_reward reads it.
         if state_type == "card_reward" and state.get("can_skip"):
             mask[start + width - 1] = 1
+
+        if not mask[start:start + width].any():
+            # Every slot masked out (no options, or skip unavailable) still has to
+            # be answerable; an all-zero mask makes MaskablePPO raise mid-run.
+            mask[start] = 1
         return mask
 
     def decode_action(self, action: int, state: dict[str, Any]) -> dict[str, Any]:
@@ -159,6 +174,9 @@ class RunStateAdapter:
         start, width = entry
         offset = max(0, min(action - start, width - 1))
 
-        if state_type == "card_reward" and state.get("can_skip") and offset == width - 1:
+        # Matches the mask above and run_env: the last slot means skip whether or
+        # not the game can honour it. Decoding it as "choose index 3" instead would
+        # turn an intended skip into a card pick.
+        if state_type == "card_reward" and offset == width - 1:
             return {"action": "skip"}
         return {"action": "choose", "index": offset}
