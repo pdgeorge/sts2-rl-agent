@@ -73,7 +73,7 @@ public class RlRestSiteRoomHandler : IRoomHandler, IHandler
     private const string RoomPath = "/root/Game/RootSceneContainer/Run/RoomContainer/RestSiteRoom";
     private const int AgentTimeoutSeconds = 30;
     private const int HandlerTimeoutSeconds = 30;
-    private const int ProceedResponseTimeoutSeconds = 10;
+    private const int ProceedResponseTimeoutSeconds = 60;
     private static readonly TimeSpan AgentTimeout = TimeSpan.FromSeconds(AgentTimeoutSeconds);
 
     public RoomType[] HandledTypes => new[] { RoomType.RestSite };
@@ -190,7 +190,11 @@ public class RlTreasureRoomHandler : IRoomHandler, IHandler
     private const int HandlerTimeoutSeconds = 30;
     private const int ChestOpenDelayMs = 1000;
     private const int RelicPickupDelayMs = 500;
-    private const int ProceedTimeoutSeconds = 5;
+    // UI-transition waits are backstops against a hung game, not pacing.
+    // Godot throttles when the window is unfocused, so their wall-clock cost
+    // depends on whether anyone is watching -- a 10s one killed a run that had
+    // just beaten a boss. The two that fire after every combat are the risky ones.
+    private const int ProceedTimeoutSeconds = 60;
     private static readonly TimeSpan AgentTimeout = TimeSpan.FromSeconds(AgentTimeoutSeconds);
 
     public RoomType[] HandledTypes => new[] { RoomType.Treasure };
@@ -602,14 +606,14 @@ public class RlEventRoomHandler : IRoomHandler, IHandler
     private const int AgentTimeoutSeconds = 30;
     private const int HandlerTimeoutMinutes = 12;
     private const int EventRoomResumeDelayMs = 500;
-    private const int EventProceedCloseTimeoutSeconds = 5;
-    private const int EventChoiceResultTimeoutSeconds = 5;
+    private const int EventProceedCloseTimeoutSeconds = 60;
+    private const int EventChoiceResultTimeoutSeconds = 60;
     private const int EventOptionsLoadTimeoutSeconds = 30;
     private const int EventOptionsLogInterval = 50;
-    private const int FakeMerchantProceedTimeoutSeconds = 10;
+    private const int FakeMerchantProceedTimeoutSeconds = 60;
     private const int AncientDialoguePollDelayMs = 100;
     private const int AncientDialogueClickDelayMs = 500;
-    private const int AncientOptionsTimeoutSeconds = 10;
+    private const int AncientOptionsTimeoutSeconds = 60;
     private static readonly TimeSpan AgentTimeout = TimeSpan.FromSeconds(AgentTimeoutSeconds);
 
     public RoomType[] HandledTypes => new[] { RoomType.Event };

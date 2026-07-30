@@ -26,8 +26,12 @@ public class RlCrystalSphereScreenHandler : IScreenHandler, IHandler
     private const int HandlerTimeoutSeconds = 120;
     private const int InitialSettleDelayMs = 1000;
     private const int ClickSettleDelayMs = 500;
-    private const int WaitForOutcomeTimeoutSeconds = 15;
-    private const int ProceedCloseTimeoutSeconds = 10;
+    private const int WaitForOutcomeTimeoutSeconds = 60;
+    // UI-transition waits are backstops against a hung game, not pacing.
+    // Godot throttles when the window is unfocused, so their wall-clock cost
+    // depends on whether anyone is watching -- a 10s one killed a run that had
+    // just beaten a boss. The two that fire after every combat are the risky ones.
+    private const int ProceedCloseTimeoutSeconds = 60;
     private const int OverlayRemovalDelayMs = 100;
     private const int ActDisplayIndexOffset = 1;
     private const string ScreenLogName = "NCrystalSphereScreen";

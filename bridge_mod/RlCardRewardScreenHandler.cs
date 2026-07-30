@@ -29,7 +29,11 @@ public class RlCardRewardScreenHandler : IScreenHandler, IHandler
     private const int AgentTimeoutSeconds = 30;
     private const int HandlerTimeoutSeconds = 30;
     private const int InitialSettleDelayMs = 400;
-    private const int CloseTimeoutSeconds = 10;
+    // UI-transition waits are backstops against a hung game, not pacing.
+    // Godot throttles when the window is unfocused, so their wall-clock cost
+    // depends on whether anyone is watching -- a 10s one killed a run that had
+    // just beaten a boss. The two that fire after every combat are the risky ones.
+    private const int CloseTimeoutSeconds = 60;
     private static readonly TimeSpan AgentTimeout = TimeSpan.FromSeconds(AgentTimeoutSeconds);
 
     public Type ScreenType => typeof(NCardRewardSelectionScreen);

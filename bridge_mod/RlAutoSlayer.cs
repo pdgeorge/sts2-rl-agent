@@ -91,7 +91,11 @@ public class RlAutoSlayer
     private const int EventProceedTimeoutSeconds = 30;
     private const int RewardsScreenTimeoutSeconds = 90;
     private const int MainMenuTimeoutSeconds = 30;
-    private const int AbandonPopupTimeoutSeconds = 5;
+    // UI-transition waits are backstops against a hung game, not pacing.
+    // Godot throttles when the window is unfocused, so their wall-clock cost
+    // depends on whether anyone is watching -- a 10s one killed a run that had
+    // just beaten a boss. The two that fire after every combat are the risky ones.
+    private const int AbandonPopupTimeoutSeconds = 30;
     private const int AbandonRunSettleDelayMs = 1000;
     private const int MenuClickSettleDelayMs = 500;
     private const int CharacterSelectDelayMs = 100;
