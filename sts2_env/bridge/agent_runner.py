@@ -20,6 +20,7 @@ import argparse
 import logging
 import sys
 import time
+from collections.abc import Callable
 from typing import Any
 
 from sts2_env.bridge.client import STS2GameClient
@@ -126,6 +127,8 @@ def run_agent(
     replay_factory: str | None = None,
     speed: str = "turbo",
     allow_random_fallback: bool = False,
+    max_runs: int = 1,
+    on_run_end: "Callable[[dict[str, Any]], None] | None" = None,
 ) -> None:
     """Main agent loop.
 
@@ -138,6 +141,11 @@ def run_agent(
         port: Bridge server port.
         deterministic: Whether to use deterministic action selection.
         verbose: Whether to log every action taken.
+        max_runs: How many runs to play before returning. The mod already starts
+            runs back to back, so anything above 1 simply stops this side from
+            exiting at the first death -- which is the only reason a live session
+            used to end after one run.
+        on_run_end: Called with a summary dict as each run finishes.
     """
     model = load_model(model_path)
     adapter = StateAdapter()
@@ -197,6 +205,12 @@ def run_agent(
 
         step_count = 0
         combat_count = 0
+        run_index = 0
+        run_started = time.monotonic()
+        # Last run-level fields seen. game_over does not always carry them, so
+        # the floor a run ended on is remembered as it goes rather than read off
+        # the final message.
+        progress: dict[str, Any] = {}
 
         try:
             while True:
@@ -229,9 +243,41 @@ def run_agent(
 
                 if phase == MSG_TYPE_PONG:
                     continue
+                for field in ("floor", "act", "act_floor", "run_hp", "run_max_hp",
+                              "deck_size", "gold", "relic_count", "potion_count"):
+                    if field in state:
+                        progress[field] = state[field]
+
                 if phase in TERMINAL_PHASES:
-                    logger.info("Run finished: %s", state.get("result", state.get("message", "unknown")))
-                    break
+                    result = state.get("result", state.get("message", "unknown"))
+                    logger.info("Run finished: %s", result)
+                    run_index += 1
+                    if on_run_end is not None:
+                        summary = dict(progress)
+                        summary.update({
+                            k: v for k, v in state.items()
+                            if k in ("floor", "act", "run_hp", "run_max_hp",
+                                     "deck_size", "gold", "relic_count")
+                        })
+                        summary.update({
+                            "run": run_index,
+                            "result": result,
+                            "steps": step_count,
+                            "combats": combat_count,
+                            "seconds": round(time.monotonic() - run_started, 1),
+                        })
+                        on_run_end(summary)
+                    if run_index >= max_runs:
+                        break
+                    # The mod returns to the menu and starts the next run on its
+                    # own; this side only has to stay connected and keep answering.
+                    logger.info("--- run %d finished; waiting for the next one ---",
+                                run_index)
+                    step_count = 0
+                    combat_count = 0
+                    progress = {}
+                    run_started = time.monotonic()
+                    continue
                 if phase == MSG_TYPE_ERROR:
                     logger.warning("Game error: %s", state.get("message", ""))
                     continue
