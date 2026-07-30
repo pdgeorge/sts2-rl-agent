@@ -19,6 +19,8 @@ using MegaCrit.Sts2.Core.AutoSlay.Handlers.Rooms;
 using MegaCrit.Sts2.Core.AutoSlay.Handlers.Screens;
 using MegaCrit.Sts2.Core.AutoSlay.Helpers;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Context;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -270,6 +272,32 @@ public class RlAutoSlayer
         while (runState.TotalFloor < FinalRunFloor)
         {
             ct.ThrowIfCancellationRequested();
+
+            // The floor counter alone does not end this loop: a player who dies on
+            // floor 21 is still below FinalRunFloor, so the loop went round again
+            // and drove handlers at a game that had already returned to the menu.
+            // That is how a death became a crash.
+            Player me = LocalContext.GetMe(runState);
+            if (me?.Creature != null && me.Creature.CurrentHp <= 0)
+            {
+                Logger.Log("[RlAutoSlayer] Player is dead; ending the run loop.");
+                break;
+            }
+
+            Node sceneRoot = ((SceneTree)Engine.GetMainLoop()).Root;
+            if (sceneRoot.GetNodeOrNull<Node>("/root/Game/RootSceneContainer/Run") == null)
+            {
+                Logger.Log("[RlAutoSlayer] The Run node is gone; the game has left the "
+                           + "run. Ending the run loop.");
+                break;
+            }
+
+            if (runState.CurrentRoom == null)
+            {
+                Logger.Log("[RlAutoSlayer] No current room; ending the run loop.");
+                break;
+            }
+
             RoomType roomType = runState.CurrentRoom.RoomType;
             _watchdog.Reset(
                 $"Entering {roomType} room (Act {runState.CurrentActIndex + 1}, Floor {runState.ActFloor})");

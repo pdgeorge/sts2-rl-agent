@@ -41,7 +41,20 @@ public class RlMapHandler : IScreenHandler, IHandler
     {
         Logger.Log("[RlMap] Handling map screen");
         Node root = ((SceneTree)Engine.GetMainLoop()).Root;
-        NRun runNode = root.GetNode<NRun>("/root/Game/RootSceneContainer/Run");
+
+        // GetNode<T> throws when the node is gone, and this handler can be reached
+        // after a run has already ended -- the run loop had no death check, so a
+        // death was followed by one more iteration that called straight into here
+        // with the game already back at the main menu. The throw propagated out
+        // through a Godot synchronisation-context continuation and took the whole
+        // GAME down: two SIGABRT coredumps, 16:05 and 18:26.
+        NRun runNode = root.GetNodeOrNull<NRun>("/root/Game/RootSceneContainer/Run");
+        if (runNode == null)
+        {
+            Logger.Log("[RlMap] No Run node -- the run is over and the game has left "
+                       + "the map. Nothing to navigate.");
+            return;
+        }
 
         await WaitHelper.Until(
             () => runNode.GlobalUi.MapScreen.IsVisibleInTree(), ct,
