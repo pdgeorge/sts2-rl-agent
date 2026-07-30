@@ -159,6 +159,24 @@ internal static class RlRunInfo
                 LogOnce($"potion slots unreadable: {ex.GetType().Name}");
             }
             SetIfAbsent(state, "potion_slots", potionSlots);
+
+            // The whole deck by card id. deck_size alone meant every card reward
+            // was decided blind to what was being built -- the agent could not
+            // tell a deck that already held four Strikes from one that did not.
+            var deckIds = new List<object>();
+            try
+            {
+                foreach (var card in player.Deck.Cards)
+                {
+                    try { deckIds.Add(card.Id.Entry); }
+                    catch { }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                LogOnce($"deck unreadable: {ex.GetType().Name}");
+            }
+            SetIfAbsent(state, "deck", deckIds);
         }
         catch (System.Exception ex)
         {

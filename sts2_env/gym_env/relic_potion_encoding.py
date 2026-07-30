@@ -62,6 +62,9 @@ def _canonical(name: object) -> str:
     alone makes those differences stop mattering instead of silently encoding a
     relic as absent.
     """
+    # Enum members stringify as "RelicId.BURNING_BLOOD", which folds to
+    # RELICIDBURNINGBLOOD and matches nothing. Prefer .name.
+    name = getattr(name, "name", name)
     return re.sub(r"[^A-Z0-9]", "", str(name).upper())
 
 

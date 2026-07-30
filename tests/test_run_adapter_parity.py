@@ -21,6 +21,8 @@ import numpy as np
 import pytest
 
 from sts2_env.bridge.run_adapter import RunStateAdapter
+from sts2_env.gym_env.choice_encoding import CHOICE_OBS_SIZE
+from sts2_env.gym_env.entity_encoding import ENTITY_OBS_SIZE
 from sts2_env.gym_env.observation import OBS_SIZE as COMBAT_OBS_SIZE
 from sts2_env.gym_env.run_env import RUN_OBS_SIZE, TOTAL_ACTIONS
 from sts2_env.gym_env.run_level_encoding import (
@@ -30,8 +32,14 @@ from sts2_env.gym_env.run_level_encoding import (
 )
 
 
-RUN_SLICE = slice(COMBAT_OBS_SIZE, COMBAT_OBS_SIZE + RUN_LEVEL_SIZE)
-CHOICE_SLICE = slice(COMBAT_OBS_SIZE + RUN_LEVEL_SIZE, RUN_OBS_SIZE)
+# The identity block (powers, monsters, hand, deck) sits between the combat dims
+# and the run-level block, so these offsets moved when it was added. Derived from
+# the block sizes rather than hardcoded, but the sizes themselves are pinned in
+# test_entity_encoding, so a silent shift still fails there.
+_RUN_START = COMBAT_OBS_SIZE + ENTITY_OBS_SIZE
+RUN_SLICE = slice(_RUN_START, _RUN_START + RUN_LEVEL_SIZE)
+CHOICE_SLICE = slice(_RUN_START + RUN_LEVEL_SIZE,
+                     _RUN_START + RUN_LEVEL_SIZE + CHOICE_OBS_SIZE)
 
 
 @pytest.fixture

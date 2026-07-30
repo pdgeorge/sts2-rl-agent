@@ -258,6 +258,11 @@ def run_agent(
                     elif "potion_slots" not in state:
                         logger.warning(
                             "Mod sends no `potion_slots`; potions will read as empty.")
+                    elif "deck" not in state:
+                        logger.error(
+                            "This mod sends deck_size but not `deck`, so the "
+                            "observation will read as an EMPTY deck and every card "
+                            "reward is decided blind. Rebuild the mod.")
 
                 for field in ("floor", "act", "act_floor", "run_hp", "run_max_hp",
                               "deck_size", "gold", "relic_count", "potion_count"):

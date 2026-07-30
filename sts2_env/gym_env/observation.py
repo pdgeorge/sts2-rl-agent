@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import numpy as np
 
+
 from sts2_env.core.combat import CombatState
 from sts2_env.core.enums import CardId, IntentType, PowerId
 from sts2_env.core.constants import MAX_HAND_SIZE, MAX_ENEMIES
@@ -49,7 +50,10 @@ ENEMY_FEATURES = 1 + 1 + 1 + NUM_INTENT_TYPES + 1 + 1 + 1 + 1 + 1  # = 13
 PILE_FEATURES = 6  # draw_size, discard_size, exhaust_size, reserved x3
 
 # Observation size
-OBS_SIZE = (
+# The identity blocks live in entity_encoding and are APPENDED to the original
+# layout below. Everything before ENTITY_OBS_SIZE keeps its column, so the
+# existing parity tests and the bridge's agreement on those dims still hold.
+_BASE_OBS_SIZE = (
     4                                  # player state
     + NUM_PLAYER_POWERS                # player powers (6)
     + MAX_HAND_SIZE * CARD_FEATURES    # hand cards (50)
@@ -58,8 +62,16 @@ OBS_SIZE = (
 )  # = 131
 
 
+OBS_SIZE = _BASE_OBS_SIZE
+
+
 def encode_observation(combat: CombatState) -> np.ndarray:
-    """Encode combat state as a compact flat float32 vector."""
+    """Encode combat state as a compact flat float32 vector.
+
+    Stays at the original 131 dims. The identity blocks are written by the
+    caller, because they must be present OUTSIDE combat too -- the deck matters
+    most at a card reward, when there is no combat state at all.
+    """
     obs = np.zeros(OBS_SIZE, dtype=np.float32)
     idx = 0
 

@@ -74,6 +74,11 @@ from sts2_env.gym_env.action_space import (
     get_action_mask,
     is_potion_action,
 )
+from sts2_env.gym_env.entity_encoding import (
+    ENTITY_OBS_SIZE,
+    encode_entities,
+    entities_from_combat,
+)
 from sts2_env.gym_env.relic_potion_encoding import (
     RELIC_POTION_OBS_SIZE,
     encode_relics_and_potions,
@@ -222,8 +227,8 @@ _RUN_STATE_SIZE = 20   # see module docstring
 # on purpose: it is identity, not summary. relic_count stays in the run-level
 # block because "how many" is still a useful cheap feature, but it was all the
 # agent had, and no amount of it distinguishes Snecko Eye from Ice Cream.
-RUN_OBS_SIZE = (COMBAT_OBS_SIZE + _RUN_STATE_SIZE + CHOICE_OBS_SIZE
-                + RELIC_POTION_OBS_SIZE)
+RUN_OBS_SIZE = (COMBAT_OBS_SIZE + ENTITY_OBS_SIZE + _RUN_STATE_SIZE
+                + CHOICE_OBS_SIZE + RELIC_POTION_OBS_SIZE)
 
 DEFAULT_MAX_STEPS = 10_000
 DEFAULT_MAX_COMBAT_TURNS = 200
@@ -749,6 +754,16 @@ class STS2RunEnv(gymnasium.Env):
             n = min(len(combat_obs), COMBAT_OBS_SIZE)
             obs[:n] = combat_obs[:n]
 
+        # ---- Identity: powers, monsters, hand and deck (3142 dims) ----
+        # Written here rather than inside the combat encoder because it must be
+        # present outside combat too: the deck matters most at a card reward,
+        # where there is no combat state at all. Passing combat=None still
+        # encodes the deck and the player's powers.
+        idx = COMBAT_OBS_SIZE
+        obs[idx:idx + ENTITY_OBS_SIZE] = encode_entities(
+            **entities_from_combat(combat, mgr.run_state.player.deck))
+        idx += ENTITY_OBS_SIZE
+
         # ---- Run-level state (20 dims) ----
         # Built by the shared encoder, not here. state_adapter needs the same 20
         # dims from a JSON message, and two implementations of the same layout is
@@ -757,7 +772,6 @@ class STS2RunEnv(gymnasium.Env):
         # just play worse.
         rs = mgr.run_state
         player = rs.player
-        idx = COMBAT_OBS_SIZE
 
         room = mgr._current_room_type
         obs[idx:idx + RUN_LEVEL_SIZE] = encode_run_level(

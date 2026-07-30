@@ -36,9 +36,9 @@ def _bridge_obs(**state):
 
 
 def test_the_block_is_where_both_sides_think_it_is():
-    """Pinned, not derived: 131 combat + 20 run-level + 126 choices."""
-    assert BLOCK_START == 277
-    assert RUN_OBS_SIZE == 896
+    """Pinned: 131 combat + 3142 identity + 20 run-level + 126 choices."""
+    assert BLOCK_START == 3419
+    assert RUN_OBS_SIZE == 4038
 
 
 def test_the_simulators_starting_relic_is_in_the_column_the_bridge_uses():

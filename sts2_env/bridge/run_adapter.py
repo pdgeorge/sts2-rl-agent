@@ -44,6 +44,11 @@ from sts2_env.gym_env.run_env import (
     RUN_OBS_SIZE,
     TOTAL_ACTIONS,
 )
+from sts2_env.gym_env.entity_encoding import (
+    ENTITY_OBS_SIZE,
+    encode_entities,
+    entities_from_bridge_state,
+)
 from sts2_env.gym_env.relic_potion_encoding import (
     RELIC_POTION_OBS_SIZE,
     encode_relics_and_potions,
@@ -91,7 +96,7 @@ class RunStateAdapter:
         self._combat = StateAdapter()
 
     def encode_observation(self, state: dict[str, Any]) -> np.ndarray:
-        """The 896-dim observation, laid out exactly as run_env writes it."""
+        """The 4038-dim observation, laid out exactly as run_env writes it."""
         obs = np.zeros(RUN_OBS_SIZE, dtype=np.float32)
 
         # Combat block. Only meaningful in combat; elsewhere it stays zero, which
@@ -101,6 +106,13 @@ class RunStateAdapter:
             obs[:COMBAT_OBS_SIZE] = combat_obs[:COMBAT_OBS_SIZE]
 
         idx = COMBAT_OBS_SIZE
+
+        # Identity block, in the same order run_env writes it. Present outside
+        # combat too: the deck is what a card reward is deciding about.
+        obs[idx:idx + ENTITY_OBS_SIZE] = encode_entities(
+            **entities_from_bridge_state(state))
+        idx += ENTITY_OBS_SIZE
+
         obs[idx:idx + RUN_LEVEL_SIZE] = encode_run_level(**run_level_from_bridge_state(state))
         idx += RUN_LEVEL_SIZE
 
