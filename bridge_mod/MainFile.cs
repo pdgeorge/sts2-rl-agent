@@ -151,9 +151,17 @@ public partial class MainFile : Node
                 bool atMenu = root.GetNodeOrNull<Control>(MainMenuPath)?.IsVisibleInTree() ?? false;
                 if (!atMenu && runNumber > 1)
                 {
-                    Logger.Log("[RlAutoSlay] Not at the main menu -- a previous run is "
-                               + "probably still open in-game. Waiting; if this repeats, "
-                               + "the game needs returning to the menu by hand.");
+                    // A run that ended badly leaves the game over screen up, and
+                    // nothing clicks it once the run loop has thrown -- so every
+                    // later run waits for a menu that never comes. Observed live:
+                    // one death on floor 21 blocked the session until Continue and
+                    // Return to Main Menu were clicked by hand.
+                    if (!await RlGameOverScreenHandler.TryDismissGameOverAsync(ct))
+                    {
+                        Logger.Log("[RlAutoSlay] Not at the main menu -- a previous run is "
+                                   + "probably still open in-game. Waiting; if this repeats, "
+                                   + "the game needs returning to the menu by hand.");
+                    }
                 }
 
                 await WaitHelper.Until(

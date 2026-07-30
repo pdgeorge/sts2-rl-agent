@@ -650,6 +650,48 @@ public class RlAutoSlayer
 /// </summary>
 public class RlGameOverScreenHandler : IScreenHandler, IHandler
 {
+    /// <summary>
+    /// Best-effort click through a game over screen that is still up, so a run
+    /// that ended badly does not block every run after it.
+    ///
+    /// Deliberately only acts when a game over screen is actually present. When a
+    /// run fails some other way the game is left sitting inside a LIVE run -- that
+    /// happened at the act 1 to act 2 boundary, where the run was still playable
+    /// on the map -- and force-quitting to the menu there would throw away a run
+    /// that was still going. A game over screen is unambiguous: that run is over.
+    /// </summary>
+    public static async Task<bool> TryDismissGameOverAsync(CancellationToken ct)
+    {
+        try
+        {
+            if (NOverlayStack.Instance == null) return false;
+            if (NOverlayStack.Instance.Peek() is not NGameOverScreen screen) return false;
+            if (!GodotObject.IsInstanceValid(screen) || !screen.IsVisibleInTree()) return false;
+
+            Logger.Log("[RlGameOver] A game over screen is still up; clicking through it.");
+
+            NGameOverContinueButton cont = UiHelper.FindFirst<NGameOverContinueButton>(screen);
+            if (cont != null)
+            {
+                await UiHelper.Click(cont);
+                await Task.Delay(1000, ct);
+            }
+
+            NReturnToMainMenuButton menu = UiHelper.FindFirst<NReturnToMainMenuButton>(screen);
+            if (menu != null)
+            {
+                await UiHelper.Click(menu);
+                return true;
+            }
+            Logger.Log("[RlGameOver] Continue clicked but no main menu button yet.");
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Logger.Log($"[RlGameOver] Recovery attempt failed: {ex.GetType().Name}");
+        }
+        return false;
+    }
+
     private const int HandlerTimeoutMinutes = 2;
     private const int ContinueButtonTimeoutSeconds = 30;
     private const int SummaryAnimationTimeoutSeconds = 90;
@@ -680,13 +722,33 @@ public class RlGameOverScreenHandler : IScreenHandler, IHandler
             return;
         }
 
-        await WaitHelper.Until(() => continueButton.IsEnabled, ct,
-            TimeSpan.FromSeconds(ContinueButtonTimeoutSeconds),
-            "Continue button did not become enabled");
+        // Every wait below is best effort. They used to throw, and a throw here
+        // propagates out through DrainOverlayScreensAsync and PlayRunAsync to the
+        // catch-all that reports "terminated" -- killing the AutoSlayer with the
+        // game over screen still on screen. Nothing then clicks Continue or
+        // Return to Main Menu, the game never reaches the menu, and MainFile's
+        // run loop waits for a menu that will never appear. Observed live: a run
+        // died on floor 21 and every later run was blocked until the buttons were
+        // clicked by hand.
+        //
+        // Clicking a button that is not quite ready may do nothing. Not clicking
+        // it ends the session.
+        try
+        {
+            await WaitHelper.Until(() => continueButton.IsEnabled, ct,
+                TimeSpan.FromSeconds(ContinueButtonTimeoutSeconds),
+                "Continue button did not become enabled");
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Logger.Log($"[RlGameOver] Continue never enabled ({ex.GetType().Name}); clicking anyway.");
+        }
         await UiHelper.Click(continueButton);
 
         NReturnToMainMenuButton mainMenuButton = null;
         int waitCycles = 0;
+        try
+        {
         await WaitHelper.Until(delegate
         {
             if (!GodotObject.IsInstanceValid(screen) || !screen.IsVisibleInTree())
@@ -700,14 +762,36 @@ public class RlGameOverScreenHandler : IScreenHandler, IHandler
             return mainMenuButton != null && mainMenuButton.Visible && mainMenuButton.IsEnabled;
         }, ct, TimeSpan.FromSeconds(SummaryAnimationTimeoutSeconds),
             "Main menu button did not become enabled");
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Logger.Log($"[RlGameOver] Main menu button never enabled ({ex.GetType().Name}); "
+                       + "trying whatever was found.");
+        }
 
         if (!GodotObject.IsInstanceValid(screen) || !screen.IsVisibleInTree())
             return;
 
+        // A last look, in case the wait above timed out before finding it.
+        mainMenuButton ??= UiHelper.FindFirst<NReturnToMainMenuButton>(screen);
+        if (mainMenuButton == null)
+        {
+            Logger.Log("[RlGameOver] No Return to Main Menu button found. The game "
+                       + "needs returning to the menu by hand for runs to continue.");
+            return;
+        }
+
         await UiHelper.Click(mainMenuButton);
-        await WaitHelper.Until(
-            () => !GodotObject.IsInstanceValid(screen) || !screen.IsVisibleInTree(),
-            ct, TimeSpan.FromSeconds(ContinueButtonTimeoutSeconds),
-            "Game over screen did not close");
+        try
+        {
+            await WaitHelper.Until(
+                () => !GodotObject.IsInstanceValid(screen) || !screen.IsVisibleInTree(),
+                ct, TimeSpan.FromSeconds(ContinueButtonTimeoutSeconds),
+                "Game over screen did not close");
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Logger.Log($"[RlGameOver] Game over screen did not close ({ex.GetType().Name}).");
+        }
     }
 }
