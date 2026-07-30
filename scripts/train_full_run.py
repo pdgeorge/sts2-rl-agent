@@ -240,19 +240,39 @@ def train(args):
         callback_after_eval=stop_callback,
     )
 
+    # Periodic checkpoints. A long run that is stopped early used to leave only
+    # best_model, which is selected as the max of many noisy evaluations and so
+    # is biased high by construction rather than being the strongest policy.
+    # These give an unbiased "where it actually was at step N" to fall back on.
+    from stable_baselines3.common.callbacks import CheckpointCallback
+
+    checkpoint_callback = CheckpointCallback(
+        save_freq=max(args.eval_freq // args.n_envs, 1),
+        save_path=str(output_dir / "checkpoints"),
+        name_prefix="ckpt",
+    )
+
     # Train
     start = time.perf_counter()
-    model.learn(
-        total_timesteps=args.total_timesteps,
-        callback=[eval_callback, FloorLogger()],
-        progress_bar=True,
-    )
+    interrupted = False
+    try:
+        model.learn(
+            total_timesteps=args.total_timesteps,
+            callback=[eval_callback, checkpoint_callback, FloorLogger()],
+            progress_bar=True,
+        )
+    except KeyboardInterrupt:
+        # learn() used to be unguarded, so final_model was written only on a
+        # complete run. Stopping a long training early -- the normal way to end
+        # one -- discarded the trained weights and left just best_model.
+        interrupted = True
+        print("\n\nInterrupted. Saving the model as it stands before exiting.")
     elapsed = time.perf_counter() - start
 
     # Save final model
     final_path = str(output_dir / "final_model")
     model.save(final_path)
-    print(f"\nTraining complete in {elapsed:.1f}s")
+    print(f"\nTraining {'interrupted after' if interrupted else 'complete in'} {elapsed:.1f}s")
     print(f"Final model saved to: {final_path}")
     print(f"Best model saved to: {output_dir / 'best_model'}")
 
