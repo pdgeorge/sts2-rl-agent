@@ -263,7 +263,22 @@ class StateAdapter:
             card = hand[i]
             cost = card.get("cost", 0)
 
-            # Check if card is playable (enough energy, cost >= 0)
+            # The mod computes playability itself and sends it. Trust that over
+            # inferring it from cost, because cost is not the only reason a card
+            # cannot be played: curses and unplayable statuses cost 0 and pass any
+            # energy check, and conditional cards look affordable while being
+            # illegal.
+            #
+            # This bit live. The simulator masks with combat.can_play_card, a full
+            # check, so in training an unplayable card could never be selected and
+            # the policy never learned one was a dead end. Over the bridge it was
+            # offered, the game rejected it, nothing about the state changed, and a
+            # deterministic policy chose the same card again -- repeatedly, burning
+            # the turn.
+            if card.get("playable") is False:
+                continue
+
+            # Cost check as a fallback for a mod that does not send the flag.
             if cost < 0:
                 # X-cost cards (cost = -1) are always playable if energy > 0
                 if energy <= 0:
