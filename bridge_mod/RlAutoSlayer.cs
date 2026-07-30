@@ -79,12 +79,17 @@ public class RlAutoSlayer
     private const int RunStateTimeoutSeconds = 60;
     private const int RoomAssignmentTimeoutSeconds = 60;
     private const int NonCombatSettleDelayMs = 500;
-    private const int BossTransitionTimeoutSeconds = 10;
-    private const int ActTransitionTimeoutSeconds = 5;
+    // Boss and act transitions play longer animations than an ordinary fight, and
+    // Godot throttles hard when the window loses focus -- so the wall-clock cost of a
+    // transition depends on whether anyone is watching. A boss was beaten at 20 HP and
+    // the run was torn down because the rewards screen took 10.1s while unfocused.
+    // These are 'something has gone wrong' backstops, not pacing controls.
+    private const int BossTransitionTimeoutSeconds = 90;
+    private const int ActTransitionTimeoutSeconds = 60;
     private const int OverlayCloseRetryLimit = 3;
     private const int OverlayDrainSettleDelayMs = 100;
-    private const int EventProceedTimeoutSeconds = 5;
-    private const int RewardsScreenTimeoutSeconds = 10;
+    private const int EventProceedTimeoutSeconds = 30;
+    private const int RewardsScreenTimeoutSeconds = 90;
     private const int MainMenuTimeoutSeconds = 30;
     private const int AbandonPopupTimeoutSeconds = 5;
     private const int AbandonRunSettleDelayMs = 1000;

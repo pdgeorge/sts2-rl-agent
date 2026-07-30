@@ -142,6 +142,20 @@ public partial class MainFile : Node
             runNumber++;
             try
             {
+                // If a previous run died mid-game -- a transition timing out, say --
+                // the game is left sitting inside that run and the menu never
+                // appears. This used to abort, loop, and abort again: ten identical
+                // "Main menu not visible" failures while a run that had just beaten
+                // a boss sat abandoned on the act 2 map. Say so plainly, once,
+                // rather than spinning silently.
+                bool atMenu = root.GetNodeOrNull<Control>(MainMenuPath)?.IsVisibleInTree() ?? false;
+                if (!atMenu && runNumber > 1)
+                {
+                    Logger.Log("[RlAutoSlay] Not at the main menu -- a previous run is "
+                               + "probably still open in-game. Waiting; if this repeats, "
+                               + "the game needs returning to the menu by hand.");
+                }
+
                 await WaitHelper.Until(
                     () => root.GetNodeOrNull<Control>(MainMenuPath)?.IsVisibleInTree() ?? false,
                     ct, TimeSpan.FromSeconds(MainMenuTimeoutSeconds), "Main menu not visible");
