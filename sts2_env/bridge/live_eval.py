@@ -167,6 +167,10 @@ def main() -> None:
                         help="Sample actions instead of taking the argmax. Live "
                              "runs are few, and a deterministic policy replays "
                              "the same mistake on the same state every time.")
+    parser.add_argument("--tell-cyra", action="store_true",
+                        help="Publish run milestones to cyra_brain over RabbitMQ. "
+                             "Needs cyra_game reachable (CYRA_GAME_PATH) and a "
+                             "broker; without either it logs once and plays on.")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -190,6 +194,7 @@ def main() -> None:
             speed=args.speed,
             max_runs=args.runs,
             on_run_end=recorder,
+            tell_cyra=args.tell_cyra,
         )
     except KeyboardInterrupt:
         logger.info("Interrupted.")

@@ -24,6 +24,8 @@ from collections.abc import Callable
 from typing import Any
 
 from sts2_env.bridge.client import STS2GameClient
+from sts2_env.bridge.cyra_events import CyraPublisher
+from sts2_env.bridge.milestones import MilestoneWatcher
 from sts2_env.bridge.protocol import (
     ActionType,
     BridgeStateType,
@@ -129,6 +131,7 @@ def run_agent(
     allow_random_fallback: bool = False,
     max_runs: int = 1,
     on_run_end: "Callable[[dict[str, Any]], None] | None" = None,
+    tell_cyra: bool = False,
 ) -> None:
     """Main agent loop.
 
@@ -146,6 +149,8 @@ def run_agent(
             exiting at the first death -- which is the only reason a live session
             used to end after one run.
         on_run_end: Called with a summary dict as each run finishes.
+        tell_cyra: Publish the four run milestones to cyra_brain. Off by default
+            so training and evaluation never depend on a broker being up.
     """
     model = load_model(model_path)
     adapter = StateAdapter()
@@ -212,6 +217,8 @@ def run_agent(
         # the final message.
         progress: dict[str, Any] = {}
         _relic_warning_done = False
+        cyra = CyraPublisher(enabled=tell_cyra)
+        milestones = MilestoneWatcher()
 
         try:
             while True:
@@ -264,6 +271,10 @@ def run_agent(
                             "observation will read as an EMPTY deck and every card "
                             "reward is decided blind. Rebuild the mod.")
 
+                for event in milestones.observe(state):
+                    logger.info("CYRA: %s", event["text"])
+                    cyra.publish(event)
+
                 for field in ("floor", "act", "act_floor", "run_hp", "run_max_hp",
                               "deck_size", "gold", "relic_count", "potion_count"):
                     if field in state:
@@ -297,6 +308,7 @@ def run_agent(
                     step_count = 0
                     combat_count = 0
                     progress = {}
+                    milestones.reset()
                     run_started = time.monotonic()
                     continue
                 if phase == MSG_TYPE_ERROR:
@@ -317,6 +329,14 @@ def run_agent(
                     decoded = run_adapter.decode_action(int(action), state)
                     if verbose:
                         logger.info("%s: model chose %s", msg_type.upper(), decoded)
+
+                    if cyra.enabled and msg_type == "map_select":
+                        event = milestones.map_choice(
+                            state, int(decoded.get("index", -1)),
+                            _decision_margin(model, obs, mask))
+                        if event is not None:
+                            logger.info("CYRA: %s", event["text"])
+                            cyra.publish(event)
                     if decoded.get("action") == "skip":
                         client.skip()
                     else:
@@ -436,6 +456,7 @@ def run_agent(
                 if step_count % 100 == 0:
                     logger.info("Step %d, combats seen: %d", step_count, combat_count)
         finally:
+            cyra.close()
             if isinstance(client, BridgeReplayRecorder):
                 saved_path = client.save(record_replay_path)
                 logger.info("Saved bridge replay trace to %s", saved_path)
@@ -444,6 +465,34 @@ def run_agent(
 # ----------------------------------------------------------------
 # Heuristic decision functions for non-combat phases
 # ----------------------------------------------------------------
+
+
+def _decision_margin(model, obs, mask) -> float | None:
+    """How far the top choice beat the runner-up, from the policy itself.
+
+    This is the only honest introspection available: the policy really was nearly
+    tied, or it really was not. The number stays inside cyra_game -- milestones.py
+    turns it into a phrase -- because a softmax over action logits is not a
+    calibrated confidence and must never be spoken as one.
+
+    Returns None rather than raising: commentary is never worth risking a run.
+    """
+    try:
+        import numpy as np
+        import torch
+
+        obs_tensor = torch.as_tensor(np.asarray([obs]), device=model.device)
+        mask_tensor = torch.as_tensor(np.asarray([mask]), device=model.device)
+        with torch.no_grad():
+            dist = model.policy.get_distribution(obs_tensor, action_masks=mask_tensor)
+            probs = dist.distribution.probs[0]
+        if probs.numel() < 2:
+            return None
+        top2 = torch.topk(probs, 2).values
+        return float(top2[0] - top2[1])
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Could not read decision margin (%s)", type(exc).__name__)
+        return None
 
 
 def _phase_for_state(state: dict[str, Any]) -> str:
