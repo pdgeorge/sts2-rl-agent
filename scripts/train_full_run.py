@@ -10,6 +10,7 @@ Requires: stable-baselines3, sb3-contrib, torch
 from __future__ import annotations
 
 import argparse
+import signal
 import sys
 import time
 from pathlib import Path
@@ -251,6 +252,16 @@ def train(args):
         save_path=str(output_dir / "checkpoints"),
         name_prefix="ckpt",
     )
+
+    # A backgrounded job ("cmd &" in a non-interactive shell) has SIGINT set to
+    # SIG_IGN by the shell, so neither Ctrl-C nor `kill -INT` can reach the
+    # handler below -- and a plain `kill` sends SIGTERM, which would end the
+    # process outright and lose the weights. Routing SIGTERM to the same path
+    # means stopping a run saves the model however it was started.
+    def _save_and_stop(signum, _frame):
+        raise KeyboardInterrupt
+
+    signal.signal(signal.SIGTERM, _save_and_stop)
 
     # Train
     start = time.perf_counter()
