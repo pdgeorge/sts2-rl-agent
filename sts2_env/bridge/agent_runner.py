@@ -275,8 +275,14 @@ def run_agent(
                     logger.info("CYRA: %s", event["text"])
                     cyra.publish(event)
 
+                # room_type included so the log says WHERE a run ended, not just
+                # on what floor. Two live runs both ended on floor 17 while the
+                # simulator puts the act 1 boss on 16 -- so "floor >= 17 cleared
+                # act 1" may be counting boss deaths as clears. Recording the room
+                # settles that from data instead of from an off-by-one argument.
                 for field in ("floor", "act", "act_floor", "run_hp", "run_max_hp",
-                              "deck_size", "gold", "relic_count", "potion_count"):
+                              "deck_size", "gold", "relic_count", "potion_count",
+                              "room_type"):
                     if field in state:
                         progress[field] = state[field]
 
@@ -289,7 +295,7 @@ def run_agent(
                         summary.update({
                             k: v for k, v in state.items()
                             if k in ("floor", "act", "run_hp", "run_max_hp",
-                                     "deck_size", "gold", "relic_count")
+                                     "deck_size", "gold", "relic_count", "room_type")
                         })
                         summary.update({
                             "run": run_index,

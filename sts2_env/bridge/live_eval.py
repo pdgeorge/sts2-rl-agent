@@ -70,10 +70,11 @@ class LiveEvalRecorder:
 
         floor = summary.get("floor", 0)
         logger.info(
-            "run %d: floor %s, act %s, %s, %ss  |  %s",
-            summary.get("run", len(self.runs)), floor, summary.get("act", "?"),
-            summary.get("result", "?"), summary.get("seconds", "?"),
-            self.one_line(),
+            "run %d: floor %s (%s), act %s, %s, hp %s, %ss  |  %s",
+            summary.get("run", len(self.runs)), floor,
+            summary.get("room_type", "?"), summary.get("act", "?"),
+            summary.get("result", "?"), summary.get("run_hp", "?"),
+            summary.get("seconds", "?"), self.one_line(),
         )
 
     def floors(self) -> list[int]:
