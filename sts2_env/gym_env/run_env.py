@@ -837,7 +837,7 @@ class STS2RunEnv(gymnasium.Env):
             n = min(len(combat_obs), COMBAT_OBS_SIZE)
             obs[:n] = combat_obs[:n]
 
-        # ---- Identity: powers, monsters, hand and deck (3142 dims) ----
+        # ---- Identity: powers, monsters, hand and deck (1690 dims) ----
         # Written here rather than inside the combat encoder because it must be
         # present outside combat too: the deck matters most at a card reward,
         # where there is no combat state at all. Passing combat=None still
@@ -899,7 +899,7 @@ class STS2RunEnv(gymnasium.Env):
             logger.exception("Could not encode run choices for phase %s", mgr.phase)
         idx += CHOICE_OBS_SIZE
 
-        # ---- Which relics and which potions (619 dims) ----
+        # ---- Which relics and which potions (384 dims) ----
         # The observation used to say only how many. A relic-blind policy cannot
         # play near-perfectly however long it trains, because a large share of
         # strong Spire decisions are relic-driven.
