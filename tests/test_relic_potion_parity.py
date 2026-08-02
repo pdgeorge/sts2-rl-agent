@@ -1,14 +1,15 @@
-"""The simulator and the bridge must put the same relic in the same column.
+"""The simulator and the bridge must produce the same hashed relic/potion vector.
 
-If they disagree, nothing raises. The policy trains believing column 277 means
+With feature hashing there are no longer guaranteed-unique columns for every item.
+Instead the invariant is: both sides use the SAME hasher with the SAME seed, so
+the same input (e.g. Burning Blood) produces the SAME output vector on both
+sides. The policy learns "this hash pattern means Burning Blood" rather than
+"column 277 means Burning Blood."
+
+If they disagree, nothing raises. The policy trains believing a pattern means
 Burning Blood and plays live believing something else, and the only symptom is
-that it plays worse than it evaluated. That is the failure mode this whole file
-exists for, and it has already happened three times on other fields.
-
-Golden values are pinned deliberately. Building the expectation with the same
-encoder under test would pass no matter what the encoder did -- an earlier parity
-suite here did exactly that, and a scale change from 1000 to 100 passed every
-test.
+that it plays worse than it evaluated. These tests verify byte-identical
+agreement between the simulator's encoder and the bridge's encoder.
 """
 
 from __future__ import annotations
@@ -18,13 +19,11 @@ import pytest
 
 from sts2_env.bridge.run_adapter import RunStateAdapter
 from sts2_env.gym_env.relic_potion_encoding import (
-    POTION_TYPE_COUNT,
-    RELIC_OBS_SIZE,
     RELIC_POTION_OBS_SIZE,
-    potion_index,
-    relic_index,
+    encode_relics_and_potions,
 )
 from sts2_env.gym_env.run_env import RUN_OBS_SIZE, STS2RunEnv
+from sts2_env.gym_env.hashing import RELIC_BUCKETS, POTION_BUCKETS
 
 BLOCK_START = RUN_OBS_SIZE - RELIC_POTION_OBS_SIZE
 
@@ -36,20 +35,23 @@ def _bridge_obs(**state):
 
 
 def test_the_block_is_where_both_sides_think_it_is():
-    """Pinned: 131 combat + 3142 identity + 20 run-level + 126 choices."""
-    assert BLOCK_START == 3419
-    assert RUN_OBS_SIZE == 4038
+    """Pinned: 131 combat + 1690 identity + 32 deck features + 20 run-level + 126 choices."""
+    from sts2_env.gym_env.deck_features import DECK_FEATURE_SIZE
+    assert BLOCK_START == 1967 + DECK_FEATURE_SIZE
+    assert RUN_OBS_SIZE == 2383
 
 
-def test_the_simulators_starting_relic_is_in_the_column_the_bridge_uses():
+def test_the_simulators_starting_relic_matches_the_bridge():
     env = STS2RunEnv(max_steps=50)
     sim_obs, _ = env.reset(seed=7)
 
     bridge_obs = _bridge_obs(relics=["BURNING_BLOOD"])
 
-    col = BLOCK_START + relic_index("BURNING_BLOOD")
-    assert sim_obs[col] == 1.0, "simulator sets Burning Blood"
-    assert bridge_obs[col] == 1.0, "bridge sets the same column"
+    # Compare the full relic/potion block byte-for-byte.
+    sim_block = sim_obs[BLOCK_START:BLOCK_START + RELIC_POTION_OBS_SIZE]
+    bridge_block = bridge_obs[BLOCK_START:BLOCK_START + RELIC_POTION_OBS_SIZE]
+    np.testing.assert_array_equal(sim_block, bridge_block)
+    assert np.any(sim_block != 0.0), "Burning Blood should hash to nonzero"
 
 
 def test_a_relic_the_simulator_holds_reads_the_same_from_the_bridge():
@@ -61,14 +63,15 @@ def test_a_relic_the_simulator_holds_reads_the_same_from_the_bridge():
 
     bridge_obs = _bridge_obs(relics=["BURNING_BLOOD", "BLACK_BLOOD"])
 
-    sim_block = sim_obs[BLOCK_START:BLOCK_START + RELIC_OBS_SIZE]
-    bridge_block = bridge_obs[BLOCK_START:BLOCK_START + RELIC_OBS_SIZE]
+    sim_block = sim_obs[BLOCK_START:BLOCK_START + RELIC_POTION_OBS_SIZE]
+    bridge_block = bridge_obs[BLOCK_START:BLOCK_START + RELIC_POTION_OBS_SIZE]
     np.testing.assert_array_equal(sim_block, bridge_block)
-    assert sim_block.sum() == 2.0
+    assert np.any(sim_block != 0.0)
 
 
 def test_potion_slots_line_up_across_the_two_sides():
-    """A potion in slot 1 must be slot 1 on both sides, not compacted to 0."""
+    """A potion in slot 1 must produce a different vector than slot 0 on both
+    sides, because the slot index is baked into the hash key."""
     from sts2_env.potions.base import create_potion
 
     env = STS2RunEnv(max_steps=50)
@@ -77,15 +80,20 @@ def test_potion_slots_line_up_across_the_two_sides():
     player.potions = [None, create_potion("BlockPotion", slot=1)]
     sim_obs = env._encode_obs()
 
-    bridge_obs = _bridge_obs(potion_slots=[None, "BlockPotion"])
-
-    start = BLOCK_START + RELIC_OBS_SIZE
-    np.testing.assert_array_equal(
-        sim_obs[start:start + 5 * POTION_TYPE_COUNT],
-        bridge_obs[start:start + 5 * POTION_TYPE_COUNT],
+    # Include the simulator's starting relic so the full block matches.
+    bridge_obs = _bridge_obs(
+        relics=[r for r in player.relics],
+        potion_slots=[None, "BlockPotion"],
     )
-    occupied = start + POTION_TYPE_COUNT + potion_index("BlockPotion")
-    assert sim_obs[occupied] == 1.0, "slot 1, not slot 0"
+
+    sim_block = sim_obs[BLOCK_START:BLOCK_START + RELIC_POTION_OBS_SIZE]
+    bridge_block = bridge_obs[BLOCK_START:BLOCK_START + RELIC_POTION_OBS_SIZE]
+    np.testing.assert_array_equal(sim_block, bridge_block)
+
+    # Slot 0 empty vs slot 1 occupied should differ.
+    slot0 = _bridge_obs(potion_slots=["BlockPotion", None])
+    slot1 = _bridge_obs(potion_slots=[None, "BlockPotion"])
+    assert not np.array_equal(slot0, slot1)
 
 
 def test_a_mod_that_sends_nothing_leaves_the_block_empty():
@@ -100,8 +108,14 @@ def test_a_mod_that_sends_nothing_leaves_the_block_empty():
 
 
 @pytest.mark.parametrize("relic", ["BURNING_BLOOD", "BLACK_BLOOD", "CRACKED_CORE"])
-def test_each_relic_gets_its_own_column(relic):
+def test_each_relic_gets_a_unique_hash_signature(relic):
     obs = _bridge_obs(relics=[relic])
-    col = BLOCK_START + relic_index(relic)
-    assert obs[col] == 1.0
-    assert obs[BLOCK_START:BLOCK_START + RELIC_OBS_SIZE].sum() == 1.0
+    block = obs[BLOCK_START:BLOCK_START + RELIC_BUCKETS]
+    assert np.any(block != 0.0), f"{relic} should hash to nonzero"
+    # Different relics must produce different hash signatures.
+    for other in ("BURNING_BLOOD", "BLACK_BLOOD", "CRACKED_CORE"):
+        if other == relic:
+            continue
+        other_obs = _bridge_obs(relics=[other])
+        other_block = other_obs[BLOCK_START:BLOCK_START + RELIC_BUCKETS]
+        assert not np.array_equal(block, other_block), f"{relic} vs {other} must differ"

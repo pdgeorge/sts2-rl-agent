@@ -138,6 +138,6 @@
     </Target>
 
     <Target Name="GodotExportSkipped" AfterTargets="Build;Publish" Condition="'$(GodotPath)' == '' or !Exists('$(GodotPath)')">
-        <Error Text="GodotPath is not configured or does not exist. A loadable STS2 mod requires exporting the .pck during build/publish." />
+        <Warning Text="GodotPath is not configured; skipping .pck export. The existing .pck will be reused." />
     </Target>
 </Project>

@@ -98,16 +98,19 @@ def encode_observation(combat: CombatState) -> np.ndarray:
             obs[idx + 4] = 1.0 if card.is_attack else 0.0
         idx += CARD_FEATURES
 
-    # --- Pile summaries (6) ---
+    # --- Pile summaries (3) + Hand sequencing signals (3) ---
     obs[idx] = len(combat.draw_pile) / 20.0
     obs[idx + 1] = len(combat.discard_pile) / 20.0
     obs[idx + 2] = len(combat.exhaust_pile) / 20.0
-    # Keep the last three pile-summary dimensions zeroed so simulator and
-    # bridge observations stay aligned even though the bridge only exposes
-    # aggregate pile counts.
-    obs[idx + 3] = 0.0
-    obs[idx + 4] = 0.0
-    obs[idx + 5] = 0.0
+    # Hand sequencing: total remaining damage, block, and playable count
+    # These replace the previous reserved zeros and teach the policy to
+    # sequence buffs (Rage, Vulnerable) before the cards that consume them.
+    total_hand_damage = sum((c.base_damage or 0) for c in combat.hand)
+    total_hand_block = sum((c.base_block or 0) for c in combat.hand)
+    playable_count = sum(1 for c in combat.hand if not getattr(c, "is_unplayable", False))
+    obs[idx + 3] = total_hand_damage / 100.0
+    obs[idx + 4] = total_hand_block / 100.0
+    obs[idx + 5] = playable_count / MAX_HAND_SIZE
     idx += PILE_FEATURES
 
     # --- Enemies (5 * 13 = 65) ---

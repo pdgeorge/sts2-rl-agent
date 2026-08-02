@@ -173,6 +173,20 @@ def main() -> None:
                              "Needs cyra_game reachable (CYRA_GAME_PATH) and a "
                              "broker; without either it logs once and plays on.")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument(
+        "--combat-policy",
+        default=None,
+        help=(
+            "Optional separate combat policy (.zip). When the main model is a full-run "
+            "model, this overrides combat decisions so the main model only handles "
+            "map, rewards, shop, rest, and events."
+        ),
+    )
+    parser.add_argument(
+        "--crash-log",
+        default="output/crash_log.json",
+        help="JSON file written when the game crashes or disconnects mid-run.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -196,13 +210,31 @@ def main() -> None:
             max_runs=args.runs,
             on_run_end=recorder,
             tell_cyra=args.tell_cyra,
+            combat_policy_path=args.combat_policy,
         )
     except KeyboardInterrupt:
         logger.info("Interrupted.")
-    except Exception:
+    except Exception as exc:
         # Report what was measured before re-raising; a crash 40 runs in should
         # not throw away 40 runs of data.
         logger.exception("Live eval stopped by an error.")
+        crash_info = {
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "error_type": type(exc).__name__,
+            "error_message": str(exc),
+            "model": args.model_path,
+            "combat_policy": args.combat_policy,
+            "runs_completed": len(recorder.runs),
+            "last_run": recorder.runs[-1] if recorder.runs else None,
+            "summary_one_line": recorder.one_line(),
+        }
+        try:
+            Path(args.crash_log).parent.mkdir(parents=True, exist_ok=True)
+            with open(args.crash_log, "w", encoding="utf-8") as fh:
+                json.dump(crash_info, fh, indent=2, default=str)
+            logger.info("Crash log written to %s", args.crash_log)
+        except Exception:
+            logger.exception("Could not write crash log.")
         print(recorder.report())
         recorder.close()
         sys.exit(1)

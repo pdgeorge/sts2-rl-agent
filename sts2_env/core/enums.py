@@ -1159,3 +1159,8 @@ class CardId(Enum):
     DEPRECATED_CARD = auto()
 
     GENERIC = auto()
+
+    # Present in the game, not yet implemented here. Added by
+    # scripts/sync_content.py so the reference parser can map every
+    # decompiled class; a member is a name, not an implementation.
+    SIDESTEP = auto()

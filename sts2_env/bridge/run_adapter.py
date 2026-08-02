@@ -49,6 +49,10 @@ from sts2_env.gym_env.entity_encoding import (
     encode_entities,
     entities_from_bridge_state,
 )
+from sts2_env.gym_env.deck_features import (
+    DECK_FEATURE_SIZE,
+    encode_deck_features,
+)
 from sts2_env.gym_env.relic_potion_encoding import (
     RELIC_POTION_OBS_SIZE,
     encode_relics_and_potions,
@@ -96,7 +100,7 @@ class RunStateAdapter:
         self._combat = StateAdapter()
 
     def encode_observation(self, state: dict[str, Any]) -> np.ndarray:
-        """The 4038-dim observation, laid out exactly as run_env writes it."""
+        """The RUN_OBS_SIZE-dim observation, laid out exactly as run_env writes it."""
         obs = np.zeros(RUN_OBS_SIZE, dtype=np.float32)
 
         # Combat block. Only meaningful in combat; elsewhere it stays zero, which
@@ -113,6 +117,11 @@ class RunStateAdapter:
             **entities_from_bridge_state(state))
         idx += ENTITY_OBS_SIZE
 
+        # Deck quality features -- same block run_env writes.
+        deck = state.get("deck") or []
+        obs[idx:idx + DECK_FEATURE_SIZE] = encode_deck_features(deck)
+        idx += DECK_FEATURE_SIZE
+
         obs[idx:idx + RUN_LEVEL_SIZE] = encode_run_level(**run_level_from_bridge_state(state))
         idx += RUN_LEVEL_SIZE
 
@@ -128,6 +137,10 @@ class RunStateAdapter:
             relics_from_bridge_state(state),
             potion_slots_from_bridge_state(state),
         )
+
+        # Same clip the simulator applies so the two sides stay byte-identical.
+        from sts2_env.gym_env.run_env import OBS_VALUE_LOW, OBS_VALUE_HIGH
+        np.clip(obs, OBS_VALUE_LOW, OBS_VALUE_HIGH, out=obs)
         return obs
 
     def compute_action_mask(self, state: dict[str, Any]) -> np.ndarray:

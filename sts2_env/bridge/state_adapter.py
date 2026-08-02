@@ -163,9 +163,7 @@ class StateAdapter:
                 obs[idx + 4] = 1.0 if card.get("type", "") == CardTypeName.ATTACK else 0.0
             idx += CARD_FEATURES
 
-        # --- Pile summaries (6) ---
-        # Keep the last three pile-summary dimensions zeroed so the bridge
-        # matches gym_env/observation.py exactly.
+        # --- Pile summaries (3) + Hand sequencing signals (3) ---
         draw_count = combat.get("draw_pile_count", 0)
         discard_count = combat.get("discard_pile_count", 0)
         exhaust_count = combat.get("exhaust_pile_count", 0)
@@ -173,9 +171,14 @@ class StateAdapter:
         obs[idx] = draw_count / 20.0
         obs[idx + 1] = discard_count / 20.0
         obs[idx + 2] = exhaust_count / 20.0
-        obs[idx + 3] = 0.0
-        obs[idx + 4] = 0.0
-        obs[idx + 5] = 0.0
+        # Hand sequencing: total remaining damage, block, and playable count
+        # (replaces the previous reserved zeros)
+        total_hand_damage = sum(c.get("base_damage", 0) for c in hand)
+        total_hand_block = sum(c.get("base_block", 0) for c in hand)
+        playable_count = sum(1 for c in hand if c.get("playable", True))
+        obs[idx + 3] = total_hand_damage / 100.0
+        obs[idx + 4] = total_hand_block / 100.0
+        obs[idx + 5] = playable_count / MAX_HAND_SIZE
         idx += PILE_FEATURES
 
         # --- Enemies (5 * 13 = 65) ---

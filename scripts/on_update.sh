@@ -13,6 +13,8 @@
 #   2. Decompiles it, keeping the previous decompile so there is something to
 #      compare against.
 #   3. Diffs the two game builds -- the short list of what this patch did.
+#      Also writes an exhaustive changes.txt with every added, removed, and
+#      changed class for sharing or review.
 #   4. Diffs card values against the simulator.
 #   5. Diffs content inventory (cards, relics, monsters, ...) against the simulator.
 #   6. Reports content the simulator has no name for at all -- the enum members
@@ -191,6 +193,35 @@ if [ -n "$BASELINE" ]; then
     "$PYTHON" "$REPO/scripts/diff_decompiles.py" \
         --old "$BASELINE" --new "$DECOMPILE_DIR" --repo "$REPO" \
         --show-changed --json > "$OUT/patch-diff.json" || true
+
+    # ---------------------------------------------------------------------------
+    # Exhaustive human-readable changelog for sharing / review.
+    # ---------------------------------------------------------------------------
+    OLD_VERSION="$BASELINE"
+    OLD_STAMP="${BASELINE}/.source.json"
+    if [ -f "$OLD_STAMP" ]; then
+        OLD_VERSION="$("$PYTHON" -c \
+            'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("informational_version","unknown"))' \
+            "$OLD_STAMP" 2>/dev/null || echo "unknown")"
+    fi
+    {
+        echo "Slay the Spire 2 Patch Changes Report"
+        echo "Generated: $(date -Iseconds)"
+        echo "Old build: ${OLD_VERSION}"
+        echo "New build: ${VERSION_TAG}"
+        echo ""
+        echo "This report lists EVERY change between the two game builds."
+        echo "ADDED    = new content in this patch"
+        echo "REMOVED  = content deleted in this patch"
+        echo "CHANGED VALUES = card stats that moved (cost, damage, block, etc.)"
+        echo "CHANGED BEHAVIOUR = code changes that may affect gameplay logic"
+        echo "[sim has it]      = the simulator already implements this"
+        echo "[sim never had it] = the simulator has never seen this"
+        echo ""
+        "$PYTHON" "$REPO/scripts/diff_decompiles.py" \
+            --old "$BASELINE" --new "$DECOMPILE_DIR" --repo "$REPO" \
+            --show-changed
+    } > "$OUT/changes.txt"
 else
     echo "  nothing to compare against -- this decompile becomes the baseline."
     echo "  The next run of this script will show what changed."
@@ -247,6 +278,10 @@ What to do with this, in order:
      first DamageVar.
   4. patch-diff.txt ADDED and inventory.txt -- new content. Real work, not a
      mechanical edit: behaviour has to be written, not copied.
+
+  changes.txt is the exhaustive version of patch-diff.txt -- every single class
+  that changed, not just the summary. Good for sharing or for grepping when you
+  suspect a specific card or power was touched.
 EOF
     exit 1
 fi

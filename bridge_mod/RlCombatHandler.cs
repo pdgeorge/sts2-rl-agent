@@ -563,9 +563,19 @@ public class RlCombatHandler : IRoomHandler, IHandler
 
     private Dictionary<string, object> SerializeEnemy(Creature enemy)
     {
+        string enemyId;
+        try
+        {
+            enemyId = (enemy.IsMonster && enemy.Monster != null) ? enemy.Monster.Id.Entry : "UNKNOWN";
+        }
+        catch
+        {
+            enemyId = "UNKNOWN";
+        }
+
         var data = new Dictionary<string, object>
         {
-            ["id"] = enemy.IsMonster ? enemy.Monster!.Id.Entry : "UNKNOWN",
+            ["id"] = enemyId,
             ["hp"] = enemy.CurrentHp,
             ["max_hp"] = enemy.MaxHp,
             ["block"] = enemy.Block,
@@ -599,18 +609,18 @@ public class RlCombatHandler : IRoomHandler, IHandler
 
                     if (firstIntent is AttackIntent attackIntent)
                     {
-                        CombatState cs = (CombatState)enemy.CombatState;
-                        if (cs != null)
+                        try
                         {
-                            try
+                            CombatState? cs = enemy.CombatState as CombatState;
+                            if (cs != null)
                             {
                                 data["intent_damage"] = attackIntent.GetSingleDamage(
                                     cs.PlayerCreatures, enemy);
                                 data["intent_hits"] = attackIntent.Repeats > 0
                                     ? attackIntent.Repeats : 1;
                             }
-                            catch { }
                         }
+                        catch { }
                     }
                 }
             }

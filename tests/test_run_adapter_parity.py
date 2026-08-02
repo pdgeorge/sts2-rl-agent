@@ -36,7 +36,8 @@ from sts2_env.gym_env.run_level_encoding import (
 # and the run-level block, so these offsets moved when it was added. Derived from
 # the block sizes rather than hardcoded, but the sizes themselves are pinned in
 # test_entity_encoding, so a silent shift still fails there.
-_RUN_START = COMBAT_OBS_SIZE + ENTITY_OBS_SIZE
+from sts2_env.gym_env.deck_features import DECK_FEATURE_SIZE
+_RUN_START = COMBAT_OBS_SIZE + ENTITY_OBS_SIZE + DECK_FEATURE_SIZE
 RUN_SLICE = slice(_RUN_START, _RUN_START + RUN_LEVEL_SIZE)
 CHOICE_SLICE = slice(_RUN_START + RUN_LEVEL_SIZE,
                      _RUN_START + RUN_LEVEL_SIZE + CHOICE_OBS_SIZE)

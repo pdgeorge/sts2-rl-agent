@@ -132,6 +132,7 @@ def run_agent(
     max_runs: int = 1,
     on_run_end: "Callable[[dict[str, Any]], None] | None" = None,
     tell_cyra: bool = False,
+    combat_policy_path: str | None = None,
 ) -> None:
     """Main agent loop.
 
@@ -174,6 +175,18 @@ def run_agent(
             f"combat size ({COMBAT_OBS_SIZE}) nor the full-run size ({RUN_OBS_SIZE}). "
             "It was probably trained against a different observation layout."
         )
+
+    # Optional separate combat policy for hierarchical models.
+    combat_model = None
+    if combat_policy_path is not None:
+        combat_model = load_model(combat_policy_path)
+        c_expected = int(combat_model.observation_space.shape[0])
+        if c_expected != COMBAT_OBS_SIZE:
+            raise ValueError(
+                f"Combat policy expects {c_expected} observation dims, but combat "
+                f"observations are {COMBAT_OBS_SIZE}."
+            )
+        logger.info("Separate combat policy loaded from %s", combat_policy_path)
 
     logger.info("Connecting to STS2 at %s:%d...", host, port)
 
@@ -351,8 +364,16 @@ def run_agent(
 
                 if phase in Phase.COMBAT_PHASES:
                     # ---- Combat: use trained model ----
-                    obs = adapter.encode_observation(state)
-                    mask = adapter.compute_action_mask(state)
+                    # Hierarchical models may delegate combat to a separate policy.
+                    combat_adapter = adapter
+                    combat_policy = model
+                    if combat_model is not None:
+                        combat_policy = combat_model
+                        if run_adapter is not None:
+                            combat_adapter = run_adapter._combat
+
+                    obs = combat_adapter.encode_observation(state)
+                    mask = combat_adapter.compute_action_mask(state)
 
                     # Ensure at least one action is valid
                     if mask.sum() == 0:
@@ -360,14 +381,14 @@ def run_agent(
                         client.end_turn()
                         continue
 
-                    action, _states = model.predict(
+                    action, _states = combat_policy.predict(
                         obs,
                         action_masks=mask,
                         deterministic=deterministic,
                     )
                     action_int = int(action)
 
-                    decoded = adapter.decode_action(action_int, state)
+                    decoded = combat_adapter.decode_action(action_int, state)
 
                     if verbose:
                         _log_combat_action(state, action_int, decoded)
@@ -626,10 +647,35 @@ def _pick_shop_option(state: dict[str, Any]) -> int:
 
 
 def _pick_event_option(state: dict[str, Any]) -> int:
-    """Choose the first enabled event option."""
+    """Choose an event option, avoiding HP-costing choices when low on health."""
     options = _enabled_options(state)
     if not options:
         return DEFAULT_CHOICE_INDEX
+
+    hp_ratio = _read_hp_ratio(state)
+    is_low_hp = hp_ratio is not None and hp_ratio < 0.5
+
+    # Keywords that suggest an option costs HP
+    harmful_keywords = ("damage", "hurt", "lose", "sacrifice", "pain", "blood",
+                        "health", "hp", "injure", "wound", "curse")
+    # Keywords that suggest an option is safe to skip
+    safe_keywords = ("leave", "skip", "ignore", "walk", "refuse", "decline",
+                     "depart", "exit", "nothing")
+
+    for i, option in enumerate(options):
+        opt_id = _canonical_text(option.get("id", ""))
+        opt_text = _canonical_text(option.get("text", option.get("description", "")))
+        combined = opt_id + opt_text
+
+        # When low HP, skip options that look harmful
+        if is_low_hp and any(kw in combined for kw in harmful_keywords):
+            continue
+
+        # Prefer safe exit options when low HP
+        if is_low_hp and any(kw in combined for kw in safe_keywords):
+            return _read_index(option, i)
+
+    # Default: first remaining option
     return _read_index(options[0], DEFAULT_CHOICE_INDEX)
 
 
@@ -769,8 +815,11 @@ def _reconnect_with_retry(
             if attempt < max_retries:
                 time.sleep(delay)
             else:
-                logger.error("Failed to reconnect after %d attempts. Exiting.", max_retries)
-                sys.exit(1)
+                logger.error("Failed to reconnect after %d attempts.", max_retries)
+                raise ConnectionError(
+                    f"Could not reconnect to STS2 bridge after {max_retries} attempts. "
+                    "The game may have crashed or the bridge mod is no longer running."
+                )
 
 
 def _log_combat_action(
@@ -906,6 +955,15 @@ def main() -> None:
             "actions as the model's."
         ),
     )
+    parser.add_argument(
+        "--combat-policy",
+        default=None,
+        help=(
+            "Optional separate combat policy (.zip). When the main model is a full-run "
+            "model, this overrides combat decisions so the main model only handles "
+            "map, rewards, shop, rest, and events."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -927,6 +985,7 @@ def main() -> None:
         replay_factory=args.replay_factory,
         speed=args.speed,
         allow_random_fallback=args.allow_random_fallback,
+        combat_policy_path=args.combat_policy,
     )
 
 

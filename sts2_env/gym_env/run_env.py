@@ -28,9 +28,13 @@ for the current game phase are unmasked:
 
 Observation space
 -----------------
-Flat ``float32`` vector of size ``RUN_OBS_SIZE`` (151).
+Flat ``float32`` vector of size ``RUN_OBS_SIZE``.
 
 * Combat observation (131) -- reuses :func:`encode_observation`.
+* Entity identity (1,690) -- powers, hand, deck, enemies via feature hashing.
+* Deck quality features (32) -- pre-computed synergy signals (block generation,
+  damage scaling, draw density, archetype indicators) so the meta-policy does
+  not have to discover deckbuilding from scratch.
 * Run-level state (20):
   - current_act, total_floor, and act_floor normalized by run scales (3)
   - player HP ratio and normalized gold                             (2)
@@ -38,7 +42,7 @@ Flat ``float32`` vector of size ``RUN_OBS_SIZE`` (151).
   - num_potions / max_potion_slots (or 0)                        (2)
   - phase one-hot (8 phases)                                     (8)
   - ascension_level / 20                                         (1)
-  - is_elite flag, is_boss flag                                  (2)
+  - is_elite flag, is_boss flag                                  (2
 
 Reward
 ------
@@ -90,6 +94,10 @@ from sts2_env.gym_env.choice_encoding import (
     CHOICE_OBS_SIZE,
     choices_from_sim_actions,
     encode_choices,
+)
+from sts2_env.gym_env.deck_features import (
+    DECK_FEATURE_SIZE,
+    encode_deck_features,
 )
 from sts2_env.gym_env.observation import OBS_SIZE as COMBAT_OBS_SIZE, encode_observation
 from sts2_env.core.rng import INT_MAX_EXCLUSIVE
@@ -223,12 +231,10 @@ NUM_PHASES = len(_PHASE_INDEX)
 # ---------------------------------------------------------------------------
 
 _RUN_STATE_SIZE = 20   # see module docstring
-# 131 + 20 + 126 + 619 = 896. The relic/potion block is the largest single part
-# on purpose: it is identity, not summary. relic_count stays in the run-level
-# block because "how many" is still a useful cheap feature, but it was all the
-# agent had, and no amount of it distinguishes Snecko Eye from Ice Cream.
-RUN_OBS_SIZE = (COMBAT_OBS_SIZE + ENTITY_OBS_SIZE + _RUN_STATE_SIZE
-                + CHOICE_OBS_SIZE + RELIC_POTION_OBS_SIZE)
+# The relic/potion block is identity, not summary. relic_count stays in the
+# run-level block because "how many" is still a useful cheap feature.
+RUN_OBS_SIZE = (COMBAT_OBS_SIZE + ENTITY_OBS_SIZE + DECK_FEATURE_SIZE
+                + _RUN_STATE_SIZE + CHOICE_OBS_SIZE + RELIC_POTION_OBS_SIZE)
 
 DEFAULT_MAX_STEPS = 10_000
 DEFAULT_MAX_COMBAT_TURNS = 200
@@ -295,6 +301,7 @@ class STS2RunEnv(gymnasium.Env):
         max_combat_turns: int = DEFAULT_MAX_COMBAT_TURNS,
         render_mode: str | None = None,
         gamma: float = 0.99,
+        enable_reward_shaping: bool = False,
     ):
         super().__init__()
 
@@ -314,6 +321,7 @@ class STS2RunEnv(gymnasium.Env):
         self.gamma = gamma
         self.max_combat_turns = max_combat_turns
         self.render_mode = render_mode
+        self.enable_reward_shaping = enable_reward_shaping
 
         # Mutable state -- set during reset()
         self._mgr: RunManager | None = None
@@ -357,6 +365,12 @@ class STS2RunEnv(gymnasium.Env):
         room_before = self._mgr._current_room_type
         in_combat_before = phase == RunManager.PHASE_COMBAT
         actions = self._mgr.get_available_actions()
+
+        # ---- reward shaping: snapshot deck before card reward ----
+        deck_features_before = None
+        if self.enable_reward_shaping and phase == RunManager.PHASE_CARD_REWARD:
+            deck_features_before = encode_deck_features(
+                self._mgr.run_state.player.deck)
 
         # ---- dispatch action to RunManager ----
         try:
@@ -412,6 +426,13 @@ class STS2RunEnv(gymnasium.Env):
                     reward += ELITE_WON
                 elif room_before == RoomType.BOSS:
                     reward += BOSS_WON
+
+            # Reward shaping for card reward choices.
+            if deck_features_before is not None:
+                deck_features_after = encode_deck_features(
+                    self._mgr.run_state.player.deck)
+                reward += self._card_reward_shaping(
+                    deck_features_before, deck_features_after, action)
 
         obs = self._encode_obs()
         info = self._build_info()
@@ -714,6 +735,68 @@ class STS2RunEnv(gymnasium.Env):
         mgr.take_action({"action": "collect"})
 
     # ------------------------------------------------------------------
+    # Reward shaping
+    # ------------------------------------------------------------------
+
+    def _card_reward_shaping(
+        self,
+        before: np.ndarray,
+        after: np.ndarray,
+        action: int,
+    ) -> float:
+        """Generic resource-flow synergy reward for card reward choices.
+
+        Rewards deck balance and resource complementarity without hardcoding
+        archetypes. The policy learns "my deck generates block, this card
+        consumes it" or "my deck draws a lot, this expensive card benefits"
+        without us naming the archetype.
+        """
+        shaping = 0.0
+
+        # 1. Curse penalty
+        curse_delta = after[28] - before[28]
+        if curse_delta > 0:
+            shaping -= 0.8 * curse_delta
+
+        # 2. Deck balance bonus — reward fixing type imbalances
+        # If deck was attack-heavy (>60%) and we added a skill
+        if before[24] > 0.60 and after[25] > before[25]:
+            shaping += 0.15
+        # If deck was skill-heavy (>50%) and we added an attack
+        if before[25] > 0.50 and after[24] > before[24]:
+            shaping += 0.15
+        # If deck had no powers and we added one
+        if before[26] < 0.05 and after[26] > before[26]:
+            shaping += 0.10
+
+        # 3. Resource-flow synergy — reward completing production/consumption loops
+        # Block synergy: deck generates block, card is a block consumer
+        if before[0] > 0.15 and after[10] > before[10]:
+            shaping += 0.30
+
+        # Scaling synergy: deck has strength sources, card adds damage output
+        if before[7] > 0.05 and after[5] > before[5]:
+            shaping += 0.20
+
+        # Draw synergy: deck draws a lot, card is expensive (can be played)
+        if before[14] > 0.10 and after[19] > before[19]:
+            shaping += 0.15
+
+        # Energy synergy: deck generates energy, card is expensive
+        if before[15] > 0.05 and after[19] > before[19]:
+            shaping += 0.15
+
+        # 4. Cost efficiency — adding low-cost cards to a slow deck is good
+        if before[21] > 0.50 and after[20] > before[20]:
+            shaping += 0.10
+
+        # 5. Anti-synergy — adding expensive cards to an already slow deck
+        if before[21] > 0.60 and after[21] > before[21]:
+            shaping -= 0.10
+
+        return shaping
+
+    # ------------------------------------------------------------------
     # Shop helpers
     # ------------------------------------------------------------------
 
@@ -763,6 +846,14 @@ class STS2RunEnv(gymnasium.Env):
         obs[idx:idx + ENTITY_OBS_SIZE] = encode_entities(
             **entities_from_combat(combat, mgr.run_state.player.deck))
         idx += ENTITY_OBS_SIZE
+
+        # ---- Deck quality features (32 dims) ----
+        # Pre-computed synergy signals so the meta-policy does not have to
+        # discover deckbuilding from scratch. Features encode block generation,
+        # damage scaling, draw density, exhaust synergy, and archetype indicators.
+        obs[idx:idx + DECK_FEATURE_SIZE] = encode_deck_features(
+            mgr.run_state.player.deck)
+        idx += DECK_FEATURE_SIZE
 
         # ---- Run-level state (20 dims) ----
         # Built by the shared encoder, not here. state_adapter needs the same 20
