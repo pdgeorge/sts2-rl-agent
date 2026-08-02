@@ -11,14 +11,12 @@ from gymnasium import spaces
 from sts2_env.cards.base import reset_instance_counter
 from sts2_env.cards.ironclad import create_ironclad_starter_deck
 from sts2_env.core.combat import CombatState
-from sts2_env.core.constants import ACTION_END_TURN, ACTION_SPACE_SIZE, IRONCLAD_STARTING_HP
+from sts2_env.core.constants import ACTION_SPACE_SIZE, IRONCLAD_STARTING_HP
 from sts2_env.encounters.act1 import ALL_ACT1_ENCOUNTERS, EncounterSetup
 from sts2_env.core.rng import INT_MAX_EXCLUSIVE, Rng
 from sts2_env.gym_env.action_space import (
-    action_to_card_and_target,
-    action_to_potion_and_target,
+    apply_action,
     get_action_mask,
-    is_potion_action,
 )
 from sts2_env.gym_env.observation import OBS_SIZE, encode_observation
 from sts2_env.gym_env.reward import compute_reward, potential
@@ -107,30 +105,7 @@ class STS2CombatEnv(gymnasium.Env):
         # CombatState, and turn_count is what the per-turn cost is charged on.
         prev_potential = potential(self.combat)
         prev_turn_count = self.combat.turn_count
-        acted = True
-        if self.combat.pending_choice is not None:
-            if action == ACTION_END_TURN:
-                self.combat.resolve_pending_choice(None)
-            else:
-                self.combat.resolve_pending_choice(action - 1)
-        else:
-            if action == ACTION_END_TURN:
-                self.combat.end_player_turn()
-            elif is_potion_action(action):
-                slot_idx, target_idx = action_to_potion_and_target(action)
-                success = (
-                    slot_idx is not None
-                    and self.combat.use_potion(slot_idx, target_index=target_idx)
-                )
-                if not success:
-                    logger.debug("Ignored invalid potion action %d", action)
-                acted = bool(success)
-            else:
-                hand_idx, target_idx = action_to_card_and_target(action)
-                success = hand_idx is not None and self.combat.play_card(hand_idx, target_idx)
-                if not success:
-                    logger.debug("Ignored invalid card action %d", action)
-                acted = bool(success)
+        acted = apply_action(self.combat, action)
 
         # A rejected action changes nothing -- including turn_count, which is what
         # truncation is keyed to. So a policy that keeps choosing one runs forever:

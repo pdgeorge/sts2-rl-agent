@@ -1,11 +1,23 @@
-"""Action space and masking logic."""
+"""Action space and masking logic.
+
+This module owns the meaning of an action index, in one place. Both the gym env
+and the search policy apply actions through :func:`apply_action` rather than
+each translating indices themselves -- "simulator and bridge agree on the
+observation but disagree on what an action index means" is a documented bug
+class here (see docs/KNOWN_ISSUES.md), and it produces no error on either side.
+One definition is the only defence.
+"""
 
 from __future__ import annotations
+
+import logging
 
 import numpy as np
 
 from sts2_env.core.combat import CombatState
 from sts2_env.core.creature import Creature
+
+logger = logging.getLogger(__name__)
 from sts2_env.core.enums import PotionTargetType, TargetType
 from sts2_env.core.constants import (
     ACTION_END_TURN,
@@ -55,6 +67,44 @@ def action_to_potion_and_target(action: int) -> tuple[int | None, int | None]:
     if target_offset == 0:
         return slot_idx, None
     return slot_idx, target_offset - 1
+
+
+def apply_action(combat: CombatState, action: int) -> bool:
+    """Apply one action index to ``combat``, mutating it in place.
+
+    Returns whether the action actually did anything. A ``False`` return means
+    the action was rejected by the engine and the state is unchanged -- which
+    should be impossible when the caller respected the action mask, so it is a
+    mask bug rather than a legal no-op. Callers must not ignore it: a rejected
+    action does not advance ``turn_count``, so a policy that keeps choosing one
+    never terminates and never truncates.
+    """
+    if combat.pending_choice is not None:
+        if action == ACTION_END_TURN:
+            combat.resolve_pending_choice(None)
+        else:
+            combat.resolve_pending_choice(action - 1)
+        return True
+
+    if action == ACTION_END_TURN:
+        combat.end_player_turn()
+        return True
+
+    if is_potion_action(action):
+        slot_idx, target_idx = action_to_potion_and_target(action)
+        success = (
+            slot_idx is not None
+            and combat.use_potion(slot_idx, target_index=target_idx)
+        )
+        if not success:
+            logger.debug("Ignored invalid potion action %d", action)
+        return bool(success)
+
+    hand_idx, target_idx = action_to_card_and_target(action)
+    success = hand_idx is not None and combat.play_card(hand_idx, target_idx)
+    if not success:
+        logger.debug("Ignored invalid card action %d", action)
+    return bool(success)
 
 
 def get_action_mask(combat: CombatState, owner: Creature | None = None) -> np.ndarray:
