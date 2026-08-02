@@ -187,6 +187,85 @@ None of that requires a runtime dependency on the dataset.
 
 ---
 
+## Next session: status cards, and the exception a policy cannot learn
+
+### 1. Statuses and curses should say what they are and what they do
+
+Today 37 of 577 cards (6.4%) render with no mechanical line, all statuses and
+curses. `WOUND` renders as little more than `unplayable`, and `BURN` renders
+almost identically to it despite costing you 2 HP every turn it sits in hand.
+
+Wanted, and deliberately simple: an explicit `status` marker plus the effect in
+plain terms.
+
+```
+BURN | Status | Status | status | cost -1 | target NONE
+keywords: unplayable
+status: deals 2 damage at end of turn while in hand
+```
+
+The work is finding where each status's behaviour lives. It is *not* in any
+`_CARD_*_HOOKS` registry -- that was checked; `BURN` appears in none of them --
+so it is special-cased in the combat engine. First task is to locate those paths
+and decide whether to describe them from a small explicit table (simple, needs
+maintenance) or by introspecting the engine (no maintenance, more work).
+
+Given how few cards are affected and how stable statuses are between patches, a
+small explicit table is probably the right trade here -- but say so out loud in
+the code, because it is the one place in this design that can drift.
+
+### 2. The boss that rewards playing status cards
+
+**The problem shape, which matters more than the specific boss.** "Never play
+status cards" is a strong, globally-correct prior. Against this one encounter it
+is wrong and fatal. A trained policy cannot learn the exception:
+
+- the encounter appears at most once per run, and only if the agent survives
+  that deep -- at a mean of 9.7 floors it essentially never sees it
+- overturning a heavily-reinforced prior needs many samples, and this is the
+  encounter that supplies the fewest
+- being confidently wrong is the worst failure mode for the Cyra seam, because
+  the top-two margin will be *wide* -- she will sound certain while dying
+
+**First task: identify the boss and its exact mechanic.** A grep found monsters
+that *add* status cards (`status_intent`, `add_status_cards_to_discard`) but none
+that reward *playing* them, so this needs the name before anything else.
+
+**Options, honestly assessed.**
+
+*Mod it out.* Simple, and legitimate as an explicit scoping decision -- but only
+if it is modded in the same place the agent plays. Removing it from the simulator
+alone is worse than doing nothing: the agent then meets it live having never
+trained against it. Removing it from the real game via the bridge mod is
+consistent, but means no run is a legitimate clear, which needs to be said in
+`MODELS.md` rather than quietly assumed.
+
+*Make the mechanic visible.* The embedding work already planned for relics and
+powers applies here: if the boss's power is rendered as text and embedded, the
+observation can carry "this enemy rewards status plays" instead of requiring the
+agent to discover it from data it will never have. This does not guarantee the
+agent uses it, but it moves the problem from impossible to learnable.
+
+*Let search handle it.* A rollout policy simulates playing the status, sees the
+result, and plays it correctly with **zero training and no rare-data problem**.
+This is the strongest concrete argument yet for keeping search in the toolkit,
+and it reframes what search is for: not a better everyday player, but the thing
+that covers exceptions a trained policy structurally cannot. It is also exactly
+the gap-gate case -- the trained policy is confident, search disagrees, and the
+disagreement is the signal worth surfacing.
+
+*Targeted curriculum.* Oversample that encounter during training. Cheap,
+standard, testable, and worth trying before anything drastic.
+
+**Recommendation for MVP: do not mod it out yet.** The agent dies around floor 9;
+a floor-50 boss is not the binding constraint, and modding buys nothing now while
+introducing a divergence between simulator and game that this project has
+otherwise worked hard to avoid. Log it as a known loss, measure how often runs
+even reach it, and revisit when they do. Keep the mod as the fallback if it turns
+out to be the last thing standing between the agent and a first win.
+
+---
+
 ## Rules that must not be broken
 
 1. **Never refit the PCA.** Fit once, commit the projection matrix, project all future cards through it. Refitting rotates the space, silently changes every existing vector, and breaks every checkpoint with no error. Same failure shape as the enum-index bug that started this.
