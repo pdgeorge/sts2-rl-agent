@@ -38,6 +38,114 @@ selector may claim `can_skip`.
 
 ---
 
+## Intent damage means different things in the simulator and the bridge
+
+**Severity:** High (silent observation mismatch; affects every model trained so far)
+
+**Status:** Open
+
+The same observation slot carries a **base** number in training and a
+**modifier-adjusted** number in live play.
+
+Bridge, `bridge_mod/RlCombatHandler.cs:617`:
+
+```csharp
+data["intent_damage"] = attackIntent.GetSingleDamage(cs.PlayerCreatures, enemy);
+```
+
+That is the game's own calculation, evaluated *against the player creatures*, so
+it applies Vulnerable on the player, Strength and Weak on the attacker -- the
+number a human sees on the intent.
+
+Simulator, `sts2_env/monsters/intents.py:15`:
+
+```python
+damage: int = 0
+```
+
+A static literal fixed when the move is defined. Applying 3 Vulnerable to the
+player and re-reading the intent gives **3 -> 3, unchanged**.
+
+**Consequence.** `observation.py` writes `intent.damage / 30.0` and
+`state_adapter.py` writes `enemy["intent_damage"] / 30.0` into the same column.
+A model learns that column as raw base damage and then reads adjusted damage
+from the real game. Under Vulnerable the live value is 1.5x what training ever
+associated with the same situation. No error is raised on either side -- the
+"silently mistranslated" row in the table above, in a new place.
+
+**Also note** that summing visible intents is not a safe estimate of incoming
+damage even within the simulator: a probe on seed 0 took 20 HP in one enemy turn
+while the individual intent read 3, because the total spans every enemy and all
+modifiers.
+
+**Implications for any incoming-damage calculation.** Do not read the intent
+number to decide how much block is needed. It is correct live and wrong in the
+simulator, which is the worst arrangement -- it would behave when tested by hand
+and be silently wrong in the environment that generates all training data.
+Simulate the enemy turn on a clone (`clone_combat`, then `end_player_turn`) and
+read the HP actually lost. That is exact on both sides and needs no damage
+formula to maintain across patches.
+
+**Fix options, none taken yet.** Either compute the intent through the damage
+pipeline in the simulator so it matches the game, or have the bridge send the
+unmodified base. Matching the game is the better target, since the intent is
+what a player sees, but it is the larger change.
+
+---
+
+## `copy.deepcopy` does not produce an independent CombatState
+
+**Severity:** High (silent state corruption for anything that duplicates a combat)
+
+**Status:** Contained by `sts2_env.search.cloning.clone_combat`; the underlying
+monster pattern is unchanged.
+
+Monster factories create a `Creature` and close over it:
+
+```python
+creature = Creature(max_hp=hp, monster_id=AXE_RUBY_RAIDER_ID)
+
+def swing(combat: CombatState) -> None:
+    _deal_damage_to_player(combat, creature, swing_dmg)
+    _gain_block(creature, swing_block, combat)   # closure variable
+```
+
+`copy.deepcopy` treats a function as atomic and returns *the same function
+object*, closure cells included. So a deep-copied combat's `MoveState.effect_fn`
+is still bound to the **original** combat's creature. The clone's monster reads
+its strength from the original, gains block on the original, and fires on-attack
+hooks against the original. Both combats corrupt each other.
+
+**How it presents.** The copy compares equal at copy time. Drive the original
+and the copy through an identical action sequence and they diverge several
+actions later -- observed at action 12 on seed 7, where one enemy gains 10 block
+in the original and 0 in the clone. The amount changes depending on which copy
+you step first, because they are fighting over one creature. No exception, no
+log line. Exactly the "everything looks fine but a decision is silently
+mistranslated" shape as the row in the table above.
+
+**Why it matters beyond search.** Any deck-strength or route evaluation built on
+cloned states measures a fight whose monsters are partly somewhere else, and the
+error reads as ordinary variance. It would have quietly invalidated the results
+rather than failing.
+
+**Containment.** `clone_combat()` deep-copies with an explicit memo, then walks
+every copied object and rebuilds any function whose closure cells or defaults
+still point at something that was copied. Rebuilding rather than mutating is
+required: `cell_contents` is writable, and writing to it would rebind the
+original monster's move too. Costs ~0.6 ms standalone and ~3.2 ms inside a run,
+against ~0.4 ms and ~2.4 ms for the unsafe `deepcopy`.
+
+**The deeper fix, not taken.** Rewriting the ~121 monster factories to resolve
+their creature from `combat` instead of closing over it would make the simulator
+clone-safe by construction. That is a large change across the most
+parity-sensitive code in the project, so it is recorded here rather than
+attempted alongside the feature that found it.
+
+**Use `clone_combat`, never `copy.deepcopy`, on a `CombatState`.**
+
+---
+
 ## Fixed Issues
 
 ### 1. Energy always displayed as 3 with CardCmd.AutoPlay
