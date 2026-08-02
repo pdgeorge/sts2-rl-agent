@@ -31,3 +31,6 @@ include = ["sts2_env*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "slow: behavioural tests that simulate many combats (deselect with '-m \"not slow\"')",
+]
