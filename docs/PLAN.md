@@ -227,9 +227,43 @@ is wrong and fatal. A trained policy cannot learn the exception:
 - being confidently wrong is the worst failure mode for the Cyra seam, because
   the top-two margin will be *wide* -- she will sound certain while dying
 
-**First task: identify the boss and its exact mechanic.** A grep found monsters
-that *add* status cards (`status_intent`, `add_status_cards_to_discard`) but none
-that reward *playing* them, so this needs the name before anything else.
+**IDENTIFIED: The Insatiable, the Act 2 boss.** The mechanic, read from
+`sts2_env/monsters/act2.py` and `sts2_env/powers/remaining_c.py`:
+
+1. `liquify_ground` puts `SandpitPower(4)` on the boss, targeting the player, and
+   adds 3 `FRANTIC_ESCAPE` to the draw pile and 3 to the discard.
+2. `SandpitPower.after_side_turn_start` decrements the counter every enemy turn.
+   **At zero it calls `_kill_target` -- the player dies outright, at any HP.**
+3. `FRANTIC_ESCAPE` is cost 1, `STATUS`, and -- unlike `INFECTION` and the other
+   statuses -- **playable**. Playing it increments the sandpit counter by 1,
+   buying one more turn.
+4. Each play raises that card's own cost by 1 (`cost_increase`), so stalling gets
+   progressively more expensive and the boss still has to be killed.
+
+This is worse than "statuses are situationally good". It is **a timer you must
+feed or die**, and three consequences follow:
+
+* A policy carrying a "never play a status card" prior loses **100%** of these
+  fights, at full HP, having played correctly by every rule it learned.
+* **The reward function is blind to it.** Combat shaping is
+  `phi = HP_WEIGHT*player_hp_frac - ENEMY_WEIGHT*enemy_hp_frac`. HP stays full
+  until the instant of death, so there is no gradient warning of anything --
+  neither the terminal signal nor the shaping can teach the lesson before it is
+  fatal. This is not a sparse-reward problem, it is a *no-signal-at-all* problem.
+* **Shallow search would miss it too.** The kill lands 4 enemy turns out, so a
+  rollout depth of 1-3 rounds -- the design favoured earlier for its low noise --
+  never simulates far enough to see the death. Search only solves this at depth
+  >= 4-5 rounds. Concrete evidence that horizon depth is task-dependent and that
+  a single fixed shallow depth has a real, lethal failure mode.
+
+At depth 5+ with a rollout policy that sometimes plays legal cards, search solves
+it immediately and without training: rollouts that play `FRANTIC_ESCAPE` survive,
+rollouts that do not die. That is about as clean a signal as this project has.
+
+**Not yet the binding constraint, and now with numbers.** The Act 1 boss sits
+around floor 17 and the Act 2 boss around floor 34. `alpha` averages 9.7 floors
+with a best single run of 29, so **no run has ever reached The Insatiable**. It
+cannot be costing anything today. Revisit when runs clear Act 1 reliably.
 
 **Options, honestly assessed.**
 
@@ -257,12 +291,17 @@ disagreement is the signal worth surfacing.
 *Targeted curriculum.* Oversample that encounter during training. Cheap,
 standard, testable, and worth trying before anything drastic.
 
-**Recommendation for MVP: do not mod it out yet.** The agent dies around floor 9;
-a floor-50 boss is not the binding constraint, and modding buys nothing now while
-introducing a divergence between simulator and game that this project has
-otherwise worked hard to avoid. Log it as a known loss, measure how often runs
-even reach it, and revisit when they do. Keep the mod as the fallback if it turns
-out to be the last thing standing between the agent and a first win.
+**Recommendation for MVP: do not mod it out yet.** No run has reached floor 34,
+so this costs nothing today, and modding would introduce exactly the kind of
+simulator/game divergence this project has otherwise worked hard to avoid. Log it
+as a known loss, measure how often runs reach it, revisit when they do. Keep the
+mod as the fallback if it ever becomes the last thing between the agent and a
+first win.
+
+The cheap partial fix, worth doing far earlier than any of this: make
+`FRANTIC_ESCAPE` render as *playable* and say what playing it does. It is already
+distinguishable from every other status by being the only one with a cost and no
+`unplayable` keyword -- the card text template just has to say so.
 
 ---
 
