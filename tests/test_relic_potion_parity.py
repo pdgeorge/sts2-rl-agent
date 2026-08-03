@@ -35,10 +35,15 @@ def _bridge_obs(**state):
 
 
 def test_the_block_is_where_both_sides_think_it_is():
-    """Pinned: 131 combat + 1690 identity + 32 deck features + 20 run-level + 126 choices."""
+    """Pinned: 131 combat + 1893 identity + 32 deck features + 20 run-level + 126 choices.
+
+    Identity grew from 1690 to 1893 at layout v2, when card identity moved from
+    feature hashing to frozen text embeddings: the hand block became per-slot
+    (10 x 65) rather than a 256-bucket bag, and the deck block became a pooled 65.
+    """
     from sts2_env.gym_env.deck_features import DECK_FEATURE_SIZE
-    assert BLOCK_START == 1967 + DECK_FEATURE_SIZE
-    assert RUN_OBS_SIZE == 2383
+    assert BLOCK_START == 2170 + DECK_FEATURE_SIZE
+    assert RUN_OBS_SIZE == 2586
 
 
 def test_the_simulators_starting_relic_matches_the_bridge():

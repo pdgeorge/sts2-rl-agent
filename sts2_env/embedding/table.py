@@ -18,22 +18,35 @@ alternative -- refusing to start -- was considered and rejected: a single unknow
 card would block a run, and the person who forgot to sync is most likely to find
 out about it five minutes before going live.
 
-WHAT THIS DOES NOT DO
+NAME FORMS
 
-No name aliasing. The table is generated from ``CardId`` members by this repo, so
-keys match exactly by construction. The suffix-alias dance in ``trace_delta`` and
-``sync_content`` exists for reconciling *external* naming, which is precisely the
-dependency this design avoids.
+Rows are keyed by ``CardId.name``, but lookups arrive in two shapes: the
+simulator passes ``CardId`` enums, and the bridge passes whatever string the game
+sent (``"Bash"``, ``"STRIKE_IRONCLAD"``, possibly with punctuation). Both must
+land on the same row or the live agent reads a different card than training did
+-- silently, since the observation is still a valid vector.
+
+So the index carries a canonical alias per row: uppercased, non-alphanumerics
+stripped, matching ``entity_encoding._canonical``. Exact matches win; the
+canonical form is the fallback. Aliases are only added where they do not collide,
+because a collision would quietly merge two cards.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
+
+
+def canonical_name(name: object) -> str:
+    """Fold naming conventions to one key. Must match entity_encoding._canonical."""
+    name = getattr(name, "name", name)
+    return re.sub(r"[^A-Z0-9]", "", str(name).upper())
 
 DEFAULT_TABLE_PATH = Path("data/card_embeddings/v1")
 
@@ -52,10 +65,17 @@ class CardEmbeddingTable:
     index: dict[str, int]        # CardId.name -> row
     manifest: dict
 
-    def vector(self, card_id) -> tuple[np.ndarray, float]:
-        """``(vector, is_known)`` for a card. Never raises on an unknown card."""
+    def row_for(self, card_id) -> int | None:
+        """Row index for a card, exact match first then canonical fallback."""
         name = getattr(card_id, "name", str(card_id))
         row = self.index.get(name)
+        if row is not None:
+            return row
+        return self.index.get(canonical_name(name))
+
+    def vector(self, card_id) -> tuple[np.ndarray, float]:
+        """``(vector, is_known)`` for a card. Never raises on an unknown card."""
+        row = self.row_for(card_id)
         if row is None:
             return np.zeros(self.dims, dtype=np.float32), 0.0
         return self.vectors[row], 1.0
@@ -76,9 +96,9 @@ class CardEmbeddingTable:
         origin, and the fraction that were known is reported so the network can
         tell a confidently-empty deck from an unrecognised one.
         """
-        rows = [self.index[n] for n in
-                (getattr(c, "name", str(c)) for c in card_ids) if n in self.index]
-        total = sum(1 for _ in card_ids)
+        card_ids = list(card_ids)
+        rows = [row for row in (self.row_for(c) for c in card_ids) if row is not None]
+        total = len(card_ids)
         if not rows:
             return np.zeros(self.dims + IS_KNOWN_DIMS, dtype=np.float32)
         mean = self.vectors[rows].mean(axis=0)
@@ -116,9 +136,26 @@ def load_table(path: str | Path = DEFAULT_TABLE_PATH) -> CardEmbeddingTable:
             f"{vectors.shape[1]}. Rebuild it."
         )
 
+    index = {name: row for row, name in enumerate(names)}
+
+    # Canonical aliases for the bridge's name forms, added only where they do not
+    # collide with an existing key or with each other. A colliding alias would
+    # quietly merge two cards into one row, which is the exact failure the
+    # embeddings are meant to remove.
+    collisions: dict[str, int] = {}
+    for row, name in enumerate(names):
+        alias = canonical_name(name)
+        if alias in index:
+            continue
+        collisions[alias] = collisions.get(alias, 0) + 1
+    for row, name in enumerate(names):
+        alias = canonical_name(name)
+        if alias not in index and collisions.get(alias) == 1:
+            index[alias] = row
+
     return CardEmbeddingTable(
         dims=int(manifest["dims"]),
         vectors=vectors,
-        index={name: row for row, name in enumerate(names)},
+        index=index,
         manifest=manifest,
     )

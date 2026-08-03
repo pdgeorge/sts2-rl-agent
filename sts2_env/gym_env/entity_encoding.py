@@ -25,8 +25,13 @@ from typing import Any
 import numpy as np
 
 from sts2_env.core.constants import MAX_HAND_SIZE as MAX_HAND_SLOTS
+from sts2_env.embedding.table import load_table
 from sts2_env.gym_env.hashing import (
+    CARD_EMBED_DIMS,
+    CARD_SLOT_WIDTH,
+    DECK_CARD_BLOCK,
     DECK_CARD_HASHER,
+    HAND_CARD_BLOCK,
     ENEMY_IDENTITY_HASHER,
     ENEMY_POWER_HASHER,
     HAND_CARD_HASHER,
@@ -40,6 +45,25 @@ from sts2_env.gym_env.hashing import (
 
 # Exported for backward compat with tests and callers that import the size.
 # The old multi-hot sizes (POWER_VEC_SIZE, CARD_SET_SIZE, etc.) are removed.
+
+
+def _table():
+    """The frozen card table, loaded once.
+
+    Lazy so importing this module does not require the artifact, but encoding
+    does. The width assertion is the guard against a table built at a different
+    dimensionality: without it a 32-dim table would produce a correctly-shaped
+    but wrongly-strided observation, and every card would read as a blend of
+    itself and its neighbour.
+    """
+    table = load_table()
+    if table.width != CARD_SLOT_WIDTH:
+        raise ValueError(
+            f"card embedding table is {table.dims} dims (width {table.width}), "
+            f"but this build expects {CARD_EMBED_DIMS} (width {CARD_SLOT_WIDTH}). "
+            f"Rebuild the table or bump the observation layout."
+        )
+    return table
 
 
 def _canonical(name: object) -> str:
@@ -108,15 +132,41 @@ def encode_monster(slot: int, monster_id: object) -> np.ndarray:
 
 
 def encode_card_set(card_names: Iterable[Any]) -> np.ndarray:
-    """256 hashed buckets encoding which cards are present."""
-    names = [_card_key(c) for c in card_names or () if c is not None]
-    return HAND_CARD_HASHER.encode_set(names)
+    """Per-slot card identity, from the frozen embedding table.
+
+    Was 256 hashed buckets over the whole hand -- a bag of cards, with no way to
+    say *which* card sits in *which* slot. That mattered: an action index selects
+    a hand slot, so the policy has to know what is in the slot it is choosing.
+    Slot identity was previously carried only by `card_id_norm` in the combat
+    block, which is a normalised enum *position* -- the exact encoding that a
+    patch shifts.
+
+    Now each slot carries its embedding plus an is_known flag, so a card the
+    table has never seen is distinguishable from one whose vector sits near the
+    origin, and a card added by a patch lands near the cards it resembles instead
+    of on top of an unrelated bucket.
+    """
+    table = _table()
+    out = np.zeros(HAND_CARD_BLOCK, dtype=np.float32)
+    for slot, name in enumerate(card_names or ()):
+        if slot >= MAX_HAND_SLOTS:
+            break
+        if name is None:
+            continue
+        base = slot * table.width
+        out[base:base + table.width] = table.encode(name)
+    return out
 
 
 def encode_deck_set(card_names: Iterable[Any]) -> np.ndarray:
-    """256 hashed buckets encoding deck composition."""
-    names = [_card_key(c) for c in card_names or () if c is not None]
-    return DECK_CARD_HASHER.encode_set(names)
+    """Mean of the deck's card vectors, plus the fraction that were known.
+
+    Pooled rather than per-slot because a deck has no slots and no order that
+    matters here, and mean rather than sum so a 40-card deck and a 10-card deck
+    stay on the same scale -- deck size is already carried explicitly in the
+    run-level block.
+    """
+    return _table().pooled([c for c in (card_names or ()) if c is not None])
 
 
 def encode_hand_extra(cards: list[Any]) -> np.ndarray:

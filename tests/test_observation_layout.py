@@ -36,13 +36,13 @@ from sts2_env.gym_env.layout import (
 
 EXPECTED_RUN_LAYOUT = [
     ("combat",          0,    131),
-    ("entity_identity", 131,  1690),
-    ("deck_features",   1821, 32),
-    ("run_level",       1853, 20),
-    ("choices",         1873, 126),
-    ("relics_potions",  1999, 384),
+    ("entity_identity", 131,  1893),
+    ("deck_features",   2024, 32),
+    ("run_level",       2056, 20),
+    ("choices",         2076, 126),
+    ("relics_potions",  2202, 384),
 ]
-EXPECTED_RUN_SIZE = 2383
+EXPECTED_RUN_SIZE = 2586
 
 EXPECTED_COMBAT_LAYOUT = [
     ("player_state",    0,  4),

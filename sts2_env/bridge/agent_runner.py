@@ -96,11 +96,19 @@ TREASURE_COLLECT_ACTION = "collect"
 BOSS_RELIC_PICK_ACTION = "pick_relic"
 
 
-def load_model(model_path: str) -> Any:
-    """Load a trained MaskablePPO model.
+def load_model(model_path: str, *, require_layout_match: bool = True) -> Any:
+    """Load a trained MaskablePPO model, refusing one built for another layout.
+
+    The check matters most here, on the live path. A checkpoint from an older
+    observation layout still loads if its input width happens to match, and then
+    reads every column as something it is not -- the policy plays the real game
+    badly for reasons no log line explains. Better to refuse at startup.
 
     Args:
         model_path: Path to the saved model (.zip file).
+        require_layout_match: Refuse a checkpoint whose recorded layout differs.
+            Checkpoints with no sidecar predate stamping and are allowed through
+            with a warning, since refusing them would strand every existing model.
 
     Returns:
         Loaded MaskablePPO model instance.
@@ -112,6 +120,22 @@ def load_model(model_path: str) -> Any:
             "sb3-contrib is required. Install with: pip install sb3-contrib"
         )
         raise
+
+    if require_layout_match:
+        from sts2_env.gym_env.layout import (
+            OBS_LAYOUT_VERSION,
+            SIDECAR_SUFFIX,
+            verify_checkpoint,
+        )
+
+        verify_checkpoint(model_path)  # raises ObservationLayoutMismatch
+        if not Path(str(model_path) + SIDECAR_SUFFIX).is_file():
+            logger.warning(
+                "%s has no %s sidecar, so the observation layout it was trained "
+                "against is unknown. This build is v%d. If it was trained before "
+                "the layout was versioned, it is probably stale.",
+                model_path, SIDECAR_SUFFIX, OBS_LAYOUT_VERSION,
+            )
 
     logger.info("Loading model from %s", model_path)
     model = MaskablePPO.load(model_path)

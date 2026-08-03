@@ -131,13 +131,28 @@ ENEMY_EXT_PER_SLOT = ENEMY_IDENTITY_BUCKETS + ENEMY_POWER_BUCKETS  # 192
 MAX_ENEMY_SLOTS = 5
 ENEMY_EXT_BLOCK = MAX_ENEMY_SLOTS * ENEMY_EXT_PER_SLOT       # 960
 
+# --- cards: embeddings, not hashes -------------------------------------------
+#
+# Declared here rather than read from the built table, because the observation's
+# shape must be knowable without the artifact on disk. `entity_encoding._table()`
+# asserts the loaded table agrees, so a table built at another width fails loudly
+# instead of silently producing a differently-shaped observation.
+#
+# HAND_CARD_HASHER and DECK_CARD_HASHER are kept only so old checkpoints and the
+# parity suites can still describe the previous layout. Nothing encodes with them.
+CARD_EMBED_DIMS = 64
+CARD_SLOT_WIDTH = CARD_EMBED_DIMS + 1                        # + is_known flag
+MAX_HAND_CARD_SLOTS = 10
+HAND_CARD_BLOCK = MAX_HAND_CARD_SLOTS * CARD_SLOT_WIDTH      # 650, per-slot identity
+DECK_CARD_BLOCK = CARD_SLOT_WIDTH                            # 65, pooled mean
+
 ENTITY_OBS_SIZE: int = (
     PLAYER_POWER_BUCKETS
-    + HAND_CARD_BUCKETS
+    + HAND_CARD_BLOCK
     + HAND_EXTRA_BLOCK
-    + DECK_CARD_BUCKETS
+    + DECK_CARD_BLOCK
     + ENEMY_EXT_BLOCK
-)  # = 1690
+)  # = 1893
 
 RELIC_BUCKETS = RELIC_HASHER.n_buckets                       # 256
 POTION_BUCKETS = POTION_HASHER.n_buckets                     # 128

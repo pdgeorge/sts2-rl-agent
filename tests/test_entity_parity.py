@@ -49,7 +49,7 @@ def test_the_layout_offsets_are_pinned():
     assert ENTITY_START == 131
     from sts2_env.gym_env.deck_features import DECK_FEATURE_SIZE
     assert RUN_OBS_SIZE == COMBAT_OBS_SIZE + ENTITY_OBS_SIZE + DECK_FEATURE_SIZE + 20 + 126 + 384
-    assert RUN_OBS_SIZE == 2383
+    assert RUN_OBS_SIZE == 2586
 
 
 def test_player_poison_is_visible_on_both_sides():
@@ -70,9 +70,9 @@ def test_enemy_identity_and_powers_are_present():
         {"id": "WRIGGLER", "hp": 10, "max_hp": 10, "is_alive": True, "powers": []},
     ])
     entity = obs[ENTITY_START:ENTITY_START + ENTITY_OBS_SIZE]
-    # Enemy block starts after player powers (128) + hand set (256) + hand extra (90)
-    # + deck set (256) = 730
-    enemy_start = 128 + 256 + 90 + 256
+    # Enemy block starts after player powers (128) + hand cards (650, per-slot
+    # embeddings) + hand extra (90) + pooled deck (65) = 933
+    enemy_start = 128 + 650 + 90 + 65
     enemy0 = entity[enemy_start:enemy_start + ENEMY_EXT_PER_SLOT]
     enemy1 = entity[enemy_start + ENEMY_EXT_PER_SLOT:enemy_start + 2 * ENEMY_EXT_PER_SLOT]
 
@@ -106,8 +106,8 @@ def test_the_deck_is_visible_outside_combat():
     obs, _ = env.reset(seed=3)
     assert env._mgr.get_combat_state() is None, "reset is not in combat"
     entity = obs[ENTITY_START:ENTITY_START + ENTITY_OBS_SIZE]
-    # Deck set starts at offset 128 + 256 + 90 = 474 within the entity block
-    deck_block = entity[474:474 + 256]
+    # Pooled deck block: 128 + 650 + 90 = 868 within the entity block
+    deck_block = entity[868:868 + 65]
     assert deck_block.sum() > 0
 
 
@@ -133,8 +133,8 @@ def test_a_mod_that_sends_no_deck_leaves_the_deck_block_empty():
     """Documents the risk: absent reads as an empty deck, not as an error."""
     obs = _bridge()
     entity = obs[ENTITY_START:ENTITY_START + ENTITY_OBS_SIZE]
-    # Deck block is at offset 474, size 256
-    assert entity[474:474 + 256].sum() == 0.0
+    # Pooled deck block is at offset 868, size 65
+    assert entity[868:868 + 65].sum() == 0.0
 
 
 def test_bridge_and_sim_entity_encoders_agree_on_full_block():
@@ -207,3 +207,74 @@ def test_bridge_and_sim_entity_encoders_agree_on_full_block():
     sim_vec = encode_entities(**from_sim)
 
     np.testing.assert_array_equal(bridge_vec, sim_vec)
+
+
+# --- card embeddings: the two name formats must land on the same row ---------
+
+
+def test_card_embeddings_match_between_sim_and_bridge():
+    """The simulator passes CardId enums; the bridge passes whatever string the
+    game sent. Both must produce the same vector.
+
+    This is the failure this repo keeps hitting: two paths agreeing on the shape
+    of the observation and disagreeing on its contents, with no error on either
+    side. Here it would mean the live agent reads a different card than training
+    did, while the vector stays perfectly valid.
+    """
+    import numpy as np
+
+    from sts2_env.core.enums import CardId
+    from sts2_env.gym_env.entity_encoding import encode_card_set
+
+    hand = [CardId.BASH, CardId.STRIKE_IRONCLAD, CardId.DEFEND_IRONCLAD]
+
+    from_sim = encode_card_set(hand)
+    from_bridge = encode_card_set([c.name for c in hand])
+
+    assert np.allclose(from_sim, from_bridge), (
+        "sim and bridge produced different card vectors for the same hand"
+    )
+    assert from_sim.sum() != 0.0, "expected non-zero embeddings for known cards"
+
+
+def test_bridge_name_variants_resolve_to_the_same_card():
+    """Case and punctuation differences must not create a different card."""
+    import numpy as np
+
+    from sts2_env.gym_env.entity_encoding import encode_card_set
+
+    canonical = encode_card_set(["STRIKE_IRONCLAD"])
+    for variant in ("StrikeIronclad", "strike_ironclad", "STRIKEIRONCLAD"):
+        assert np.allclose(encode_card_set([variant]), canonical), (
+            f"{variant!r} did not resolve to STRIKE_IRONCLAD"
+        )
+
+
+def test_an_unknown_card_is_flagged_not_guessed():
+    """A card from a future patch must read as unknown rather than as whichever
+    card it happens to hash near."""
+    import numpy as np
+
+    from sts2_env.gym_env.hashing import CARD_SLOT_WIDTH
+    from sts2_env.gym_env.entity_encoding import encode_card_set
+
+    block = encode_card_set(["A_CARD_FROM_NEXT_PATCH"])
+    slot = block[:CARD_SLOT_WIDTH]
+    assert np.allclose(slot[:-1], 0.0), "unknown card should have a zero vector"
+    assert slot[-1] == 0.0, "is_known flag should be 0 for an unknown card"
+
+
+def test_slot_order_is_preserved():
+    """An action index selects a hand slot, so slot k must carry card k."""
+    import numpy as np
+
+    from sts2_env.core.enums import CardId
+    from sts2_env.gym_env.entity_encoding import encode_card_set
+    from sts2_env.gym_env.hashing import CARD_SLOT_WIDTH
+
+    block = encode_card_set([CardId.BASH, CardId.DEFEND_IRONCLAD])
+    solo_bash = encode_card_set([CardId.BASH])[:CARD_SLOT_WIDTH]
+    solo_defend = encode_card_set([CardId.DEFEND_IRONCLAD])[:CARD_SLOT_WIDTH]
+
+    assert np.allclose(block[:CARD_SLOT_WIDTH], solo_bash)
+    assert np.allclose(block[CARD_SLOT_WIDTH:2 * CARD_SLOT_WIDTH], solo_defend)

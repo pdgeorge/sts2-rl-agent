@@ -31,6 +31,8 @@ from sts2_env.gym_env.entity_encoding import (
     encode_powers,
 )
 from sts2_env.gym_env.hashing import (
+    DECK_CARD_BLOCK,
+    HAND_CARD_BLOCK,
     ENEMY_IDENTITY_BUCKETS,
     ENEMY_POWER_BUCKETS,
     PLAYER_POWER_BUCKETS,
@@ -46,7 +48,9 @@ def test_sizes_are_pinned():
     assert ENEMY_IDENTITY_BUCKETS == 64
     assert ENEMY_POWER_BUCKETS == 128
     assert ENEMY_EXT_PER_SLOT == 192
-    assert ENTITY_OBS_SIZE == 1690
+    assert HAND_CARD_BLOCK == 650      # 10 slots x (64 embed + is_known)
+    assert DECK_CARD_BLOCK == 65       # pooled mean + known fraction
+    assert ENTITY_OBS_SIZE == 1893
 
 
 # --- powers -----------------------------------------------------------------

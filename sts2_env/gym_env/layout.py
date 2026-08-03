@@ -54,8 +54,14 @@ from sts2_env.gym_env.observation import OBS_SIZE as COMBAT_OBS_SIZE
 from sts2_env.gym_env.relic_potion_encoding import RELIC_POTION_OBS_SIZE
 from sts2_env.gym_env.run_level_encoding import RUN_LEVEL_SIZE
 
-OBS_LAYOUT_VERSION = 1
-"""Bump whenever any column's meaning changes. See the module docstring."""
+OBS_LAYOUT_VERSION = 2
+"""Bump whenever any column's meaning changes. See the module docstring.
+
+v2: card identity moved from feature hashing to frozen text embeddings. The hand
+    block became per-slot (10 x 65) instead of a 256-bucket bag, and the deck
+    block became a pooled 65 instead of 256 buckets. Every v1 checkpoint is
+    invalid -- the columns mean different things and the vector is longer.
+"""
 
 SIDECAR_SUFFIX = ".layout.json"
 
