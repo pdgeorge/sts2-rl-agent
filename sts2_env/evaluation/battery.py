@@ -70,6 +70,25 @@ from sts2_env.core.rng import Rng
 Pilot = Callable[[object], int]
 """Chooses an action given a CombatState. See sts2_env.evaluation.pilots."""
 
+DEFAULT_RELICS: tuple[str, ...] = ("BURNING_BLOOD",)
+"""The character's starting relic, because a deck without it is not the deck
+being played.
+
+Burning Blood heals 6 after every won combat. Omitting it is not a rounding
+error: a gauntlet without it survived 4 fights where the real thing survives 5,
+and every "the deck dies almost immediately" result today was measured without
+it.
+"""
+
+ACT_OPENING_WEAK_FIGHTS = 3
+"""How many weak encounters an act opens with before the normal pool.
+
+Ignoring this was the larger of two measurement errors. A gauntlet run entirely
+on act1_normal said a starter deck survives 2 fights; a real act 1 opens with
+weak fights at a third of the cost (11.4 HP against 34.5), and the same deck
+survives 5. The battery was measuring a situation that does not occur.
+"""
+
 
 @dataclass(frozen=True)
 class Tier:
@@ -142,6 +161,7 @@ def play_one(
     *,
     max_hp: int = IRONCLAD_STARTING_HP,
     starting_hp: int | None = None,
+    relics: Sequence[str] | None = None,
     character_id: str = "Ironclad",
     max_steps: int = 600,
 ) -> FightResult:
@@ -163,6 +183,7 @@ def play_one(
         player_hp=max_hp if starting_hp is None else starting_hp,
         player_max_hp=max_hp,
         deck=fresh_deck,
+        relics=list(relics) if relics else list(DEFAULT_RELICS),
         rng_seed=seed,
         character_id=character_id,
     )
@@ -297,6 +318,27 @@ def mean_gauntlet(
     return float(np.mean(lengths)) if lengths else 0.0
 
 
+def act_sequence(tier: Tier, length: int) -> list:
+    """Encounters in the order an act actually presents them.
+
+    Weak fights first, then the normal pool. A gauntlet that skips this measures
+    a run dropped into mid-act with a starting deck, which never happens.
+    """
+    if tier.kind != "normal":
+        pool = encounters_for(tier)
+        return [pool[i % len(pool)] for i in range(length)] if pool else []
+
+    weak = encounters_for(Tier(tier.act, "weak"))
+    normal = encounters_for(tier)
+    out = []
+    for index in range(length):
+        if index < ACT_OPENING_WEAK_FIGHTS and weak:
+            out.append(weak[index % len(weak)])
+        elif normal:
+            out.append(normal[(index - ACT_OPENING_WEAK_FIGHTS) % len(normal)])
+    return out
+
+
 def gauntlet_hp(
     deck: Sequence,
     tier: Tier,
@@ -305,6 +347,7 @@ def gauntlet_hp(
     seed: int = 0,
     max_hp: int = IRONCLAD_STARTING_HP,
     fights: int = 5,
+    relics: Sequence[str] | None = None,
 ) -> float:
     """HP left after `fights` consecutive fights, without healing. 0 if it dies.
 
@@ -317,23 +360,31 @@ def gauntlet_hp(
     Continuous rather than a fight count, because counts land on 0, 1 or 2 for
     the decks that exist today and cannot rank anything.
     """
-    encounters = encounters_for(tier)
-    if not encounters:
+    sequence = act_sequence(tier, fights)
+    if not sequence:
         return float(max_hp)
 
     hp = float(max_hp)
-    for index in range(fights):
-        setup = encounters[index % len(encounters)]
+    for index, setup in enumerate(sequence):
         result = play_one(
             deck, setup, seed * 1000 + index, pilot,
-            max_hp=max_hp, starting_hp=int(hp),
+            max_hp=max_hp, starting_hp=int(hp), relics=relics,
         )
         if not result.won:
             return 0.0
         hp -= result.hp_lost
         if hp <= 0:
             return 0.0
+        # Burning Blood and friends fire after a won combat, so the heal belongs
+        # between fights rather than being folded into the fight itself.
+        hp = min(float(max_hp), hp + _post_combat_heal(relics))
     return hp
+
+
+def _post_combat_heal(relics: Sequence[str] | None) -> float:
+    """HP restored after a won fight by the relics in play."""
+    names = {str(r).upper() for r in (relics if relics is not None else DEFAULT_RELICS)}
+    return 6.0 if "BURNING_BLOOD" in names else 0.0
 
 
 def mean_gauntlet_hp(
@@ -344,10 +395,12 @@ def mean_gauntlet_hp(
     seeds: Iterable[int] = range(6),
     max_hp: int = IRONCLAD_STARTING_HP,
     fights: int = 5,
+    relics: Sequence[str] | None = None,
 ) -> float:
     """Mean HP surviving a gauntlet, across seeds. Higher is a better deck."""
     values = [
-        gauntlet_hp(deck, tier, pilot, seed=seed, max_hp=max_hp, fights=fights)
+        gauntlet_hp(deck, tier, pilot, seed=seed, max_hp=max_hp,
+                    fights=fights, relics=relics)
         for seed in seeds
     ]
     return float(np.mean(values)) if values else 0.0

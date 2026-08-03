@@ -76,11 +76,23 @@ from typing import Sequence
 from sts2_env.core.constants import IRONCLAD_STARTING_HP
 from sts2_env.evaluation.battery import Pilot, Tier, mean_gauntlet_hp
 
-GAUNTLET_FIGHTS = 2
-"""Consecutive fights per gauntlet, no healing between them.
+GAUNTLET_FIGHTS = 5
+"""Consecutive fights per gauntlet, healing only from relics between them.
 
-Two, because at three every deck the agent currently builds dies and every
-candidate scores zero -- a metric with no resolution. Raise it as decks improve.
+Five, because that is where a starter deck actually separates. The sequence
+follows real act structure -- weak fights first, then the normal pool -- and
+carries the character's starting relic, so:
+
+    2 fights  76.1 hp     all weak, every deck looks identical
+    3 fights  73.5 hp
+    4 fights  46.6 hp
+    5 fights  31.2 hp     discriminating
+    6 fights   0.0 hp     everything dies, no resolution again
+
+This was 2 for most of a day, chosen because "every deck dies at 3". That was an
+artifact of running the gauntlet entirely on act1_normal with no relics, which is
+a situation a run never encounters. Corrected, the same deck survives 5 fights --
+matching a live count of 5 wins before dying to an elite.
 """
 
 DEFAULT_SEEDS: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)

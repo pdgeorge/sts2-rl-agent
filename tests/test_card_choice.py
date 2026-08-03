@@ -405,9 +405,36 @@ def test_body_slam_is_rejected_without_a_block_source():
     )
 
 
-def test_gauntlet_fights_is_two_and_says_why():
-    """Three kills every deck the agent currently builds, so every candidate
-    scores zero and the metric ranks nothing."""
+def test_gauntlet_length_sits_where_decks_separate():
+    """Two was wrong, and wrong for a measurable reason.
+
+    Run on act1_normal with no relics, everything died at 3 fights. Run in real
+    act order -- weak fights first -- with the starting relic, a starter deck
+    survives 5 and dies on the 6th, matching a live count of 5 wins. At 2 fights
+    every deck scores ~76 HP and nothing separates.
+    """
     from sts2_env.evaluation.card_choice import GAUNTLET_FIGHTS
 
-    assert GAUNTLET_FIGHTS == 2
+    assert GAUNTLET_FIGHTS == 5
+
+
+def test_gauntlet_opens_with_weak_fights():
+    """A run does not start against mid-act encounters, and pretending it does
+    made every deck look unplayable."""
+    from sts2_env.evaluation.battery import Tier, act_sequence, encounters_for
+
+    weak = set(encounters_for(Tier(1, "weak")))
+    sequence = act_sequence(Tier(1, "normal"), 5)
+    assert len(sequence) == 5
+    assert all(s in weak for s in sequence[:3]), "act should open with weak fights"
+    assert not any(s in weak for s in sequence[3:])
+
+
+def test_the_starting_relic_is_present_by_default():
+    """A deck without Burning Blood is not the deck being played -- it heals 6
+    after every win, worth a whole extra fight over a gauntlet."""
+    from sts2_env.evaluation.battery import DEFAULT_RELICS, _post_combat_heal
+
+    assert "BURNING_BLOOD" in DEFAULT_RELICS
+    assert _post_combat_heal(None) == 6.0
+    assert _post_combat_heal([]) == 0.0
