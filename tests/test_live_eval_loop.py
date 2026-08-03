@@ -80,7 +80,9 @@ def _card_reward(floor):
 def patched(monkeypatch):
     from sts2_env.gym_env.run_env import RUN_OBS_SIZE
 
-    def _fake_load(path):
+    def _fake_load(path, **kwargs):
+        # **kwargs so a new load_model option (require_layout_match) does not
+        # break every test that only cares about the run loop.
         return _FakeModel(RUN_OBS_SIZE)
 
     monkeypatch.setattr(agent_runner, "load_model", _fake_load)
