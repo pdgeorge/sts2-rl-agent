@@ -8,6 +8,72 @@ Add a row when a model is worth keeping. A model with no row is a scratch run.
 
 ---
 
+## run_ppo_v2_6m — 2026-08-03 — the first model on layout v2, and a second null result
+
+`output/run_ppo_v2_6m/final_model.zip` and `.../best_model/best_model.zip`
+
+**The observation change is neutral. More training is still not the answer.**
+Recorded so the v2 layout is not blamed for the plateau, and so nobody retries
+"same setup, more steps" a third time.
+
+| | |
+|---|---|
+| training | 6,008,832 steps, 76 min, 1,322 fps, from scratch |
+| observation | 2,586 dims, layout **v2** (`d7051542685e12cb`) |
+| actions | 157 |
+| game build | decompile matched installed build `9f6869d1f4e27dc4` |
+| selection | both checkpoints kept and layout-stamped |
+
+100 deterministic simulator runs via `scripts/eval_run_model.py`:
+
+```
+model              steps    mean   median   max   outcome
+400k v2             0.4M     8.8      7      17   plumbing check only
+6M v2 final         6.0M     9.1      8      18   died 91, timeout 9
+6M v2 best          6.0M     9.4      8      23   died 89, timeout 11
+alpha (v1)         14.7M     9.7      8      29
+```
+
+Win rate 0% everywhere.
+
+**15x the training bought +0.3 to +0.6 floors, all inside noise.** With sd ~5 over
+100 episodes the sem is ~0.5, so final and best are ~0.4 sem apart and neither is
+distinguishable from the 400k plumbing run.
+
+**No learning trend.** Twelve evaluations, in order:
+
+```
+3.72 4.93 5.65 3.21 4.11 4.18 2.17 2.75 3.85 5.04 2.99 4.49
+first six 4.30    last six 3.55    change -0.75    range 2.17-5.65
+```
+
+It drifts *downward*. The spread dwarfs any signal, exactly as in `run_ppo_v4`.
+
+**`best_model` is again close to a selection artifact.** It was saved three times,
+and the maximum of twelve noisy draws sits ~1.7 sd above their mean by
+construction. At 9.4 against final's 9.1 it is not a better policy, it is the
+top of the noise -- the same reading as v4's `best_model`, and the reason that
+entry exists.
+
+**What v2 did buy**, none of it visible in floors: card identity survives a patch
+(new card, new row, existing rows bit-identical); observation encoding got 28%
+faster (394 us -> 284 us) despite 203 more columns; and the whole pipeline was
+validated live, driving 8 real runs at mean floor 13.6.
+
+**Why this closes a door.** `run_ppo_v4` established that resuming at the wrong
+learning rate learns nothing. This establishes the stronger thing: a clean run,
+from scratch, on a better representation, with correct evaluation, still plateaus
+around 9 floors. The limit is not the optimiser, the resume, or the encoding.
+
+The measured cause sits in `sts2_env/evaluation/card_choice.py`: adding one curse
+to a ten-card deck moves the deck's measured score by **0.005** over 240 fights,
+with identical win rates. That is the true size of a single-card decision, and it
+arrives hundreds of steps later mixed with everything else. No amount of PPO
+recovers a signal that small. Drafting has to be measured rather than learned,
+which is what `evaluation/` now does and what the next phase builds on.
+
+---
+
 ## run_ppo_v4 — 2026-07-30 — a null result, kept as one
 
 `output/run_ppo_v4/best_model/best_model.zip`
