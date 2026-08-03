@@ -74,9 +74,16 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from sts2_env.core.constants import IRONCLAD_STARTING_HP
-from sts2_env.evaluation.battery import Pilot, Tier, score_cell
+from sts2_env.evaluation.battery import Pilot, Tier, mean_gauntlet_hp
 
-DEFAULT_SEEDS: tuple[int, ...] = (0, 1, 2, 3, 4, 5)
+GAUNTLET_FIGHTS = 2
+"""Consecutive fights per gauntlet, no healing between them.
+
+Two, because at three every deck the agent currently builds dies and every
+candidate scores zero -- a metric with no resolution. Raise it as decks improve.
+"""
+
+DEFAULT_SEEDS: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 """Six seeds, ~90 fights per candidate, ~1.7s. See the table in the module
 docstring: this separates clear differences and will not settle close ones."""
 
@@ -128,34 +135,36 @@ def score_candidate(
     tiers: Sequence[Tier],
     seeds: Sequence[int] = DEFAULT_SEEDS,
     max_hp: int = IRONCLAD_STARTING_HP,
+    fights: int = GAUNTLET_FIGHTS,
 ) -> CandidateScore:
-    """Play `deck + card` and report how it did."""
+    """Play `deck + card` through a gauntlet and report HP surviving.
+
+    Scored on HP left after consecutive fights WITHOUT healing, because the
+    per-fight version of this reset to full HP every fight and so could not value
+    HP at all. On the deck that actually reached floor 11 live, ranking Body Slam
+    against skipping:
+
+        per-fight scoring   BODY_SLAM 0.695 vs SKIP 0.743   (0.05, inside noise)
+        gauntlet scoring    BODY_SLAM 25.7hp vs SKIP 32.9hp (7.2 HP, clear)
+
+    The agent took Body Slam. With four Defends and no other block source it
+    deals almost nothing, and the old scoring could not see the difference.
+
+    Cheaper as well as sharper: 24 fights per candidate against 90.
+    """
     candidate_deck = list(deck) + ([card] if card is not None else [])
 
-    total_fights = 0
-    weighted_win = 0.0
-    weighted_hp = 0.0
-    hp_samples = 0
-
-    for tier in tiers:
-        cell = score_cell(
-            candidate_deck, tier, pilot, seeds=seeds, max_hp=max_hp
-        )
-        total_fights += cell.fights
-        weighted_win += cell.win_rate * cell.fights
-        if cell.hp_lost_on_wins == cell.hp_lost_on_wins:  # not NaN
-            weighted_hp += cell.hp_lost_on_wins * cell.fights
-            hp_samples += cell.fights
-
-    win_rate = weighted_win / total_fights if total_fights else 0.0
-    hp_lost = weighted_hp / hp_samples if hp_samples else float("nan")
+    tier = tiers[0] if tiers else Tier(1, "normal")
+    hp_left = mean_gauntlet_hp(
+        candidate_deck, tier, pilot, seeds=seeds, max_hp=max_hp, fights=fights
+    )
 
     return CandidateScore(
         card=card,
-        score=_combined(win_rate, hp_lost, max_hp),
-        win_rate=win_rate,
-        hp_lost=hp_lost,
-        fights=total_fights,
+        score=hp_left / max_hp,        # normalised so thresholds stay comparable
+        win_rate=float("nan"),
+        hp_lost=max_hp - hp_left,
+        fights=len(list(seeds)) * fights,
     )
 
 

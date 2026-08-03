@@ -374,3 +374,40 @@ def test_smith_intent_gate_distinguishes_heal_from_smith():
     ]}
     assert _option_is_smith(state, 1) is True
     assert _option_is_smith(state, 0) is False
+
+
+# --- gauntlet scoring -------------------------------------------------------
+
+
+@pytest.mark.slow
+def test_body_slam_is_rejected_without_a_block_source():
+    """The pick that prompted this change.
+
+    Body Slam deals damage equal to your block. With four Defends and nothing
+    else generating block it does almost nothing, and the agent took it live.
+
+    Per-fight scoring rated it 0.695 against 0.743 for skipping -- a 0.05 gap
+    inside the noise. Gauntlet scoring, which carries HP between fights instead
+    of resetting to full, rates it 7 HP worse than taking nothing.
+    """
+    from sts2_env.evaluation.card_choice import rank_candidates
+
+    deck = [create_card(CardId[n]) for n in
+            ["STRIKE_IRONCLAD"] * 5 + ["DEFEND_IRONCLAD"] * 4 +
+            ["BASH", "ANGER", "TRUE_GRIT", "PILLAGE"]]
+    cards = [create_card(CardId.BODY_SLAM), create_card(CardId.UPPERCUT)]
+
+    ranked = rank_candidates(deck, cards, greedy_pilot, floor=11)
+    body_slam = next(r for r in ranked if "BODY_SLAM" in r.label)
+    skip = next(r for r in ranked if r.card is None)
+    assert body_slam.score < skip.score, (
+        "Body Slam should lose to taking nothing in a deck with no block source"
+    )
+
+
+def test_gauntlet_fights_is_two_and_says_why():
+    """Three kills every deck the agent currently builds, so every candidate
+    scores zero and the metric ranks nothing."""
+    from sts2_env.evaluation.card_choice import GAUNTLET_FIGHTS
+
+    assert GAUNTLET_FIGHTS == 2
