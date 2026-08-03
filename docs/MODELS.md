@@ -8,6 +8,75 @@ Add a row when a model is worth keeping. A model with no row is a scratch run.
 
 ---
 
+## combat_v3_overnight — 2026-08-04 — first model that can see the hit coming
+
+`output/combat_v3_overnight/final_model.zip` (use final, not best — see below)
+
+**Combat only.** With measured drafting on, card rewards, rest sites, shops and
+routing are decided by simulation, so a combat model is the only part of the
+agent a training run still improves.
+
+| | |
+|---|---|
+| training | 40,009,728 steps, 4 h 45 m, 2,340 fps, from scratch |
+| observation | 131 dims, layout **v3** |
+| game build | decompile matched installed build |
+| selection | both stamped; `final` measured no worse than `best` |
+
+**Why it exists.** Until 2026-08-03 `Intent.damage` was a frozen literal ignoring
+Strength: an enemy declaring 7 hit for 19, and `observation.py` fed the declared
+number to the policy. Every model before this learned an incoming-damage signal
+that was systematically low and did not respond to buffs, so none of them could
+learn to block what they could not see coming. This is the first model trained
+after that was fixed.
+
+**Against the previous combat model**, same task, same encounters -- the fix is
+worth roughly 3 HP a fight and 10 points of elite win rate:
+
+```
+                     hp lost / act1 normal    act1 elite win
+combat_ppo_v5 (v1 obs)        32.0                33.3%
+combat_v3_overnight           28.7                43.3%
+```
+
+**Against greedy-damage**, 20 seeds per encounter, it is nominally ahead and not
+significantly so:
+
+```
+                  elite win            hp lost
+greedy         38.3% +/- 6.3%      30.2 +/- 0.7
+v3 overnight   43.3% +/- 6.4%      28.7 +/- 0.7
+                 0.56 sem            1.5 sem
+```
+
+So greedy remains the battery's bulk pilot. It is instant, and nothing here beats
+it by enough to pay for a forward pass per decision.
+
+**The behavioural change is the interesting part**, because it is something no
+earlier model could have learned:
+
+```
+                block cards     blocked FIRST when >=10 damage incoming
+greedy             41.6%                 0/93  =  0.0%
+v3 overnight       47.3%                 7/99  =  7.1%
+```
+
+Greedy never blocks pre-emptively -- it plays Defends with leftover energy only.
+This model does, 7% of the time under real threat. Small, but non-zero, and it is
+the first evidence that a policy *can* learn defence once the observation stops
+lying about incoming damage.
+
+**No learning trend.** 160 evaluations wandering between -0.10 and +0.43 with no
+slope, the same shape as `run_ppo_v4` and `run_ppo_v2_6m`. 40M steps is 6x the
+run that moved floors by +0.3. What changed here was the input, not the budget.
+
+**`best_model` is not better.** Five "new best" saves out of 160 noisy
+evaluations; measured as a pilot it came out slightly behind `final` (26.8 vs
+28.6 gauntlet HP). Same selection artifact recorded for v4 and v2_6m -- the max
+of many noisy draws is not a better policy.
+
+---
+
 ## run_ppo_v2_6m — 2026-08-03 — the first model on layout v2, and a second null result
 
 `output/run_ppo_v2_6m/final_model.zip` and `.../best_model/best_model.zip`
