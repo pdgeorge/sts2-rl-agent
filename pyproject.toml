@@ -25,6 +25,15 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
 ]
+embed = [
+    # Building the card embedding table. Needed only when content changes -- not
+    # at training time and not at inference time, because the built table is a
+    # committed artifact and the model never runs in the hot path.
+    "torch>=2.0",
+    "transformers>=4.51",
+    "huggingface-hub>=0.30",
+    "safetensors>=0.4",
+]
 
 [tool.setuptools.packages.find]
 include = ["sts2_env*"]

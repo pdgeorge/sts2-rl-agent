@@ -1,0 +1,5475 @@
+ABRASIVE | Power | Rare | silent | cost 3 | target SELF
+keywords: sly | tags: none
+damage none | block none
+vars: dexterity 1; thorns_power 4
+applies: DEXTERITY, THORNS
+  DEXTERITY (buff, counter stack) hooks: modify_block_additive
+  THORNS (buff, counter stack) hooks: before_damage_received
+does: apply_power_to
+upgrade: thorns_power 4->6
+
+----
+
+ACCELERANT | Power | Uncommon | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: accelerant 1
+applies: ACCELERANT
+  ACCELERANT (buff, counter stack)
+does: apply_power_to
+upgrade: accelerant 1->2
+
+----
+
+ACCURACY_CARD | Power | Uncommon | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: accuracy_power 4
+applies: ACCURACY
+  ACCURACY (buff, counter stack) hooks: modify_damage_additive
+does: apply_power_to
+upgrade: accuracy_power 4->6
+
+----
+
+ACROBATICS | Skill | Uncommon | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 3
+does: discard_cards, draw_cards, request_card_choice
+reads: hand
+upgrade: cards 3->4
+
+----
+
+ADAPTIVE_STRIKE | Attack | Rare | defect | cost 2 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 18 | block none
+does: add_generated_card_to_creature_discard, apply_damage, calculate_damage, clone, new_card_instance_id, set_combat_cost
+upgrade: base_damage 18->23
+
+----
+
+ADRENALINE | Skill | Rare | silent | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 2; energy 1
+does: draw_cards, gain_energy
+upgrade: energy 1->2
+
+----
+
+AFTERIMAGE_CARD | Power | Rare | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: afterimage_power 1
+applies: AFTERIMAGE
+  AFTERIMAGE (buff, counter stack) hooks: after_card_played, before_card_played
+does: apply_power_to
+
+----
+
+AFTERLIFE | Skill | Common | necrobinder | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: summon 6
+does: summon_osty
+upgrade: summon 6->9
+
+----
+
+AGGRESSION_CARD | Power | Rare | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: AGGRESSION
+  AGGRESSION (buff, counter stack) hooks: before_side_turn_start
+does: apply_power_to
+
+----
+
+ALCHEMIZE | Skill | Rare | colorless | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: procure_random_potion
+upgrade: cost 1->0
+
+----
+
+ALIGNMENT | Skill | Uncommon | regent | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 2
+does: gain_energy
+upgrade: energy 2->3
+
+----
+
+ALL_FOR_ONE | Attack | Rare | defect | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+does: apply_damage, calculate_damage, modified_card_cost, move_card_to_creature_hand
+upgrade: base_damage 10->14
+
+----
+
+ANGER | Attack | Common | ironclad | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 6 | block none
+does: CardInstance, add_card_to_discard, deal_damage_to_target, get_next_id
+upgrade: base_damage 6->8
+
+----
+
+ANOINTED | Skill | Rare | colorless | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: move_card_to_hand
+reads: draw_pile
+
+----
+
+ANTICIPATE | Skill | Common | silent | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: dexterity 2
+applies: ANTICIPATE
+  ANTICIPATE (buff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_power_to
+upgrade: dexterity 2->4
+
+----
+
+APOTHEOSIS | Skill | Ancient | event | cost 2 | target SELF
+keywords: exhaust, innate | tags: none
+damage none | block none
+does: all_cards_for_creature, upgrade_card
+upgrade: cost 2->1
+
+----
+
+APPARITION | Skill | Ancient | event | cost 1 | target SELF
+keywords: ethereal, exhaust | tags: none
+damage none | block none
+vars: intangible_power 1
+applies: INTANGIBLE
+  INTANGIBLE (buff, counter stack) hooks: modify_damage_cap, modify_hp_lost, on_turn_end_enemy_side
+does: apply_power_to
+
+----
+
+ARMAMENTS | Skill | Common | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 5
+does: gain_block, request_card_choice, upgrade_card
+reads: hand
+
+----
+
+ARSENAL | Power | Rare | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: arsenal 1
+applies: ARSENAL
+  ARSENAL (buff, counter stack) hooks: after_card_played
+does: apply_power_to
+
+----
+
+ASCENDERS_BANE | Curse | Curse | curse | cost -1 | target NONE
+keywords: eternal, ethereal, unplayable | tags: none
+damage none | block none
+
+----
+
+ASHEN_STRIKE | Attack | Uncommon | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 6 | block none
+vars: calc_base 6; extra_damage 3
+does: apply_damage, calculate_damage
+reads: exhaust_pile
+upgrade: extra_damage 3->4
+
+----
+
+ASSASSINATE | Attack | Rare | silent | cost 0 | target ANY_ENEMY
+keywords: exhaust, innate | tags: none
+damage 10 | block none
+vars: vulnerable 1
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 10->13; vulnerable 1->2
+
+----
+
+ASTRAL_PULSE | Attack | Common | regent | cost 0 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 6 | block none
+does: deal_damage_all
+upgrade: base_damage 6->8
+
+----
+
+AUTOMATION | Power | Uncommon | colorless | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 1
+applies: AUTOMATION
+  AUTOMATION (buff, counter stack) hooks: after_power_amount_changed, on_card_drawn
+does: apply_power_to
+upgrade: cost 1->0
+
+----
+
+BACKFLIP | Skill | Common | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 5
+vars: cards 2
+does: calculate_block, draw_cards, gain_resolved_block
+upgrade: base_block 5->8
+
+----
+
+BACKSTAB | Attack | Uncommon | silent | cost 0 | target ANY_ENEMY
+keywords: exhaust, innate | tags: none
+damage 11 | block none
+does: apply_damage, calculate_damage
+upgrade: base_damage 11->15
+
+----
+
+BAD_LUCK | Curse | Curse | curse | cost -1 | target NONE
+keywords: eternal, unplayable | tags: none
+damage none | block none
+vars: hp_loss 13
+
+----
+
+BALL_LIGHTNING | Attack | Common | defect | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 7 | block none
+does: apply_damage, calculate_damage, channel_orb
+upgrade: base_damage 7->10
+
+----
+
+BANSHEES_CRY | Attack | Rare | necrobinder | cost 9 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 33 | block none
+vars: damage 33; energy 2
+does: deal_damage_all
+upgrade: cost 9->7
+
+----
+
+BARRAGE | Attack | Common | defect | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: calc_base 0; calc_extra 1
+does: apply_damage, calculate_damage, get_orb_count
+upgrade: base_damage 5->7
+
+----
+
+BARRICADE_CARD | Power | Rare | ironclad | cost 3 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: BARRICADE
+  BARRICADE (buff, single stack) hooks: should_clear_block
+does: apply_power_to
+upgrade: cost 3->2
+
+----
+
+BASH | Attack | Basic | ironclad | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 8 | block none
+vars: vulnerable 2
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, deal_damage_to_target
+upgrade: base_damage 8->10; vulnerable 2->3
+
+----
+
+BATTLE_TRANCE | Skill | Uncommon | ironclad | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 3
+applies: NO_DRAW
+  NO_DRAW (debuff, single stack) hooks: after_turn_end, should_draw
+does: apply_power_to, draw_cards
+upgrade: cards 3->4
+
+----
+
+BEACON_OF_HOPE | Power | Rare | colorless | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: BEACON_OF_HOPE
+  BEACON_OF_HOPE (buff, counter stack) hooks: after_block_gained
+does: apply_power_to
+
+----
+
+BEAM_CELL | Attack | Common | defect | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 3 | block none
+vars: vulnerable 1
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 3->4; vulnerable 1->2
+
+----
+
+BEAT_DOWN | Skill | Rare | colorless | cost 3 | target RANDOM_ENEMY
+keywords: none | tags: none
+damage none | block none
+vars: cards 3
+does: auto_play_card, random_enemy_of, stable_shuffle_cards, zones_for_creature
+upgrade: cards 3->4
+
+----
+
+BEAT_INTO_SHAPE | Attack | Rare | regent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: calc_base 5; calc_extra 5
+does: count_powered_hits_this_turn, deal_damage_single, forge
+upgrade: base_damage 5->7; calc_base 5->7; calc_extra 5->7
+
+----
+
+BECKON | Status | Status | status | cost 1 | target NONE
+keywords: none | tags: none
+damage none | block none
+vars: hp_loss 6
+
+----
+
+BEGONE | Skill | Common | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage 4 | block none
+does: deal_damage_single, make_minion_dive_bomb, request_card_choice, transform_card
+reads: hand
+upgrade: base_damage 4->5
+
+----
+
+BELIEVE_IN_YOU | Skill | Uncommon | colorless | cost 0 | target ANY_ALLY
+keywords: none | tags: none
+damage none | block none
+vars: energy 2
+does: gain_energy
+upgrade: energy 2->3
+
+----
+
+BIASED_COGNITION_CARD | Power | Ancient | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: biased_cognition_power 1; focus_power 5
+applies: BIASED_COGNITION, FOCUS
+  BIASED_COGNITION (debuff, counter stack) hooks: after_side_turn_start
+  FOCUS (buff, counter stack)
+does: apply_power_to
+upgrade: focus_power 5->6
+
+----
+
+BIG_BANG | Skill | Rare | regent | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 1; energy 1; forge 5; stars 1
+does: draw_cards, forge, gain_energy, gain_stars
+
+----
+
+BLACK_HOLE | Power | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: black_hole 3
+applies: BLACK_HOLE
+  BLACK_HOLE (buff, counter stack) hooks: after_card_played, on_stars_gained
+does: apply_power_to
+upgrade: black_hole 3->4
+
+----
+
+BLADE_DANCE | Skill | Common | silent | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 3
+does: add_generated_card_to_creature_hand, make_shiv
+upgrade: cards 3->4
+
+----
+
+BLADE_OF_INK | Skill | Rare | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: strength 2
+applies: BLADE_OF_INK
+  BLADE_OF_INK (buff, counter stack) hooks: after_card_played, after_turn_end
+does: apply_power_to
+upgrade: strength 2->3
+
+----
+
+BLIGHT_STRIKE | Attack | Common | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 8 | block none
+applies: DOOM
+  DOOM (debuff, counter stack) hooks: before_turn_end
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 8->10
+
+----
+
+BLOODLETTING | Skill | Uncommon | ironclad | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 2; hp_loss 3
+does: gain_energy, self_hp_loss
+upgrade: energy 2->3
+
+----
+
+BLOOD_WALL | Skill | Common | ironclad | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block 16
+vars: hp_loss 2
+does: gain_block, self_hp_loss
+upgrade: base_block 16->20
+
+----
+
+BLUDGEON | Attack | Uncommon | ironclad | cost 3 | target ANY_ENEMY
+keywords: none | tags: none
+damage 32 | block none
+does: deal_damage_to_target
+upgrade: base_damage 32->42
+
+----
+
+BLUR_CARD | Skill | Uncommon | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 5
+vars: blur 1
+applies: BLUR
+  BLUR (buff, counter stack) hooks: after_side_turn_start, should_clear_block
+does: apply_power_to, calculate_block, gain_resolved_block
+upgrade: base_block 5->8
+
+----
+
+BODYGUARD | Skill | Basic | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: summon 5
+does: summon_osty
+upgrade: summon 5->7
+
+----
+
+BODY_SLAM | Attack | Common | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage none | block none
+vars: calc_base 0; extra_damage 1
+does: apply_damage, calculate_damage
+reads: block
+upgrade: cost 1->0
+
+----
+
+BOLAS | Attack | Rare | colorless | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 3 | block none
+does: deal_damage_single
+upgrade: base_damage 3->4
+
+----
+
+BOMBARDMENT | Attack | Rare | regent | cost 3 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage 18 | block none
+vars: damage 18
+does: deal_damage_single
+upgrade: base_damage 18->24; damage 18->24
+
+----
+
+BONE_SHARDS | Attack | Uncommon | necrobinder | cost 1 | target ALL_ENEMIES
+keywords: none | tags: osty_attack
+damage 9 | block 9
+vars: block 9; osty_damage 9
+does: deal_osty_damage_all, gain_block, kill_osty, osty
+upgrade: base_damage 9->12; base_block 9->12; block 9->12; osty_damage 9->12
+
+----
+
+BOOST_AWAY | Skill | Common | defect | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block 6
+does: add_generated_card_to_creature_discard, calculate_block, gain_resolved_block, make_dazed
+upgrade: base_block 6->9
+
+----
+
+BOOT_SEQUENCE | Skill | Uncommon | defect | cost 0 | target SELF
+keywords: exhaust, innate | tags: none
+damage none | block 10
+does: calculate_block, gain_resolved_block
+upgrade: base_block 10->13
+
+----
+
+BORROWED_TIME | Skill | Uncommon | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 4; extra_cost 1
+applies: DOOM
+  DOOM (debuff, counter stack) hooks: before_turn_end
+does: apply_power_to, gain_energy
+upgrade: energy 4->6
+
+----
+
+BOUNCING_FLASK | Skill | Uncommon | silent | cost 2 | target RANDOM_ENEMY
+keywords: none | tags: none
+damage none | block none
+vars: poison_power 3; repeat 3
+applies: POISON
+  POISON (debuff, counter stack) hooks: after_side_turn_start
+does: apply_power_to
+upgrade: repeat 3->4
+
+----
+
+BRAND | Skill | Rare | ironclad | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: hp_loss 1; strength 1
+applies: STRENGTH
+  STRENGTH (buff, counter stack) hooks: modify_damage_additive
+does: apply_power_to, exhaust_card, request_card_choice, self_hp_loss
+reads: hand
+upgrade: strength 1->2
+
+----
+
+BREAK | Attack | Ancient | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 20 | block none
+vars: vulnerable 5
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, deal_damage_to_target
+upgrade: base_damage 20->30; vulnerable 5->7
+
+----
+
+BREAKTHROUGH | Attack | Common | ironclad | cost 1 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 9 | block none
+vars: hp_loss 1
+does: deal_damage_all_enemies, self_hp_loss
+upgrade: base_damage 9->13
+
+----
+
+BRIGHTEST_FLAME | Skill | Ancient | event | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 2; energy 2; max_hp 1
+does: draw_cards_for_creature, gain_energy, lose_max_hp
+upgrade: cards 2->3; energy 2->3
+
+----
+
+BUBBLE_BUBBLE | Skill | Uncommon | silent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage none | block none
+vars: poison_power 9
+applies: POISON
+  POISON (debuff, counter stack) hooks: after_side_turn_start
+does: apply_power_to, get_power_amount
+upgrade: poison_power 9->12
+
+----
+
+BUFFER_CARD | Power | Rare | defect | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: buffer_power 1
+applies: BUFFER
+  BUFFER (buff, counter stack) hooks: modify_hp_lost_late
+does: apply_power_to
+upgrade: buffer_power 1->2
+
+----
+
+BULK_UP | Power | Uncommon | defect | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: dexterity 2; orb_slots 1; strength 2
+applies: DEXTERITY, STRENGTH
+  DEXTERITY (buff, counter stack) hooks: modify_block_additive
+  STRENGTH (buff, counter stack) hooks: modify_damage_additive
+does: apply_power_to, remove_orb_slot
+upgrade: dexterity 2->3; strength 2->3
+
+----
+
+BULLET_TIME | Skill | Rare | silent | cost 3 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: NO_DRAW
+  NO_DRAW (debuff, single stack) hooks: after_turn_end, should_draw
+does: apply_power_to, set_temporary_free_this_turn
+reads: hand
+upgrade: cost 3->2
+
+----
+
+BULLY | Attack | Uncommon | ironclad | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 4 | block none
+vars: calc_base 4; extra_damage 2
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_damage, calculate_damage, get_power_amount
+upgrade: extra_damage 2->3
+
+----
+
+BULWARK | Skill | Uncommon | regent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block 12
+vars: forge 10
+does: forge, gain_block
+upgrade: base_block 12->15; forge 10->13
+
+----
+
+BUNDLE_OF_JOY | Skill | Rare | regent | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 3
+does: add_generated_card_to_creature_hand, create_cards_from_ids, eligible_registered_cards
+upgrade: cards 3->4
+
+----
+
+BURN | Status | Status | status | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage 2 | block none
+vars: damage 2
+
+----
+
+BURNING_PACT | Skill | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 2
+does: draw_cards, exhaust_card, request_card_choice
+reads: hand
+upgrade: cards 2->3
+
+----
+
+BURST | Skill | Rare | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: skills 1
+applies: BURST
+  BURST (buff, counter stack) hooks: after_modifying_card_play_count, after_turn_end, modify_card_play_count
+does: apply_power_to
+upgrade: skills 1->2
+
+----
+
+BURY | Attack | Uncommon | necrobinder | cost 4 | target ANY_ENEMY
+keywords: none | tags: none
+damage 52 | block none
+vars: damage 52
+does: deal_damage_single
+upgrade: base_damage 52->63; damage 52->63
+
+----
+
+BYRDONIS_EGG | Quest | Quest | quest | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage none | block none
+
+----
+
+BYRD_SWOOP | Attack | Event | event | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 14 | block none
+does: deal_damage_single
+upgrade: base_damage 14->18
+
+----
+
+CALAMITY_CARD | Power | Rare | colorless | cost 3 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: CALAMITY
+  CALAMITY (buff, counter stack) hooks: after_card_played, before_card_played
+does: apply_power_to
+upgrade: cost 3->2
+
+----
+
+CALCIFY_CARD | Power | Uncommon | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: calcify 4
+applies: CALCIFY
+  CALCIFY (buff, counter stack) hooks: modify_damage_additive
+does: apply_power_to
+upgrade: calcify 4->6
+
+----
+
+CALCULATED_GAMBLE | Skill | Uncommon | silent | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: discard_cards
+reads: hand
+
+----
+
+CALL_OF_THE_VOID | Power | Rare | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 1
+applies: CALL_OF_THE_VOID
+  CALL_OF_THE_VOID (buff, counter stack) hooks: before_hand_draw
+does: apply_power_to
+
+----
+
+CALTROPS | Power | Event | event | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: thorns_power 3
+applies: THORNS
+  THORNS (buff, counter stack) hooks: before_damage_received
+does: apply_power_to
+upgrade: thorns_power 3->5
+
+----
+
+CAPACITOR | Power | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: repeat 2
+does: add_orb_slot
+upgrade: repeat 2->3
+
+----
+
+CAPTURE_SPIRIT | Skill | Uncommon | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 3 | block none
+vars: cards 3; damage 3
+does: add_generated_card_to_creature_draw_pile, deal_damage, make_soul
+upgrade: base_damage 3->4; cards 3->4; damage 3->4
+
+----
+
+CASCADE | Skill | Rare | ironclad | cost -1 | target SELF
+keywords: none | tags: none
+damage none | block none
+does: auto_play_from_draw
+
+----
+
+CATASTROPHE | Skill | Uncommon | colorless | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 2
+does: auto_play_card, stable_shuffle_cards
+reads: draw_pile
+upgrade: cards 2->3
+
+----
+
+CELESTIAL_MIGHT | Attack | Common | regent | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 6 | block none
+vars: repeat 3
+does: apply_damage, calculate_damage
+upgrade: repeat 3->4
+
+----
+
+CHAOS | Skill | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: repeat 1
+does: channel_orb
+upgrade: repeat 1->2
+
+----
+
+CHARGE | Skill | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 2
+does: make_minion_strike, request_multi_card_choice, transform_card
+reads: draw_pile
+
+----
+
+CHARGE_BATTERY | Skill | Common | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 7
+vars: energy 1
+applies: ENERGY_NEXT_TURN
+  ENERGY_NEXT_TURN (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+does: apply_power_to, calculate_block, gain_resolved_block
+upgrade: base_block 7->10
+
+----
+
+CHILD_OF_THE_STARS | Power | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: block_for_stars 2
+applies: CHILD_OF_THE_STARS
+  CHILD_OF_THE_STARS (buff, counter stack) hooks: on_stars_spent
+does: apply_power_to
+upgrade: block_for_stars 2->3
+
+----
+
+CHILL | Skill | Uncommon | defect | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: channel_orb
+
+----
+
+CINDER | Attack | Common | ironclad | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 18 | block none
+vars: cards_to_exhaust 1
+does: deal_damage_to_target, exhaust_from_draw_pile
+upgrade: base_damage 18->24
+
+----
+
+CLASH | Attack | Event | event | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 14 | block none
+does: deal_damage_single
+upgrade: base_damage 14->18
+
+----
+
+CLAW | Attack | Common | defect | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 3 | block none
+vars: increase 2
+does: all_cards_for_creature, apply_damage, calculate_damage, increase_base_damage
+upgrade: base_damage 3->4; increase 2->3
+
+----
+
+CLEANSE | Skill | Uncommon | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: summon 3
+does: request_card_choice, summon_osty
+reads: draw_pile
+upgrade: summon 3->5
+
+----
+
+CLOAK_AND_DAGGER | Skill | Common | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 6
+vars: cards 1
+does: add_generated_card_to_creature_hand, calculate_block, gain_resolved_block, make_shiv
+upgrade: cards 1->2
+
+----
+
+CLOAK_OF_STARS | Skill | Common | regent | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block 7
+does: gain_block
+upgrade: base_block 7->10
+
+----
+
+CLUMSY | Curse | Curse | curse | cost -1 | target NONE
+keywords: ethereal, unplayable | tags: none
+damage none | block none
+
+----
+
+COLD_SNAP | Attack | Common | defect | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 6 | block none
+does: apply_damage, calculate_damage, channel_orb
+upgrade: base_damage 6->9
+
+----
+
+COLLISION_COURSE | Attack | Common | regent | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+does: add_generated_cards_to_hand, deal_damage_single, make_debris
+upgrade: base_damage 10->14
+
+----
+
+COLOSSUS_CARD | Skill | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 4
+vars: colossus 1
+applies: COLOSSUS
+  COLOSSUS (buff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, gain_block
+upgrade: base_block 4->7
+
+----
+
+COMET | Attack | Rare | regent | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 33 | block none
+vars: damage 33; vulnerable 3; weak 3
+applies: VULNERABLE, WEAK
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 33->44; damage 33->44
+
+----
+
+COMPACT | Skill | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 6
+does: calculate_block, gain_resolved_block, make_fuel, transform_card
+reads: hand
+upgrade: base_block 6->7
+
+----
+
+COMPILE_DRIVER | Attack | Common | defect | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 7 | block none
+vars: calc_base 0; calc_extra 1
+does: apply_damage, calculate_damage, draw_cards, get_unique_orb_type_count
+upgrade: base_damage 7->10
+
+----
+
+CONFLAGRATION | Attack | Rare | ironclad | cost 1 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 8 | block none
+vars: calc_base 8; extra_damage 2
+does: apply_damage, calculate_damage, count_card_plays_finished_this_turn
+upgrade: calc_base 8->9; extra_damage 2->3
+
+----
+
+CONQUEROR | Skill | Uncommon | regent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage none | block none
+vars: forge 3
+applies: CONQUEROR
+  CONQUEROR (debuff, counter stack) hooks: after_turn_end, modify_damage_multiplicative
+does: apply_power_to, forge
+upgrade: forge 3->5
+
+----
+
+CONSUMING_SHADOW | Power | Rare | defect | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: consuming_shadow_power 1; repeat 2
+applies: CONSUMING_SHADOW
+  CONSUMING_SHADOW (buff, counter stack) hooks: after_turn_end
+does: apply_power_to, channel_orb
+upgrade: repeat 2->3
+
+----
+
+CONVERGENCE | Skill | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 1; stars 1
+applies: ENERGY_NEXT_TURN, RETAIN_HAND, STAR_NEXT_TURN
+  ENERGY_NEXT_TURN (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+  RETAIN_HAND (buff, counter stack) hooks: after_turn_end, should_flush
+  STAR_NEXT_TURN (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+does: apply_power_to
+upgrade: stars 1->2
+
+----
+
+COOLANT | Power | Rare | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: coolant_power 2
+applies: COOLANT
+  COOLANT (buff, counter stack) hooks: after_side_turn_start
+does: apply_power_to
+upgrade: coolant_power 2->3
+
+----
+
+COOLHEADED | Skill | Common | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 1
+does: channel_orb, draw_cards
+upgrade: cards 1->2
+
+----
+
+COORDINATE_CARD | Skill | Uncommon | colorless | cost 1 | target ANY_ALLY
+keywords: none | tags: none
+damage none | block none
+vars: strength 5
+applies: COORDINATE
+  COORDINATE (buff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_power_to
+upgrade: strength 5->8
+
+----
+
+CORROSIVE_WAVE | Skill | Rare | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: corrosive_wave 2
+applies: CORROSIVE_WAVE
+  CORROSIVE_WAVE (buff, counter stack) hooks: after_turn_end, on_card_drawn
+does: apply_power_to
+upgrade: corrosive_wave 2->3
+
+----
+
+CORRUPTION_CARD | Power | Ancient | ironclad | cost 3 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: power 1
+applies: CORRUPTION
+  CORRUPTION (buff, single stack) hooks: modify_card_play_result_pile_type_and_position
+does: apply_power_to
+upgrade: cost 3->2
+
+----
+
+COSMIC_INDIFFERENCE | Skill | Common | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 6
+does: gain_block, insert_card_into_draw_pile, request_card_choice
+reads: discard_pile
+upgrade: base_block 6->9
+
+----
+
+COUNTDOWN_CARD | Power | Uncommon | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: countdown 6
+applies: COUNTDOWN
+  COUNTDOWN (buff, counter stack) hooks: after_side_turn_start
+does: apply_power_to
+upgrade: countdown 6->9
+
+----
+
+CRASH_LANDING | Attack | Rare | regent | cost 1 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 21 | block none
+does: add_generated_card_to_creature_hand, deal_damage_all, make_debris
+reads: hand
+upgrade: base_damage 21->26
+
+----
+
+CREATIVE_AI_CARD | Power | Rare | defect | cost 3 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: creative_ai 1
+applies: CREATIVE_AI
+  CREATIVE_AI (buff, counter stack) hooks: before_hand_draw
+does: apply_power_to
+upgrade: cost 3->2
+
+----
+
+CRESCENT_SPEAR | Attack | Common | regent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 6 | block none
+vars: calc_base 6; extra_damage 2
+does: all_cards_for_creature, apply_damage, calculate_damage
+upgrade: base_damage 6->7; extra_damage 2->3
+
+----
+
+CRIMSON_MANTLE | Power | Rare | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: crimson_mantle_power 7
+applies: CRIMSON_MANTLE
+  CRIMSON_MANTLE (buff, counter stack) hooks: after_player_turn_start
+does: apply_power_to, callable, increment
+reads: powers
+upgrade: crimson_mantle_power 7->10
+
+----
+
+CRUELTY_CARD | Power | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cruelty_power 25
+applies: CRUELTY
+  CRUELTY (buff, counter stack)
+does: apply_power_to
+upgrade: cruelty_power 25->50
+
+----
+
+CRUSH_UNDER | Attack | Common | regent | cost 1 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 8 | block none
+vars: damage 8; strength_loss 1
+applies: CRUSH_UNDER
+  CRUSH_UNDER (debuff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_power_to, deal_damage_all
+upgrade: base_damage 8->9; damage 8->9; strength_loss 1->2
+
+----
+
+CURSE_OF_THE_BELL | Curse | Curse | curse | cost -1 | target NONE
+keywords: eternal, unplayable | tags: none
+damage none | block none
+
+----
+
+DAGGER_SPRAY | Attack | Common | silent | cost 1 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 4 | block none
+does: apply_damage, calculate_damage
+upgrade: base_damage 4->6
+
+----
+
+DAGGER_THROW | Attack | Common | silent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 9 | block none
+does: apply_damage, calculate_damage, discard_cards, draw_cards, request_card_choice
+reads: hand
+upgrade: base_damage 9->12
+
+----
+
+DANSE_MACABRE | Power | Uncommon | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: danse_macabre 4; energy 2
+applies: DANSE_MACABRE
+  DANSE_MACABRE (buff, counter stack) hooks: before_card_played
+does: apply_power_to
+upgrade: danse_macabre 4->6
+
+----
+
+DARKNESS_CARD | Skill | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: passives 1
+does: channel_orb, on_passive
+reads: orbs
+upgrade: passives 1->2
+
+----
+
+DARK_EMBRACE_CARD | Power | Rare | ironclad | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: DARK_EMBRACE
+  DARK_EMBRACE (buff, counter stack) hooks: after_card_exhausted, after_turn_end
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+DARK_SHACKLES | Skill | Uncommon | colorless | cost 0 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage none | block none
+vars: strength_loss 9
+applies: DARK_SHACKLES
+  DARK_SHACKLES (debuff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_power_to
+upgrade: strength_loss 9->15
+
+----
+
+DASH | Attack | Uncommon | silent | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block 10
+does: apply_damage, calculate_block, calculate_damage, gain_resolved_block
+upgrade: base_damage 10->13; base_block 10->13
+
+----
+
+DAZED | Status | Status | status | cost -1 | target NONE
+keywords: ethereal, unplayable | tags: none
+damage none | block none
+
+----
+
+DEADLY_POISON | Skill | Common | silent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage none | block none
+vars: poison_power 5
+applies: POISON
+  POISON (debuff, counter stack) hooks: after_side_turn_start
+does: apply_power_to
+upgrade: poison_power 5->7
+
+----
+
+DEATHBRINGER | Skill | Uncommon | necrobinder | cost 2 | target ALL_ENEMIES
+keywords: none | tags: none
+damage none | block none
+vars: doom 21; weak 1
+applies: DOOM, WEAK
+  DOOM (debuff, counter stack) hooks: before_turn_end
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to
+upgrade: doom 21->26
+
+----
+
+DEATHS_DOOR | Skill | Uncommon | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 6
+vars: block 6; repeat 2
+applies: DOOM
+  DOOM (debuff, counter stack) hooks: before_turn_end
+does: gain_block, was_power_applied_this_turn
+upgrade: base_block 6->7; block 6->7
+
+----
+
+DEATH_MARCH | Attack | Uncommon | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 8 | block none
+vars: calc_base 8; extra_damage 3
+does: apply_damage, calculate_damage, count_non_hand_draws_this_turn
+upgrade: base_damage 8->9; calc_base 8->9; extra_damage 3->4
+
+----
+
+DEBILITATE_CARD | Attack | Uncommon | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+vars: damage 10; debilitate 2
+applies: DEBILITATE
+  DEBILITATE (debuff, counter stack) hooks: after_turn_end
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 10->12; damage 10->12; debilitate 2->3
+
+----
+
+DEBRIS | Status | Status | status | cost 1 | target NONE
+keywords: exhaust | tags: none
+damage none | block none
+
+----
+
+DEBT | Curse | Curse | curse | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage none | block none
+vars: gold 10
+
+----
+
+DECAY | Curse | Curse | curse | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage 2 | block none
+vars: damage 2
+
+----
+
+DECISIONS_DECISIONS | Skill | Rare | regent | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 3; repeat 3
+does: auto_play_card, draw_cards, request_card_choice
+reads: hand
+upgrade: cards 3->5
+
+----
+
+DEFEND_DEFECT | Skill | Basic | defect | cost 1 | target SELF
+keywords: none | tags: defend
+damage none | block 5
+does: calculate_block, gain_resolved_block
+upgrade: base_block 5->8
+
+----
+
+DEFEND_IRONCLAD | Skill | Basic | ironclad | cost 1 | target SELF
+keywords: none | tags: defend
+damage none | block 5
+does: gain_block
+upgrade: base_block 5->8
+
+----
+
+DEFEND_NECROBINDER | Skill | Basic | necrobinder | cost 1 | target SELF
+keywords: none | tags: defend
+damage none | block 5
+does: gain_block
+upgrade: base_block 5->8
+
+----
+
+DEFEND_REGENT | Skill | Basic | regent | cost 1 | target SELF
+keywords: none | tags: defend
+damage none | block 5
+does: gain_block
+upgrade: base_block 5->8
+
+----
+
+DEFEND_SILENT | Skill | Basic | silent | cost 1 | target SELF
+keywords: none | tags: defend
+damage none | block 5
+does: calculate_block, gain_resolved_block
+upgrade: base_block 5->8
+
+----
+
+DEFILE | Attack | Common | necrobinder | cost 1 | target ANY_ENEMY
+keywords: ethereal | tags: none
+damage 13 | block none
+does: deal_damage_single
+upgrade: base_damage 13->17
+
+----
+
+DEFLECT | Skill | Common | silent | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block 4
+does: calculate_block, gain_resolved_block
+upgrade: base_block 4->7
+
+----
+
+DEFRAGMENT | Power | Rare | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: focus_power 1
+applies: FOCUS
+  FOCUS (buff, counter stack)
+does: apply_power_to
+upgrade: focus_power 1->2
+
+----
+
+DEFY | Skill | Common | necrobinder | cost 1 | target ANY_ENEMY
+keywords: ethereal | tags: none
+damage none | block 6
+vars: weak 1
+applies: WEAK
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, gain_block
+upgrade: base_block 6->9
+
+----
+
+DELAY | Skill | Uncommon | necrobinder | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block 11
+vars: block 11; energy 1
+applies: ENERGY_NEXT_TURN
+  ENERGY_NEXT_TURN (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+does: apply_power_to, gain_block
+upgrade: base_block 11->13; block 11->13; energy 1->2
+
+----
+
+DEMESNE | Power | Rare | necrobinder | cost 3 | target SELF
+keywords: ethereal | tags: none
+damage none | block none
+vars: cards 1; energy 1
+applies: DEMESNE
+  DEMESNE (buff, counter stack) hooks: modify_hand_draw, modify_max_energy
+does: apply_power_to
+upgrade: cost 3->2
+
+----
+
+DEMONIC_SHIELD | Skill | Uncommon | ironclad | cost 0 | target ANY_ALLY
+keywords: exhaust | tags: none
+damage none | block none
+vars: calc_base 0; calc_extra 1; hp_loss 1
+does: calculate_block, fire_after_block_gained, gain_block, self_hp_loss
+reads: block
+
+----
+
+DEMON_FORM_CARD | Power | Rare | ironclad | cost 3 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: strength 3
+applies: DEMON_FORM
+  DEMON_FORM (buff, counter stack) hooks: after_side_turn_start
+does: apply_power_to
+upgrade: strength 3->4
+
+----
+
+DEPRECATED_CARD | Status | Status | unknown | cost 0 | target NONE
+keywords: exhaust | tags: none
+damage none | block none
+
+----
+
+DEVASTATE | Attack | Uncommon | regent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 35 | block none
+vars: damage 35
+does: deal_damage_single
+upgrade: base_damage 35->45; damage 35->45
+
+----
+
+DEVOUR_LIFE_CARD | Power | Rare | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: devour_life 1
+applies: DEVOUR_LIFE
+  DEVOUR_LIFE (buff, counter stack) hooks: after_card_played
+does: apply_power_to
+upgrade: devour_life 1->2
+
+----
+
+DIRGE | Skill | Uncommon | necrobinder | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: summon 3
+does: add_generated_card_to_creature_draw_pile, make_soul, summon_osty
+upgrade: summon 3->4
+
+----
+
+DISCOVERY | Skill | Uncommon | colorless | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: add_generated_card_to_creature_hand, create_distinct_character_cards, request_card_choice, set_temporary_cost_for_turn
+
+----
+
+DISINTEGRATION | Status | Status | token | cost -1 | target NONE
+keywords: none | tags: none
+damage none | block none
+vars: disintegration_power 6
+
+----
+
+DISMANTLE | Attack | Uncommon | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 8 | block none
+vars: hits 2
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_damage, calculate_damage, has_power
+upgrade: base_damage 8->10
+
+----
+
+DISTRACTION | Skill | Event | event | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: add_generated_card_to_creature_hand, create_character_cards, set_temporary_free_this_turn
+upgrade: cost 1->0
+
+----
+
+DODGE_AND_ROLL | Skill | Common | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 4
+applies: BLOCK_NEXT_TURN
+  BLOCK_NEXT_TURN (buff, counter stack) hooks: after_block_cleared, after_side_turn_start
+does: apply_power_to, calculate_block, gain_resolved_block
+upgrade: base_block 4->6
+
+----
+
+DOMINATE | Skill | Rare | ironclad | cost 1 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage none | block none
+vars: strength_per_vulnerable 1
+applies: STRENGTH, VULNERABLE
+  STRENGTH (buff, counter stack) hooks: modify_damage_additive
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, get_power_amount
+
+----
+
+DOUBLE_ENERGY | Skill | Uncommon | defect | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+reads: energy
+upgrade: cost 1->0
+
+----
+
+DOUBT | Curse | Curse | curse | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage none | block none
+vars: weak 1
+
+----
+
+DRAIN_POWER | Attack | Common | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+vars: cards 2
+does: deal_damage_single, upgrade_random_cards
+reads: discard_pile
+upgrade: base_damage 10->12; cards 2->3
+
+----
+
+DRAMATIC_ENTRANCE | Attack | Uncommon | colorless | cost 0 | target ALL_ENEMIES
+keywords: exhaust, innate | tags: none
+damage 11 | block none
+does: deal_damage_all
+upgrade: base_damage 11->15
+
+----
+
+DREDGE | Skill | Uncommon | necrobinder | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 3
+does: move_card_to_hand, request_multi_card_choice
+reads: discard_pile, hand
+
+----
+
+DRUM_OF_BATTLE_CARD | Skill | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 2; drum_of_battle_power 1
+applies: DRUM_OF_BATTLE
+  DRUM_OF_BATTLE (buff, counter stack) hooks: before_hand_draw_late
+does: apply_power_to, draw_cards
+
+----
+
+DUALCAST | Skill | Basic | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+does: evoke_front, on_evoke
+reads: orbs
+upgrade: cost 1->0
+
+----
+
+DUAL_WIELD | Skill | Event | event | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 1
+does: add_generated_cards_to_hand, clone, new_card_instance_id, request_card_choice
+reads: hand
+upgrade: cards 1->2
+
+----
+
+DYING_STAR | Attack | Rare | regent | cost 1 | target ALL_ENEMIES
+keywords: ethereal | tags: none
+damage 9 | block none
+vars: damage 9; strength_loss 9
+applies: DYING_STAR
+  DYING_STAR (debuff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_power_to, deal_damage_all
+upgrade: base_damage 9->11; damage 9->11; strength_loss 9->11
+
+----
+
+ECHOING_SLASH | Attack | Uncommon | silent | cost 1 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 10 | block none
+vars: damage 10
+does: apply_damage, calculate_damage
+upgrade: base_damage 10->13; damage 10->13
+
+----
+
+ECHO_FORM_CARD | Power | Rare | defect | cost 3 | target SELF
+keywords: ethereal | tags: none
+damage none | block none
+vars: echo_form 1
+applies: ECHO_FORM
+  ECHO_FORM (buff, counter stack) hooks: modify_card_play_count
+does: apply_power_to
+
+----
+
+EIDOLON | Skill | Rare | necrobinder | cost 2 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+applies: INTANGIBLE
+  INTANGIBLE (buff, counter stack) hooks: modify_damage_cap, modify_hp_lost, on_turn_end_enemy_side
+does: apply_power_to, exhaust_card
+reads: hand
+upgrade: cost 2->1
+
+----
+
+END_OF_DAYS | Skill | Rare | necrobinder | cost 3 | target ALL_ENEMIES
+keywords: none | tags: none
+damage none | block none
+vars: doom 29
+applies: DOOM
+  DOOM (debuff, counter stack) hooks: before_turn_end
+does: apply_power_to, get_power_amount, kill_doomed_creatures
+reads: current_hp
+upgrade: doom 29->37
+
+----
+
+ENERGY_SURGE | Skill | Uncommon | defect | cost 1 | target ALL_ALLIES
+keywords: exhaust | tags: none
+damage none | block none
+vars: energy 2
+does: gain_energy, get_player_allies_of
+upgrade: energy 2->3
+
+----
+
+ENFEEBLING_TOUCH | Skill | Uncommon | necrobinder | cost 1 | target ANY_ENEMY
+keywords: ethereal | tags: none
+damage none | block none
+vars: strength_loss 8
+applies: ENFEEBLING_TOUCH
+  ENFEEBLING_TOUCH (debuff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_power_to
+upgrade: strength_loss 8->11
+
+----
+
+ENLIGHTENMENT | Skill | Event | event | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: set_combat_cost, set_temporary_cost_for_turn
+reads: hand
+
+----
+
+ENTHRALLED | Curse | Curse | curse | cost 2 | target NONE
+keywords: eternal | tags: none
+damage none | block none
+
+----
+
+ENTRENCH | Skill | Event | event | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+does: gain_resolved_block
+reads: block
+upgrade: cost 2->1
+
+----
+
+ENTROPY | Power | Rare | colorless | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 1
+applies: ENTROPY
+  ENTROPY (buff, counter stack) hooks: after_player_turn_start
+does: apply_power_to
+
+----
+
+ENVENOM_CARD | Power | Rare | silent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: envenom_power 1
+applies: ENVENOM
+  ENVENOM (buff, counter stack) hooks: after_damage_given
+does: apply_power_to
+upgrade: envenom_power 1->2
+
+----
+
+EQUILIBRIUM | Skill | Uncommon | colorless | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block 13
+vars: equilibrium 1
+applies: RETAIN_HAND
+  RETAIN_HAND (buff, counter stack) hooks: after_turn_end, should_flush
+does: apply_power_to, gain_block
+upgrade: base_block 13->16
+
+----
+
+ERADICATE | Attack | Rare | necrobinder | cost 0 | target ANY_ENEMY
+keywords: retain | tags: none
+damage 11 | block none
+vars: damage 11
+does: apply_damage, calculate_damage
+upgrade: base_damage 11->14; damage 11->14
+
+----
+
+ESCAPE_PLAN | Skill | Uncommon | silent | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block 3
+does: calculate_block, draw_cards, gain_resolved_block
+reads: hand
+upgrade: base_block 3->5
+
+----
+
+ETERNAL_ARMOR | Power | Rare | colorless | cost 3 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: plating 9
+applies: PLATING
+  PLATING (buff, counter stack) hooks: after_turn_end, before_side_turn_start, before_turn_end_early, on_turn_end_enemy_side
+does: apply_power_to
+upgrade: plating 9->12
+
+----
+
+EVIL_EYE | Skill | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 8
+does: gain_block, was_card_exhausted_this_turn
+upgrade: base_block 8->11
+
+----
+
+EXPECT_A_FIGHT | Skill | Uncommon | ironclad | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: calc_base 0; calc_extra 1; energy 0
+does: gain_energy
+reads: hand
+upgrade: cost 2->1
+
+----
+
+EXPERTISE | Skill | Uncommon | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 2
+does: draw_cards
+reads: hand
+upgrade: cards 2->3
+
+----
+
+EXPOSE | Skill | Uncommon | silent | cost 0 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage none | block none
+vars: power 2
+applies: ARTIFACT, VULNERABLE
+  ARTIFACT (buff, counter stack) hooks: try_block_debuff
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to
+reads: block, powers
+upgrade: power 2->3
+
+----
+
+EXTERMINATE | Attack | Event | event | cost 1 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 3 | block none
+vars: repeat 4
+does: deal_damage_all
+upgrade: base_damage 3->4
+
+----
+
+FALLING_STAR | Attack | Basic | regent | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 8 | block none
+vars: vulnerable 1; weak 1
+applies: VULNERABLE, WEAK
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 8->12
+
+----
+
+FAN_OF_KNIVES_CARD | Power | Rare | silent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: shivs 4
+applies: FAN_OF_KNIVES
+  FAN_OF_KNIVES (buff, single stack)
+does: add_generated_card_to_creature_hand, apply_power_to, make_shiv
+upgrade: shivs 4->5
+
+----
+
+FASTEN | Power | Uncommon | colorless | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: extra_block 4
+applies: FASTEN
+  FASTEN (buff, counter stack) hooks: modify_block_additive
+does: apply_power_to
+upgrade: extra_block 4->6
+
+----
+
+FEAR | Attack | Common | necrobinder | cost 1 | target ANY_ENEMY
+keywords: ethereal | tags: none
+damage 7 | block none
+vars: vulnerable 1
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 7->8; vulnerable 1->2
+
+----
+
+FEED | Attack | Rare | ironclad | cost 1 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage 10 | block none
+vars: max_hp 3
+does: deal_damage_to_target, gain_max_hp, should_owner_death_trigger_fatal
+upgrade: base_damage 10->12; max_hp 3->4
+
+----
+
+FEEDING_FRENZY_CARD | Skill | Event | event | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: strength 5
+applies: FEEDING_FRENZY
+  FEEDING_FRENZY (buff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_power_to
+upgrade: strength 5->7
+
+----
+
+FEEL_NO_PAIN_CARD | Power | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: power 3
+applies: FEEL_NO_PAIN
+  FEEL_NO_PAIN (buff, counter stack) hooks: after_card_exhausted
+does: apply_power_to
+upgrade: power 3->4
+
+----
+
+FERAL | Power | Uncommon | defect | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: feral_power 1
+applies: FERAL
+  FERAL (buff, counter stack) hooks: after_modifying_card_play_result_pile_or_position, after_power_amount_changed, before_side_turn_start, modify_card_play_result_pile_type_and_position
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+FETCH | Attack | Uncommon | necrobinder | cost 0 | target ANY_ENEMY
+keywords: none | tags: osty_attack
+damage 3 | block none
+vars: cards 1; osty_damage 3
+does: deal_osty_damage_single, draw_cards, has_card_play_finished_this_turn, osty
+upgrade: base_damage 3->6; osty_damage 3->6
+
+----
+
+FIEND_FIRE | Attack | Rare | ironclad | cost 2 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage 7 | block none
+does: apply_damage, calculate_damage, exhaust_card
+reads: hand
+upgrade: base_damage 7->10
+
+----
+
+FIGHT_ME | Attack | Uncommon | ironclad | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: enemy_strength 1; repeat 2; strength 3
+applies: STRENGTH
+  STRENGTH (buff, counter stack) hooks: modify_damage_additive
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 5->6; strength 3->4
+
+----
+
+FIGHT_THROUGH | Skill | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 13
+vars: wounds 2
+does: add_generated_card_to_creature_discard, calculate_block, gain_resolved_block, make_wound
+upgrade: base_block 13->17
+
+----
+
+FINESSE | Skill | Uncommon | colorless | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block 4
+vars: cards 1
+does: draw_cards, gain_block
+upgrade: base_block 4->7
+
+----
+
+FINISHER | Attack | Uncommon | silent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 6 | block none
+vars: calc_base 0; calc_extra 1
+does: apply_damage, calculate_damage, count_card_plays_finished_this_turn
+upgrade: base_damage 6->8
+
+----
+
+FISTICUFFS | Attack | Uncommon | colorless | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 7 | block none
+does: apply_damage, calculate_block, calculate_damage, gain_resolved_block
+upgrade: base_damage 7->9
+
+----
+
+FLAK_CANNON | Attack | Rare | defect | cost 2 | target RANDOM_ENEMY
+keywords: none | tags: none
+damage 8 | block none
+vars: calc_base 0; calc_extra 1
+does: apply_damage, calculate_damage, exhaust_card, non_exhausted_status_cards
+upgrade: base_damage 8->11
+
+----
+
+FLAME_BARRIER_CARD | Skill | Uncommon | ironclad | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block 12
+vars: damage_back 4
+applies: FLAME_BARRIER
+  FLAME_BARRIER (buff, counter stack) hooks: after_damage_received, after_turn_end
+does: apply_power_to, gain_block
+upgrade: base_block 12->16; damage_back 4->6
+
+----
+
+FLANKING | Skill | Rare | silent | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage none | block none
+vars: flanking_power 2
+applies: FLANKING
+  FLANKING (debuff, counter stack) hooks: after_power_amount_changed, after_turn_end, modify_damage_multiplicative
+does: apply_power_to
+reads: powers
+upgrade: cost 2->1
+
+----
+
+FLASH_OF_STEEL | Attack | Uncommon | colorless | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: cards 1
+does: deal_damage_single, draw_cards
+upgrade: base_damage 5->8
+
+----
+
+FLATTEN | Attack | Common | necrobinder | cost 2 | target ANY_ENEMY
+keywords: none | tags: osty_attack
+damage 12 | block none
+vars: osty_damage 12
+does: deal_osty_damage_single
+upgrade: base_damage 12->16; osty_damage 12->16
+
+----
+
+FLECHETTES | Attack | Uncommon | silent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: calc_base 0; calc_extra 1
+does: apply_damage, calculate_damage
+reads: hand
+upgrade: base_damage 5->7
+
+----
+
+FLICK_FLACK | Attack | Common | silent | cost 1 | target ALL_ENEMIES
+keywords: sly | tags: none
+damage 7 | block none
+does: apply_damage, calculate_damage
+upgrade: base_damage 7->9
+
+----
+
+FOCUSED_STRIKE_CARD | Attack | Common | defect | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 9 | block none
+vars: focus_power 1
+applies: FOCUSED_STRIKE
+  FOCUSED_STRIKE (buff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 9->11; focus_power 1->2
+
+----
+
+FOLLY | Curse | Curse | curse | cost -1 | target NONE
+keywords: eternal, ethereal, innate, unplayable | tags: none
+damage none | block none
+
+----
+
+FOOTWORK | Power | Uncommon | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: dexterity 2
+applies: DEXTERITY
+  DEXTERITY (buff, counter stack) hooks: modify_block_additive
+does: apply_power_to
+upgrade: dexterity 2->3
+
+----
+
+FORBIDDEN_GRIMOIRE | Power | Ancient | necrobinder | cost 2 | target SELF
+keywords: eternal | tags: none
+damage none | block none
+applies: FORBIDDEN_GRIMOIRE
+  FORBIDDEN_GRIMOIRE (buff, counter stack) hooks: after_combat_end
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+FOREGONE_CONCLUSION | Skill | Rare | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 2
+applies: FOREGONE_CONCLUSION
+  FOREGONE_CONCLUSION (buff, counter stack) hooks: before_hand_draw
+does: apply_power_to
+upgrade: cards 2->3
+
+----
+
+FORGOTTEN_RITUAL | Skill | Uncommon | ironclad | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: energy 3
+does: gain_energy, was_card_exhausted_this_turn
+upgrade: energy 3->4
+
+----
+
+FRANTIC_ESCAPE | Status | Status | status | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: SANDPIT
+  SANDPIT (buff, counter stack) hooks: after_side_turn_start
+does: callable, increment_target
+reads: powers
+
+----
+
+FRIENDSHIP | Power | Uncommon | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 1; strength 2
+applies: FRIENDSHIP, STRENGTH
+  FRIENDSHIP (buff, counter stack) hooks: modify_max_energy
+  STRENGTH (buff, counter stack) hooks: modify_damage_additive
+does: apply_power_to
+upgrade: strength 2->1
+
+----
+
+FTL | Attack | Uncommon | defect | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: cards 1; play_max 3
+does: apply_damage, calculate_damage, count_card_plays_finished_this_turn, draw_cards
+upgrade: base_damage 5->6; play_max 3->4
+
+----
+
+FUEL | Skill | Status | token | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 1; energy 1
+does: draw_cards, gain_energy
+upgrade: cards 1->2; energy 1->2
+
+----
+
+FURNACE | Power | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: forge 5
+applies: FURNACE
+  FURNACE (buff, counter stack) hooks: after_side_turn_start
+does: apply_power_to
+upgrade: forge 5->7
+
+----
+
+FUSION | Skill | Uncommon | defect | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: channel_orb
+
+----
+
+GAMMA_BLAST | Attack | Uncommon | regent | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 13 | block none
+vars: damage 13; vulnerable 2; weak 2
+applies: VULNERABLE, WEAK
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 13->18; damage 13->18
+
+----
+
+GANG_UP | Attack | Uncommon | colorless | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: calc_base 5; extra_damage 5
+does: apply_damage, calculate_damage, count_allied_powered_hits_on_target_this_turn
+upgrade: base_damage 5->7; extra_damage 5->7
+
+----
+
+GATHER_LIGHT | Skill | Common | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 8
+vars: stars 1
+does: gain_block, gain_stars
+upgrade: base_block 8->11
+
+----
+
+GENESIS | Power | Rare | regent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: stars_per_turn 2
+applies: GENESIS
+  GENESIS (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+does: apply_power_to
+upgrade: stars_per_turn 2->3
+
+----
+
+GENETIC_ALGORITHM | Skill | Rare | defect | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block 1
+vars: block 1; increase 3
+does: calculate_block, gain_resolved_block, increase_base_block
+upgrade: increase 3->4
+
+----
+
+GIANT_ROCK | Attack | Status | token | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 20 | block none
+does: deal_damage_single
+upgrade: base_damage 20->24
+
+----
+
+GLACIER | Skill | Uncommon | defect | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block 6
+does: calculate_block, channel_orb, gain_resolved_block
+upgrade: base_block 6->9
+
+----
+
+GLASSWORK | Skill | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 5
+does: calculate_block, channel_orb, gain_resolved_block
+upgrade: base_block 5->8
+
+----
+
+GLIMMER | Skill | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 3; put_back 1
+does: draw_cards, insert_card_into_draw_pile, request_card_choice
+reads: hand
+upgrade: cards 3->4
+
+----
+
+GLIMPSE_BEYOND | Skill | Rare | necrobinder | cost 1 | target ALL_ALLIES
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 3
+does: add_generated_card_to_creature_draw_pile, get_player_allies_of, make_soul
+upgrade: cards 3->4
+
+----
+
+GLITTERSTREAM | Skill | Common | regent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block 11
+vars: block 11; block_next_turn 5
+applies: BLOCK_NEXT_TURN
+  BLOCK_NEXT_TURN (buff, counter stack) hooks: after_block_cleared, after_side_turn_start
+does: apply_power_to, calculate_block, gain_block
+upgrade: base_block 11->13; block 11->13; block_next_turn 5->7
+
+----
+
+GLOW | Skill | Common | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 1; stars 1
+does: draw_cards, gain_stars
+upgrade: stars 1->2
+
+----
+
+GOLD_AXE | Attack | Rare | colorless | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage none | block none
+vars: calc_base 0; extra_damage 1
+does: apply_damage, calculate_damage, count_cards_played_this_combat
+
+----
+
+GO_FOR_THE_EYES | Attack | Common | defect | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 3 | block none
+vars: weak 1
+applies: WEAK
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_damage, apply_power_to, calculate_damage, target_intends_to_attack
+upgrade: base_damage 3->4; weak 1->2
+
+----
+
+GRAND_FINALE | Attack | Rare | silent | cost 0 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 60 | block none
+does: apply_damage, calculate_damage
+upgrade: base_damage 60->75
+
+----
+
+GRAVEBLAST | Attack | Common | necrobinder | cost 1 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage 4 | block none
+does: deal_damage_single, request_card_choice
+reads: discard_pile
+upgrade: base_damage 4->6
+
+----
+
+GRAVE_WARDEN | Skill | Common | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 8
+vars: cards 1
+does: gain_block, make_soul
+reads: draw_pile
+upgrade: base_block 8->11
+
+----
+
+GREED | Curse | Curse | curse | cost -1 | target NONE
+keywords: eternal, unplayable | tags: none
+damage none | block none
+
+----
+
+GUARDS | Skill | Rare | regent | cost 2 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: make_minion_sacrifice, request_multi_card_choice, transform_card
+reads: hand
+
+----
+
+GUIDING_STAR | Attack | Common | regent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 12 | block none
+vars: cards 2
+applies: DRAW_CARDS_NEXT_TURN
+  DRAW_CARDS_NEXT_TURN (buff, counter stack) hooks: after_side_turn_start, modify_hand_draw
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 12->13; cards 2->3
+
+----
+
+GUILTY | Curse | Curse | curse | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage none | block none
+vars: combats 5
+
+----
+
+GUNK_UP | Attack | Common | defect | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 4 | block none
+vars: repeat 3
+does: add_generated_card_to_creature_discard, apply_damage, calculate_damage, make_slimed
+upgrade: base_damage 4->5
+
+----
+
+HAILSTORM | Power | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: hailstorm_power 6
+applies: HAILSTORM
+  HAILSTORM (buff, counter stack) hooks: before_turn_end
+does: apply_power_to
+upgrade: hailstorm_power 6->8
+
+----
+
+HAMMER_TIME | Power | Rare | regent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: HAMMER_TIME
+  HAMMER_TIME (buff, single stack) hooks: after_forge
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+HAND_OF_GREED | Attack | Rare | colorless | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 20 | block none
+vars: gold 20
+does: deal_damage_single, gain_gold, should_owner_death_trigger_fatal
+upgrade: base_damage 20->25; gold 20->25
+
+----
+
+HAND_TRICK | Skill | Uncommon | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 7
+does: calculate_block, gain_resolved_block, request_card_choice
+reads: hand
+upgrade: base_block 7->10
+
+----
+
+HANG | Attack | Rare | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+vars: damage 10
+applies: HANG
+  HANG (debuff, counter stack) hooks: modify_damage_multiplicative
+does: apply_power_to, deal_damage_single, get_power_amount
+upgrade: base_damage 10->13; damage 10->13
+
+----
+
+HAUNT | Power | Uncommon | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: hp_loss 7
+applies: HAUNT
+  HAUNT (buff, counter stack) hooks: after_card_played
+does: apply_power_to
+upgrade: hp_loss 7->9
+
+----
+
+HAVOC | Skill | Common | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+does: auto_play_from_draw
+upgrade: cost 1->0
+
+----
+
+HAZE | Skill | Uncommon | silent | cost 2 | target ALL_ENEMIES
+keywords: none | tags: none
+damage none | block none
+vars: poison_power 4
+applies: POISON
+  POISON (debuff, counter stack) hooks: after_side_turn_start
+does: apply_power_to
+upgrade: poison_power 4->6
+
+----
+
+HEADBUTT | Attack | Common | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 9 | block none
+does: deal_damage_to_target, insert_card_into_draw_pile, request_card_choice
+reads: discard_pile
+upgrade: base_damage 9->12
+
+----
+
+HEAVENLY_DRILL | Attack | Rare | regent | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 8 | block none
+vars: damage 8; energy 4
+does: apply_damage, calculate_damage
+upgrade: base_damage 8->10; damage 8->10
+
+----
+
+HEGEMONY | Attack | Uncommon | regent | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 15 | block none
+vars: damage 15; energy 2
+applies: ENERGY_NEXT_TURN
+  ENERGY_NEXT_TURN (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 15->18; damage 15->18; energy 2->3
+
+----
+
+HEIRLOOM_HAMMER | Attack | Rare | regent | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 20 | block none
+vars: repeat 1
+does: add_generated_cards_to_hand, clone, deal_damage_single, eligible_registered_cards, new_card_instance_id, request_card_choice
+reads: hand
+upgrade: base_damage 20->25
+
+----
+
+HELIX_DRILL | Attack | Rare | defect | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 3 | block none
+vars: calc_base 0; calc_extra 1
+does: apply_damage, calculate_damage, energy_spent_this_turn, modified_card_cost
+upgrade: base_damage 3->5
+
+----
+
+HELLO_WORLD_CARD | Power | Event | event | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: HELLO_WORLD
+  HELLO_WORLD (buff, counter stack) hooks: before_hand_draw
+does: apply_power_to
+
+----
+
+HELLRAISER_CARD | Power | Rare | ironclad | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: HELLRAISER
+  HELLRAISER (buff, single stack)
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+HEMOKINESIS | Attack | Uncommon | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 15 | block none
+vars: hp_loss 2
+does: deal_damage_to_target, self_hp_loss
+upgrade: base_damage 15->20
+
+----
+
+HIDDEN_CACHE | Skill | Common | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: star_next_turn_power 3; stars 1
+applies: STAR_NEXT_TURN
+  STAR_NEXT_TURN (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+does: apply_power_to, gain_stars
+upgrade: star_next_turn_power 3->4
+
+----
+
+HIDDEN_DAGGERS | Skill | Uncommon | silent | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 2; shivs 2
+does: add_generated_card_to_creature_hand, discard_cards, finish, make_shiv, request_card_choice, request_multi_card_choice
+reads: hand
+
+----
+
+HIDDEN_GEM | Skill | Rare | colorless | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: replay 2
+reads: draw_pile
+upgrade: replay 2->3
+
+----
+
+HIGH_FIVE | Attack | Uncommon | necrobinder | cost 2 | target ALL_ENEMIES
+keywords: none | tags: osty_attack
+damage 11 | block none
+vars: osty_damage 11; vulnerable 2
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, deal_osty_damage_all, osty
+upgrade: base_damage 11->13; osty_damage 11->13; vulnerable 2->3
+
+----
+
+HOLOGRAM | Skill | Common | defect | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block 3
+does: calculate_block, gain_resolved_block, request_card_choice
+reads: discard_pile
+upgrade: base_block 3->5
+
+----
+
+HOTFIX | Skill | Common | defect | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: focus_power 2
+applies: HOTFIX
+  HOTFIX (buff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_power_to
+
+----
+
+HOWL_FROM_BEYOND | Attack | Uncommon | ironclad | cost 3 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 18 | block none
+does: deal_damage_all_enemies
+upgrade: base_damage 18->24
+
+----
+
+HUDDLE_UP | Skill | Uncommon | colorless | cost 1 | target ALL_ALLIES
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 2
+does: draw_cards_for_creature, get_teammates_of
+upgrade: cards 2->3
+
+----
+
+HYPERBEAM | Attack | Rare | defect | cost 2 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 30 | block none
+vars: focus_power 3
+applies: FOCUS
+  FOCUS (buff, counter stack)
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 30->38
+
+----
+
+ICE_LANCE | Attack | Rare | defect | cost 3 | target ANY_ENEMY
+keywords: none | tags: none
+damage 19 | block none
+vars: repeat 3
+does: apply_damage, calculate_damage, channel_orb
+upgrade: base_damage 19->24
+
+----
+
+IGNITION | Skill | Uncommon | defect | cost 1 | target ANY_ALLY
+keywords: exhaust | tags: none
+damage none | block none
+does: channel_orb
+
+----
+
+IMPATIENCE | Skill | Uncommon | colorless | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 2
+does: draw_cards
+reads: hand
+upgrade: cards 2->3
+
+----
+
+IMPERVIOUS | Skill | Rare | ironclad | cost 2 | target SELF
+keywords: exhaust | tags: none
+damage none | block 30
+does: gain_block
+upgrade: base_block 30->40
+
+----
+
+INFECTION | Status | Status | status | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage 3 | block none
+vars: damage 3
+
+----
+
+INFERNAL_BLADE | Skill | Uncommon | ironclad | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: add_generated_card_to_creature_hand, create_character_cards, set_temporary_free_this_turn
+upgrade: cost 1->0
+
+----
+
+INFERNO_CARD | Power | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: inferno_power 6
+applies: INFERNO
+  INFERNO (buff, counter stack) hooks: after_damage_received, after_player_turn_start
+does: apply_power_to, callable, increment_self_damage
+reads: powers
+upgrade: inferno_power 6->9
+
+----
+
+INFINITE_BLADES_CARD | Power | Uncommon | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: INFINITE_BLADES
+  INFINITE_BLADES (buff, counter stack) hooks: before_hand_draw
+does: apply_power_to
+
+----
+
+INFLAME | Power | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: strength 2
+applies: STRENGTH
+  STRENGTH (buff, counter stack) hooks: modify_damage_additive
+does: apply_power_to
+upgrade: strength 2->3
+
+----
+
+INJURY | Curse | Curse | curse | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage none | block none
+
+----
+
+INTERCEPT_CARD | Skill | Uncommon | colorless | cost 1 | target ANY_ALLY
+keywords: none | tags: none
+damage none | block 9
+applies: COVERED
+  COVERED (buff, single stack) hooks: after_power_amount_changed, after_turn_end, modify_damage_multiplicative
+does: apply_power_to, calculate_block, gain_resolved_block
+upgrade: base_block 9->13
+
+----
+
+INVOKE | Skill | Common | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 2; summon 2
+applies: ENERGY_NEXT_TURN, SUMMON_NEXT_TURN
+  ENERGY_NEXT_TURN (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+  SUMMON_NEXT_TURN (buff, counter stack) hooks: after_player_turn_start
+does: apply_power_to
+upgrade: energy 2->3; summon 2->3
+
+----
+
+IRON_WAVE | Attack | Common | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block 5
+does: deal_damage_to_target, gain_block
+upgrade: base_damage 5->7; base_block 5->7
+
+----
+
+ITERATION_CARD | Power | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: iteration_power 2
+applies: ITERATION
+  ITERATION (buff, counter stack) hooks: on_card_drawn
+does: apply_power_to
+upgrade: iteration_power 2->3
+
+----
+
+I_AM_INVINCIBLE | Skill | Rare | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 10
+vars: block 10
+does: gain_block
+upgrade: base_block 10->13; block 10->13
+
+----
+
+JACKPOT | Attack | Rare | colorless | cost 3 | target ANY_ENEMY
+keywords: none | tags: none
+damage 25 | block none
+vars: cards 3
+does: add_generated_card_to_creature_hand, card_preview, create_cards_from_ids, deal_damage_single, eligible_registered_cards, get_character, upgrade_card
+upgrade: base_damage 25->30
+
+----
+
+JACK_OF_ALL_TRADES | Skill | Uncommon | colorless | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 1
+does: add_generated_card_to_creature_hand, create_cards_from_ids, eligible_registered_cards
+upgrade: cards 1->2
+
+----
+
+JUGGERNAUT_CARD | Power | Rare | ironclad | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: juggernaut_power 6
+applies: JUGGERNAUT
+  JUGGERNAUT (buff, counter stack) hooks: after_block_gained
+does: apply_power_to
+upgrade: juggernaut_power 6->8
+
+----
+
+JUGGLING_CARD | Power | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: JUGGLING
+  JUGGLING (buff, counter stack) hooks: after_card_played, after_power_amount_changed, after_turn_end
+does: apply_power_to
+
+----
+
+KINGLY_KICK | Attack | Uncommon | regent | cost 4 | target ANY_ENEMY
+keywords: none | tags: none
+damage 27 | block none
+vars: damage 27
+does: deal_damage_single
+upgrade: base_damage 27->35; damage 27->35
+
+----
+
+KINGLY_PUNCH | Attack | Uncommon | regent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 8 | block none
+vars: damage 8; increase 4
+does: deal_damage_single
+upgrade: base_damage 8->10; damage 8->10; increase 4->6
+
+----
+
+KNIFE_TRAP | Skill | Rare | silent | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage none | block none
+vars: calc_base 0; calc_extra 1
+does: apply_damage, calculate_damage
+reads: exhaust_pile
+
+----
+
+KNOCKDOWN | Attack | Rare | colorless | cost 3 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+vars: damage 10; knockdown 2
+applies: KNOCKDOWN
+  KNOCKDOWN (debuff, counter stack) hooks: after_power_amount_changed, after_turn_end, modify_damage_multiplicative
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 10->14; damage 10->14; knockdown 2->3
+
+----
+
+KNOCKOUT_BLOW | Attack | Uncommon | regent | cost 3 | target ANY_ENEMY
+keywords: none | tags: none
+damage 30 | block none
+vars: damage 30; stars 5
+does: deal_damage_single, gain_stars
+upgrade: base_damage 30->38; damage 30->38
+
+----
+
+KNOW_THY_PLACE | Skill | Common | regent | cost 0 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage none | block none
+vars: vulnerable 1; weak 1
+applies: VULNERABLE, WEAK
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to
+
+----
+
+LANTERN_KEY | Quest | Quest | quest | cost -1 | target SELF
+keywords: unplayable | tags: none
+damage none | block none
+
+----
+
+LARGESSE | Skill | Uncommon | regent | cost 0 | target ANY_ALLY
+keywords: none | tags: none
+damage none | block none
+does: add_generated_card_to_creature_hand, create_cards_from_ids, eligible_registered_cards, upgrade_card
+
+----
+
+LEADING_STRIKE | Attack | Common | silent | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 3 | block none
+vars: shivs 2
+does: add_generated_card_to_creature_hand, apply_damage, calculate_damage, make_shiv
+upgrade: base_damage 3->6
+
+----
+
+LEAP | Skill | Common | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 9
+does: calculate_block, gain_resolved_block
+upgrade: base_block 9->12
+
+----
+
+LEGION_OF_BONE | Skill | Uncommon | necrobinder | cost 2 | target ALL_ALLIES
+keywords: none | tags: none
+damage none | block none
+vars: summon 6
+does: summon_osty
+upgrade: summon 6->8
+
+----
+
+LEG_SWEEP | Skill | Uncommon | silent | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage none | block 11
+vars: weak 2
+applies: WEAK
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, calculate_block, gain_resolved_block
+upgrade: base_block 11->14; weak 2->3
+
+----
+
+LETHALITY_CARD | Power | Uncommon | necrobinder | cost 1 | target SELF
+keywords: ethereal | tags: none
+damage none | block none
+vars: lethality 50
+applies: LETHALITY
+  LETHALITY (buff, counter stack) hooks: modify_damage_multiplicative
+does: apply_power_to
+upgrade: lethality 50->75
+
+----
+
+LIFT | Skill | Uncommon | colorless | cost 1 | target ANY_ALLY
+keywords: none | tags: none
+damage none | block 11
+does: calculate_block, gain_resolved_block
+upgrade: base_block 11->16
+
+----
+
+LIGHTNING_ROD | Skill | Common | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 4
+vars: lightning_rod_power 2
+applies: LIGHTNING_ROD
+  LIGHTNING_ROD (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+does: apply_power_to, calculate_block, gain_resolved_block
+upgrade: base_block 4->7
+
+----
+
+LOOP_CARD | Power | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: loop 1
+applies: LOOP
+  LOOP (buff, counter stack) hooks: after_player_turn_start
+does: apply_power_to
+upgrade: loop 1->2
+
+----
+
+LUMINESCE | Skill | Status | token | cost 0 | target SELF
+keywords: exhaust, retain | tags: none
+damage none | block none
+vars: energy 2
+does: gain_energy
+upgrade: energy 2->3
+
+----
+
+LUNAR_BLAST | Attack | Uncommon | regent | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 4 | block none
+vars: calc_base 0; calc_extra 1; damage 4
+does: apply_damage, calculate_damage, count_cards_played_this_turn
+upgrade: base_damage 4->5; damage 4->5
+
+----
+
+MACHINE_LEARNING_CARD | Power | Rare | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 1
+applies: MACHINE_LEARNING
+  MACHINE_LEARNING (buff, counter stack) hooks: modify_hand_draw
+does: apply_power_to
+
+----
+
+MAD_SCIENCE | Attack | Event | event | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 12 | block 8
+vars: block 8; choking_damage 6; curious_reduction 1; energized_energy 2; expertise_dexterity 2; expertise_strength 2; rider 0; sapping_vulnerable 2; sapping_weak 2; violence_hits 3; wisdom_cards 3
+applies: CURIOUS, DEXTERITY, IMPROVEMENT, STRANGLE, STRENGTH, VULNERABLE, WEAK
+  CURIOUS (buff, counter stack)
+  DEXTERITY (buff, counter stack) hooks: modify_block_additive
+  IMPROVEMENT (buff, counter stack) hooks: after_combat_end
+  STRANGLE (debuff, counter stack) hooks: after_card_played, after_turn_end, before_card_played
+  STRENGTH (buff, counter stack) hooks: modify_damage_additive
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: add_generated_card_to_creature_hand, apply_power_to, create_character_cards, deal_damage_single, draw_cards, gain_block, gain_energy, set_combat_cost
+
+----
+
+MAKE_IT_SO | Attack | Rare | regent | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 6 | block none
+vars: cards 3
+does: deal_damage_single
+upgrade: base_damage 6->9
+
+----
+
+MALAISE | Skill | Rare | silent | cost 0 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage none | block none
+applies: STRENGTH, WEAK
+  STRENGTH (buff, counter stack) hooks: modify_damage_additive
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to
+
+----
+
+MANGLE | Attack | Rare | ironclad | cost 3 | target ANY_ENEMY
+keywords: none | tags: none
+damage 20 | block none
+vars: strength_loss 10
+applies: MANGLE
+  MANGLE (debuff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_power_to, deal_damage_to_target
+upgrade: base_damage 20->26; strength_loss 10->15
+
+----
+
+MANIFEST_AUTHORITY | Skill | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 7
+does: add_generated_card_to_creature_hand, create_cards_from_ids, eligible_registered_cards, gain_block, upgrade_card
+upgrade: base_block 7->8
+
+----
+
+MASTER_OF_STRATEGY | Skill | Rare | colorless | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 3
+does: draw_cards
+upgrade: cards 3->4
+
+----
+
+MASTER_PLANNER | Power | Rare | silent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: MASTER_PLANNER
+  MASTER_PLANNER (buff, single stack) hooks: after_card_played
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+MAUL | Attack | Ancient | event | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: increase 2
+does: all_cards_for_creature, deal_damage_single, increase_base_damage
+upgrade: base_damage 5->6; increase 2->3
+
+----
+
+MAYHEM_CARD | Power | Rare | colorless | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: MAYHEM
+  MAYHEM (buff, counter stack) hooks: before_hand_draw_late
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+MELANCHOLY | Skill | Uncommon | necrobinder | cost 3 | target SELF
+keywords: none | tags: none
+damage none | block 13
+vars: block 13; energy 1
+does: gain_block
+upgrade: base_block 13->17; block 13->17
+
+----
+
+MEMENTO_MORI | Attack | Uncommon | silent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 8 | block none
+vars: calc_base 9; extra_damage 4
+does: apply_damage, calculate_damage, count_cards_discarded_this_turn
+upgrade: base_damage 8->10; calc_base 9->11; extra_damage 4->5
+
+----
+
+METAMORPHOSIS | Skill | Event | event | cost 2 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 3
+does: add_generated_card_to_creature_draw_pile, create_character_cards, set_free_this_combat
+upgrade: cards 3->5
+
+----
+
+METEOR_SHOWER | Attack | Ancient | regent | cost 0 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 14 | block none
+vars: damage 14; vulnerable 2; weak 2
+applies: VULNERABLE, WEAK
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, deal_damage_all
+upgrade: base_damage 14->21; damage 14->21
+
+----
+
+METEOR_STRIKE | Attack | Rare | defect | cost 5 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 24 | block none
+does: apply_damage, calculate_damage, channel_orb
+upgrade: base_damage 24->30
+
+----
+
+MIMIC | Skill | Rare | colorless | cost 1 | target ANY_ALLY
+keywords: exhaust | tags: none
+damage none | block none
+vars: calc_base 0; calc_extra 1
+does: calculate_block, gain_resolved_block
+reads: block
+
+----
+
+MIND_BLAST | Attack | Uncommon | colorless | cost 1 | target ANY_ENEMY
+keywords: innate | tags: none
+damage none | block none
+vars: calc_base 0; extra_damage 1
+does: apply_damage, calculate_damage
+reads: draw_pile
+upgrade: cost 1->0
+
+----
+
+MIND_ROT | Status | Status | token | cost -1 | target NONE
+keywords: none | tags: none
+damage none | block none
+vars: mind_rot_power 1
+
+----
+
+MINION_DIVE_BOMB | Attack | Status | token | cost 0 | target ANY_ENEMY
+keywords: exhaust | tags: minion
+damage 13 | block none
+does: deal_damage_single
+upgrade: base_damage 13->16
+
+----
+
+MINION_SACRIFICE | Skill | Status | token | cost 0 | target SELF
+keywords: exhaust | tags: minion
+damage none | block 7
+does: gain_block
+upgrade: base_block 7->10
+
+----
+
+MINION_STRIKE | Attack | Status | token | cost 0 | target ANY_ENEMY
+keywords: exhaust | tags: minion, strike
+damage 6 | block none
+vars: cards 1
+does: deal_damage_single, draw_cards
+upgrade: base_damage 6->9
+
+----
+
+MIRAGE | Skill | Uncommon | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: calc_base 0; calc_extra 1
+applies: POISON
+  POISON (debuff, counter stack) hooks: after_side_turn_start
+does: calculate_block, gain_resolved_block, get_power_amount
+upgrade: cost 1->0
+
+----
+
+MISERY | Attack | Rare | necrobinder | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 7 | block none
+vars: damage 7
+does: apply_power_to, deal_damage_single, get_power_class, is_current_debuff
+reads: powers
+upgrade: base_damage 7->9; damage 7->9
+
+----
+
+MODDED | Skill | Rare | defect | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 1; repeat 1
+does: add_orb_slot, draw_cards
+upgrade: cards 1->2
+
+----
+
+MOLTEN_FIST | Attack | Common | ironclad | cost 1 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage 10 | block none
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, deal_damage_to_target, get_power_amount
+upgrade: base_damage 10->14
+
+----
+
+MOMENTUM_STRIKE | Attack | Common | defect | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 11 | block none
+does: apply_damage, calculate_damage, set_combat_cost
+upgrade: base_damage 11->15
+
+----
+
+MONARCHS_GAZE_CARD | Power | Rare | regent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: strength_loss 1
+applies: MONARCHS_GAZE
+  MONARCHS_GAZE (buff, counter stack) hooks: after_damage_given
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+MONOLOGUE_CARD | Skill | Uncommon | regent | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: power 1
+applies: MONOLOGUE
+  MONOLOGUE (buff, counter stack) hooks: after_card_played, after_power_amount_changed, after_turn_end, before_card_played
+does: apply_power_to
+
+----
+
+MULTI_CAST | Skill | Rare | defect | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+does: evoke_front, on_evoke
+reads: orbs
+
+----
+
+MURDER | Attack | Rare | silent | cost 3 | target ANY_ENEMY
+keywords: none | tags: none
+damage 1 | block none
+vars: calc_base 1; extra_damage 1
+does: apply_damage, calculate_damage, count_cards_drawn_this_combat
+upgrade: cost 3->2
+
+----
+
+NECRO_MASTERY_CARD | Power | Rare | necrobinder | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: summon 5
+applies: NECRO_MASTERY
+  NECRO_MASTERY (buff, counter stack) hooks: after_current_hp_changed
+does: apply_power_to, summon_osty
+upgrade: summon 5->8
+
+----
+
+NEGATIVE_PULSE | Skill | Common | necrobinder | cost 1 | target ALL_ENEMIES
+keywords: none | tags: none
+damage none | block 5
+vars: doom 7
+applies: DOOM
+  DOOM (debuff, counter stack) hooks: before_turn_end
+does: apply_power_to, gain_block
+upgrade: base_block 5->6; doom 7->11
+
+----
+
+NEOWS_FURY | Attack | Ancient | event | cost 1 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage 10 | block none
+vars: cards 2
+does: deal_damage_single, move_card_to_hand
+reads: discard_pile
+upgrade: base_damage 10->14; cards 2->3
+
+----
+
+NEUROSURGE | Power | Rare | necrobinder | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 2; energy 3; neurosurge 3
+applies: NEUROSURGE
+  NEUROSURGE (debuff, counter stack) hooks: after_side_turn_start
+does: apply_power_to, draw_cards, gain_energy
+upgrade: energy 3->4
+
+----
+
+NEUTRALIZE | Attack | Basic | silent | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 3 | block none
+vars: weak 1
+applies: WEAK
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 3->4; weak 1->2
+
+----
+
+NEUTRON_AEGIS | Power | Rare | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: plating 8
+applies: PLATING
+  PLATING (buff, counter stack) hooks: after_turn_end, before_side_turn_start, before_turn_end_early, on_turn_end_enemy_side
+does: apply_power_to
+upgrade: plating 8->11
+
+----
+
+NIGHTMARE | Skill | Rare | silent | cost 3 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+applies: NIGHTMARE
+  NIGHTMARE (buff, counter stack) hooks: before_hand_draw
+does: apply_power_to, get_power_amount, request_card_choice, set_selected_card
+reads: hand, powers
+upgrade: cost 3->2
+
+----
+
+NORMALITY | Curse | Curse | curse | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage none | block none
+vars: calc_base 3; calc_extra -1
+
+----
+
+NOSTALGIA_CARD | Power | Rare | colorless | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: NOSTALGIA
+  NOSTALGIA (buff, counter stack) hooks: modify_card_play_result_pile_type_and_position
+does: apply_power_to
+upgrade: cost 1->0
+
+----
+
+NOXIOUS_FUMES_CARD | Power | Uncommon | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: poison_per_turn 2
+applies: NOXIOUS_FUMES
+  NOXIOUS_FUMES (buff, counter stack) hooks: after_side_turn_start
+does: apply_power_to
+upgrade: poison_per_turn 2->3
+
+----
+
+NO_ESCAPE | Skill | Uncommon | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+vars: calc_base 10; calc_extra 5; doom_threshold 10
+applies: DOOM
+  DOOM (debuff, counter stack) hooks: before_turn_end
+does: apply_power_to, get_power_amount
+upgrade: base_damage 10->15; calc_base 10->15
+
+----
+
+NULL_CARD | Attack | Uncommon | defect | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+vars: weak 2
+applies: WEAK
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_damage, apply_power_to, calculate_damage, channel_orb
+upgrade: base_damage 10->13; weak 2->3
+
+----
+
+OBLIVION | Skill | Rare | necrobinder | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage none | block none
+vars: doom 3
+applies: OBLIVION
+  OBLIVION (debuff, counter stack) hooks: after_card_played, after_turn_end, before_card_played
+does: apply_power_to
+reads: powers
+upgrade: doom 3->4
+
+----
+
+OFFERING | Skill | Rare | ironclad | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 3; energy 2; hp_loss 6
+does: draw_cards, gain_energy, self_hp_loss
+upgrade: cards 3->5
+
+----
+
+OMNISLICE | Attack | Uncommon | colorless | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 8 | block none
+vars: damage 8
+does: apply_damage, calculate_damage, get_teammates_of
+upgrade: base_damage 8->11; damage 8->11
+
+----
+
+ONE_TWO_PUNCH_CARD | Skill | Rare | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: attacks 1
+applies: ONE_TWO_PUNCH
+  ONE_TWO_PUNCH (buff, counter stack) hooks: after_modifying_card_play_count, after_turn_end, modify_card_play_count
+does: apply_power_to
+upgrade: attacks 1->2
+
+----
+
+ORBIT | Power | Uncommon | regent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 1
+applies: ORBIT
+  ORBIT (buff, counter stack) hooks: after_energy_spent, after_power_amount_changed
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+OUTBREAK_CARD | Skill | Rare | silent | cost 3 | target ALL_ENEMIES
+keywords: none | tags: none
+damage none | block none
+vars: outbreak_power 11; repeat 3
+applies: OUTBREAK
+  OUTBREAK (buff, counter stack) hooks: after_power_amount_changed
+does: apply_power_to
+reads: powers
+upgrade: outbreak_power 11->15
+
+----
+
+OUTMANEUVER | Skill | Event | event | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 2
+applies: ENERGY_NEXT_TURN
+  ENERGY_NEXT_TURN (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+does: apply_power_to
+upgrade: energy 2->3
+
+----
+
+OVERCLOCK | Skill | Uncommon | defect | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 2
+does: add_generated_card_to_creature_discard, draw_cards, make_burn
+upgrade: cards 2->3
+
+----
+
+PACTS_END | Attack | Rare | ironclad | cost 0 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 18 | block none
+vars: cards 3
+does: deal_damage_all_enemies
+upgrade: base_damage 18->24
+
+----
+
+PAGESTORM | Power | Uncommon | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 1
+applies: PAGESTORM
+  PAGESTORM (buff, counter stack) hooks: on_card_drawn
+does: apply_power_to
+upgrade: cost 1->0
+
+----
+
+PAIN | Curse | Unknown | unknown | cost -1 | target NONE
+keywords: none | tags: none
+damage none | block none
+
+----
+
+PALE_BLUE_DOT | Power | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: card_play 5; cards 1
+applies: PALE_BLUE_DOT
+  PALE_BLUE_DOT (buff, counter stack) hooks: modify_hand_draw
+does: apply_power_to
+upgrade: cards 1->2
+
+----
+
+PANACHE_CARD | Power | Uncommon | colorless | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: panache_damage 10
+applies: PANACHE
+  PANACHE (buff, counter stack) hooks: after_card_played, after_power_amount_changed, after_turn_end
+does: apply_power_to
+upgrade: panache_damage 10->14
+
+----
+
+PANIC_BUTTON | Skill | Uncommon | colorless | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block 30
+vars: turns 2
+applies: NO_BLOCK
+  NO_BLOCK (debuff, counter stack) hooks: after_turn_end, modify_block_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, gain_block
+upgrade: base_block 30->40
+
+----
+
+PARASITE | Curse | Unknown | unknown | cost -1 | target NONE
+keywords: none | tags: none
+damage none | block none
+
+----
+
+PARRY_CARD | Power | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: parry 10
+applies: PARRY
+  PARRY (buff, counter stack) hooks: after_card_played
+does: apply_power_to
+upgrade: parry 10->14
+
+----
+
+PARSE | Skill | Uncommon | necrobinder | cost 1 | target SELF
+keywords: ethereal | tags: none
+damage none | block none
+vars: cards 3
+does: draw_cards
+upgrade: cards 3->4
+
+----
+
+PARTICLE_WALL | Skill | Uncommon | regent | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block 9
+vars: block 9
+does: gain_block, move_card_to_hand
+upgrade: base_block 9->12; block 9->12
+
+----
+
+PATTER | Skill | Common | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 8
+vars: vigor 2
+applies: VIGOR
+  VIGOR (buff, counter stack) hooks: after_attack, before_attack, modify_damage_additive
+does: apply_power_to, gain_block
+upgrade: base_block 8->10; vigor 2->3
+
+----
+
+PECK | Attack | Event | event | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 2 | block none
+vars: repeat 3
+does: apply_damage, calculate_damage
+upgrade: repeat 3->4
+
+----
+
+PERFECTED_STRIKE | Attack | Common | ironclad | cost 2 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 6 | block none
+vars: calc_base 6; extra_damage 2
+does: apply_damage, calculate_damage
+reads: discard_pile, draw_pile, exhaust_pile, hand
+upgrade: extra_damage 2->3
+
+----
+
+PHANTOM_BLADES_CARD | Power | Uncommon | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: phantom_blades_power 9
+applies: PHANTOM_BLADES
+  PHANTOM_BLADES (buff, counter stack) hooks: after_card_played, after_power_amount_changed, before_side_turn_start, modify_damage_additive
+does: apply_power_to, frozenset
+upgrade: phantom_blades_power 9->12
+
+----
+
+PHOTON_CUT | Attack | Common | regent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+vars: cards 1; put_back 1
+does: deal_damage_single, draw_cards, insert_card_into_draw_pile, request_card_choice
+reads: hand
+upgrade: base_damage 10->13; cards 1->2
+
+----
+
+PIERCING_WAIL | Skill | Common | silent | cost 1 | target ALL_ENEMIES
+keywords: exhaust | tags: none
+damage none | block none
+vars: strength_loss 6
+applies: PIERCING_WAIL
+  PIERCING_WAIL (debuff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_power_to
+upgrade: strength_loss 6->8
+
+----
+
+PILLAGE | Attack | Uncommon | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 6 | block none
+does: deal_damage_to_target, draw_cards
+reads: hand
+upgrade: base_damage 6->9
+
+----
+
+PILLAR_OF_CREATION | Power | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 2
+vars: block 2
+applies: PILLAR_OF_CREATION
+  PILLAR_OF_CREATION (buff, counter stack) hooks: after_card_generated_for_combat
+does: apply_power_to
+upgrade: base_block 2->3; block 2->3
+
+----
+
+PINPOINT | Attack | Uncommon | silent | cost 3 | target ANY_ENEMY
+keywords: none | tags: none
+damage 15 | block none
+does: apply_damage, calculate_damage
+upgrade: base_damage 15->19
+
+----
+
+POISONED_STAB | Attack | Common | silent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 6 | block none
+vars: poison_power 3
+applies: POISON
+  POISON (debuff, counter stack) hooks: after_side_turn_start
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 6->8; poison_power 3->4
+
+----
+
+POKE | Attack | Common | necrobinder | cost 0 | target ANY_ENEMY
+keywords: none | tags: osty_attack
+damage 6 | block none
+vars: osty_damage 6
+does: deal_osty_damage_single
+upgrade: base_damage 6->9; osty_damage 6->9
+
+----
+
+POMMEL_STRIKE | Attack | Common | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 9 | block none
+vars: cards 1
+does: deal_damage_to_target, draw_cards
+upgrade: base_damage 9->10; cards 1->2
+
+----
+
+POOR_SLEEP | Curse | Curse | curse | cost -1 | target NONE
+keywords: retain, unplayable | tags: none
+damage none | block none
+
+----
+
+POUNCE | Attack | Uncommon | silent | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 14 | block none
+applies: FREE_SKILL
+  FREE_SKILL (buff, counter stack) hooks: before_card_played
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 14->20
+
+----
+
+PRECISE_CUT | Attack | Uncommon | silent | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 13 | block none
+vars: calc_base 13; extra_damage 2
+does: apply_damage, calculate_damage
+reads: hand
+upgrade: base_damage 13->16; calc_base 13->16
+
+----
+
+PREDATOR | Attack | Common | silent | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 15 | block none
+applies: DRAW_CARDS_NEXT_TURN
+  DRAW_CARDS_NEXT_TURN (buff, counter stack) hooks: after_side_turn_start, modify_hand_draw
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 15->20
+
+----
+
+PREPARED | Skill | Common | silent | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 1
+does: discard_cards, draw_cards, request_card_choice, request_multi_card_choice
+reads: hand
+upgrade: cards 1->2
+
+----
+
+PREP_TIME | Power | Uncommon | colorless | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: prep_time 4
+applies: PREP_TIME
+  PREP_TIME (buff, counter stack) hooks: after_side_turn_start
+does: apply_power_to
+upgrade: prep_time 4->6
+
+----
+
+PRIMAL_FORCE | Skill | Rare | ironclad | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+does: make_giant_rock, transform_card
+reads: hand
+
+----
+
+PRODUCTION | Skill | Uncommon | colorless | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: energy 2
+does: gain_energy
+upgrade: energy 2->3
+
+----
+
+PROLONG | Skill | Uncommon | colorless | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+applies: BLOCK_NEXT_TURN
+  BLOCK_NEXT_TURN (buff, counter stack) hooks: after_block_cleared, after_side_turn_start
+does: apply_power_to
+reads: block
+
+----
+
+PROPHESIZE | Skill | Uncommon | regent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 6
+does: draw_cards
+upgrade: cards 6->9
+
+----
+
+PROTECTOR | Attack | Ancient | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: osty_attack
+damage 10 | block none
+vars: calc_base 10; extra_damage 1
+does: deal_damage, osty
+reads: max_hp
+upgrade: cost 1->0; base_damage 10->15; calc_base 10->15
+
+----
+
+PROWESS | Power | Uncommon | colorless | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: dexterity 1; strength 1
+applies: DEXTERITY, STRENGTH
+  DEXTERITY (buff, counter stack) hooks: modify_block_additive
+  STRENGTH (buff, counter stack) hooks: modify_damage_additive
+does: apply_power_to
+upgrade: dexterity 1->2; strength 1->2
+
+----
+
+PULL_AGGRO | Skill | Common | necrobinder | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block 7
+vars: summon 4
+does: gain_block, summon_osty
+upgrade: base_block 7->9; summon 4->5
+
+----
+
+PULL_FROM_BELOW | Attack | Uncommon | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: calc_base 0; calc_extra 1; damage 5
+does: apply_damage, calculate_damage, count_ethereal_cards_played_this_combat
+upgrade: base_damage 5->7; damage 5->7
+
+----
+
+PURITY | Skill | Uncommon | colorless | cost 0 | target SELF
+keywords: exhaust, retain | tags: none
+damage none | block none
+vars: cards 3
+does: exhaust_card, request_multi_card_choice
+reads: hand
+upgrade: cards 3->5
+
+----
+
+PUTREFY | Skill | Uncommon | necrobinder | cost 1 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage none | block none
+vars: power 2
+applies: VULNERABLE, WEAK
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to
+upgrade: power 2->3
+
+----
+
+PYRE | Power | Rare | ironclad | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 1
+applies: PYRE
+  PYRE (buff, counter stack) hooks: modify_max_energy
+does: apply_power_to
+upgrade: energy 1->2
+
+----
+
+QUADCAST | Skill | Ancient | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: repeat 4
+does: evoke_front, passive_front
+upgrade: cost 1->0
+
+----
+
+QUASAR | Skill | Uncommon | regent | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+does: create_cards_from_ids, eligible_registered_cards, request_card_choice, upgrade_card
+
+----
+
+RADIATE | Attack | Uncommon | regent | cost 0 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 3 | block none
+vars: calc_base 0; calc_extra 1; damage 3; stars 1
+does: count_stars_gained_this_turn, deal_damage_all
+upgrade: base_damage 3->4; damage 3->4
+
+----
+
+RAGE_CARD | Skill | Uncommon | ironclad | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: power 3
+applies: RAGE
+  RAGE (buff, counter stack) hooks: after_card_played, after_turn_end
+does: apply_power_to
+upgrade: power 3->5
+
+----
+
+RAINBOW | Skill | Rare | defect | cost 2 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: channel_orb
+
+----
+
+RALLY | Skill | Rare | colorless | cost 2 | target ALL_ALLIES
+keywords: none | tags: none
+damage none | block 12
+vars: block 12
+does: calculate_block, gain_resolved_block, get_teammates_of
+upgrade: base_block 12->17; block 12->17
+
+----
+
+RAMPAGE | Attack | Uncommon | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 9 | block none
+vars: increase 5
+does: deal_damage_to_target, increase_base_damage
+upgrade: increase 5->9
+
+----
+
+RATTLE | Attack | Uncommon | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: osty_attack
+damage 7 | block none
+vars: calc_base 0; calc_extra 1; osty_damage 7
+does: count_powered_hits_by_dealer_this_turn, deal_damage, osty, osty_damage
+upgrade: base_damage 7->9; osty_damage 7->9
+
+----
+
+REANIMATE | Skill | Rare | necrobinder | cost 3 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: summon 20
+does: summon_osty
+upgrade: summon 20->25
+
+----
+
+REAP | Attack | Common | necrobinder | cost 3 | target ANY_ENEMY
+keywords: retain | tags: none
+damage 27 | block none
+does: deal_damage_single
+upgrade: base_damage 27->33
+
+----
+
+REAPER_FORM | Power | Rare | necrobinder | cost 3 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: REAPER_FORM
+  REAPER_FORM (buff, counter stack) hooks: after_damage_given
+does: apply_power_to
+
+----
+
+REAVE | Attack | Common | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+vars: cards 1
+does: add_generated_card_to_creature_draw_pile, deal_damage_single, make_soul
+upgrade: base_damage 10->13
+
+----
+
+REBOOT | Skill | Rare | defect | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 4
+does: draw_cards
+reads: draw_pile, hand
+upgrade: cards 4->6
+
+----
+
+REBOUND | Attack | Event | event | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 9 | block none
+applies: REBOUND
+  REBOUND (buff, counter stack) hooks: after_modifying_card_play_result_pile_or_position, after_turn_end, modify_card_play_result_pile_type_and_position
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 9->12
+
+----
+
+REFINE_BLADE | Skill | Common | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 1; forge 9
+applies: ENERGY_NEXT_TURN
+  ENERGY_NEXT_TURN (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+does: apply_power_to, forge
+upgrade: forge 9->13
+
+----
+
+REFLECT_CARD | Skill | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 15
+vars: block 15
+applies: REFLECT
+  REFLECT (buff, counter stack) hooks: after_damage_received, after_side_turn_start
+does: apply_power_to, gain_block
+upgrade: base_block 15->20; block 15->20
+
+----
+
+REFLEX | Skill | Uncommon | silent | cost 3 | target SELF
+keywords: sly | tags: none
+damage none | block none
+vars: cards 2
+does: draw_cards
+upgrade: cards 2->3
+
+----
+
+REFRACT | Attack | Uncommon | defect | cost 3 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+vars: repeat 2
+does: apply_damage, calculate_damage, channel_orb
+upgrade: base_damage 10->13
+
+----
+
+REGRET | Curse | Curse | curse | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage none | block none
+
+----
+
+RELAX | Skill | Ancient | event | cost 3 | target SELF
+keywords: exhaust | tags: none
+damage none | block 16
+vars: cards 2; energy 2
+applies: DRAW_CARDS_NEXT_TURN, ENERGY_NEXT_TURN
+  DRAW_CARDS_NEXT_TURN (buff, counter stack) hooks: after_side_turn_start, modify_hand_draw
+  ENERGY_NEXT_TURN (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+does: apply_power_to, gain_block
+upgrade: base_block 16->18; cards 2->3; energy 2->3
+
+----
+
+REND | Attack | Rare | colorless | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 15 | block none
+vars: calc_base 15; extra_damage 5
+does: apply_damage, calculate_damage, get_power_class, power_type_for_amount
+reads: powers
+upgrade: base_damage 15->18; calc_base 15->18; extra_damage 5->8
+
+----
+
+RESONANCE | Skill | Uncommon | regent | cost 1 | target ALL_ENEMIES
+keywords: none | tags: none
+damage none | block none
+vars: strength 1
+applies: STRENGTH
+  STRENGTH (buff, counter stack) hooks: modify_damage_additive
+does: apply_power_to
+upgrade: strength 1->2
+
+----
+
+RESTLESSNESS | Skill | Uncommon | colorless | cost 0 | target SELF
+keywords: retain | tags: none
+damage none | block none
+vars: cards 2; energy 2
+does: draw_cards, gain_energy
+reads: hand
+upgrade: cards 2->3; energy 2->3
+
+----
+
+RICOCHET | Attack | Common | silent | cost 2 | target RANDOM_ENEMY
+keywords: sly | tags: none
+damage 3 | block none
+vars: repeat 4
+does: apply_damage, calculate_damage
+upgrade: repeat 4->5
+
+----
+
+RIGHT_HAND_HAND | Attack | Uncommon | necrobinder | cost 0 | target ANY_ENEMY
+keywords: none | tags: osty_attack
+damage 4 | block none
+vars: energy 2; osty_damage 4
+does: deal_osty_damage_single
+upgrade: base_damage 4->6; osty_damage 4->6
+
+----
+
+RIP_AND_TEAR | Attack | Event | event | cost 1 | target RANDOM_ENEMY
+keywords: none | tags: none
+damage 7 | block none
+does: apply_damage, calculate_damage
+upgrade: base_damage 7->9
+
+----
+
+ROCKET_PUNCH | Attack | Uncommon | defect | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 13 | block none
+vars: cards 1
+does: apply_damage, calculate_damage, draw_cards
+upgrade: base_damage 13->14; cards 1->2
+
+----
+
+ROLLING_BOULDER | Power | Rare | colorless | cost 3 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: increment_amount 5; rolling_boulder 5
+applies: ROLLING_BOULDER
+  ROLLING_BOULDER (buff, counter stack) hooks: after_player_turn_start, after_power_amount_changed
+does: apply_power_to
+upgrade: rolling_boulder 5->10
+
+----
+
+ROYALTIES_CARD | Power | Rare | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: gold 30
+applies: ROYALTIES
+  ROYALTIES (buff, counter stack) hooks: after_combat_end
+does: apply_power_to
+upgrade: gold 30->40
+
+----
+
+ROYAL_GAMBLE | Skill | Uncommon | regent | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: stars 9
+does: gain_stars
+
+----
+
+RUPTURE_CARD | Power | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: strength 1
+applies: RUPTURE
+  RUPTURE (buff, counter stack) hooks: after_card_played, after_damage_received, before_card_played
+does: apply_power_to
+upgrade: strength 1->2
+
+----
+
+SACRIFICE | Skill | Rare | necrobinder | cost 1 | target SELF
+keywords: retain | tags: none
+damage none | block none
+does: gain_resolved_block, get_osty, kill_osty
+reads: max_hp
+upgrade: cost 1->0
+
+----
+
+SALVO | Attack | Rare | colorless | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 12 | block none
+vars: damage 12
+applies: RETAIN_HAND
+  RETAIN_HAND (buff, counter stack) hooks: after_turn_end, should_flush
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 12->16; damage 12->16
+
+----
+
+SCAVENGE | Skill | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 2
+applies: ENERGY_NEXT_TURN
+  ENERGY_NEXT_TURN (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+does: apply_power_to, exhaust_card, request_card_choice
+reads: hand
+upgrade: energy 2->3
+
+----
+
+SCOURGE | Skill | Common | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage none | block none
+vars: cards 1; doom 13
+applies: DOOM
+  DOOM (debuff, counter stack) hooks: before_turn_end
+does: apply_power_to, draw_cards
+upgrade: cards 1->2; doom 13->16
+
+----
+
+SCRAPE | Attack | Uncommon | defect | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 7 | block none
+vars: cards 4
+does: apply_damage, calculate_damage, draw_cards
+reads: discard_pile, hand
+upgrade: base_damage 7->10; cards 4->5
+
+----
+
+SCRAWL | Skill | Rare | colorless | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: draw_cards
+reads: hand
+
+----
+
+SCULPTING_STRIKE | Attack | Common | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 9 | block none
+does: deal_damage_single, frozenset, request_card_choice
+reads: hand
+upgrade: base_damage 9->12
+
+----
+
+SEANCE | Skill | Rare | necrobinder | cost 1 | target SELF
+keywords: ethereal | tags: none
+damage none | block none
+vars: cards 1
+does: make_soul, request_multi_card_choice, transform_card
+reads: draw_pile
+upgrade: cost 1->0
+
+----
+
+SECOND_WIND | Skill | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 5
+vars: block 5
+does: calculate_block, exhaust_card, fire_after_block_gained, gain_block
+reads: block, hand
+upgrade: base_block 5->7; block 5->7
+
+----
+
+SECRET_TECHNIQUE | Skill | Rare | colorless | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: request_card_choice
+reads: draw_pile
+
+----
+
+SECRET_WEAPON | Skill | Rare | colorless | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: request_card_choice
+reads: draw_pile
+
+----
+
+SEEKER_STRIKE | Attack | Uncommon | colorless | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 9 | block none
+vars: cards 3
+does: deal_damage_single, request_card_choice, stable_shuffle_cards
+reads: draw_pile
+upgrade: base_damage 9->12
+
+----
+
+SEEKING_EDGE | Power | Rare | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: forge 7
+applies: SEEKING_EDGE
+  SEEKING_EDGE (buff, single stack)
+does: apply_power_to, forge
+upgrade: forge 7->11
+
+----
+
+SENTRY_MODE | Power | Rare | necrobinder | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: sentry_mode 1
+applies: SENTRY_MODE
+  SENTRY_MODE (buff, counter stack) hooks: before_hand_draw
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+SERPENT_FORM_CARD | Power | Rare | silent | cost 3 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: serpent_form_power 4
+applies: SERPENT_FORM
+  SERPENT_FORM (buff, counter stack) hooks: after_card_played, before_card_played
+does: apply_power_to
+upgrade: serpent_form_power 4->6
+
+----
+
+SETUP_STRIKE_CARD | Attack | Common | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 7 | block none
+vars: strength 3
+applies: SETUP_STRIKE
+  SETUP_STRIKE (buff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_power_to, deal_damage_to_target
+upgrade: base_damage 7->9; strength 3->4
+
+----
+
+SEVEN_STARS | Attack | Rare | regent | cost 2 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 7 | block none
+vars: damage 7; repeat 7
+does: deal_damage_all
+upgrade: cost 2->1
+
+----
+
+SEVERANCE | Attack | Uncommon | necrobinder | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 13 | block none
+does: add_generated_card_to_creature_discard, add_generated_card_to_creature_draw_pile, add_generated_card_to_creature_hand, deal_damage_single, make_soul
+upgrade: base_damage 13->18
+
+----
+
+SHADOWMELD | Skill | Rare | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: power 1
+applies: SHADOWMELD
+  SHADOWMELD (buff, counter stack) hooks: after_turn_end, modify_block_multiplicative
+does: apply_power_to
+upgrade: cost 1->0
+
+----
+
+SHADOW_SHIELD | Skill | Uncommon | defect | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block 11
+does: calculate_block, channel_orb, gain_resolved_block
+upgrade: base_block 11->15
+
+----
+
+SHADOW_STEP | Skill | Rare | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 3
+applies: SHADOW_STEP
+  SHADOW_STEP (buff, counter stack) hooks: after_side_turn_start
+does: apply_power_to, discard_cards
+reads: hand
+upgrade: cost 1->0
+
+----
+
+SHAME | Curse | Curse | curse | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage none | block none
+vars: frail 1
+
+----
+
+SHARED_FATE | Skill | Rare | necrobinder | cost 0 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage none | block none
+vars: enemy_strength_loss 2; player_strength_loss 2
+applies: STRENGTH
+  STRENGTH (buff, counter stack) hooks: modify_damage_additive
+does: apply_power_to
+upgrade: enemy_strength_loss 2->3
+
+----
+
+SHATTER | Attack | Rare | defect | cost 1 | target ALL_ENEMIES
+keywords: exhaust | tags: none
+damage 7 | block none
+does: apply_damage, calculate_damage, evoke_front
+upgrade: base_damage 7->11
+
+----
+
+SHINING_STRIKE | Attack | Uncommon | regent | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 8 | block none
+vars: damage 8; stars 2
+does: deal_damage_single, gain_stars, insert_card_into_draw_pile
+upgrade: base_damage 8->11; damage 8->11
+
+----
+
+SHIV | Attack | Status | token | cost 0 | target ANY_ENEMY
+keywords: exhaust | tags: shiv
+damage 4 | block none
+vars: calc_base 0; calc_extra 1
+applies: FAN_OF_KNIVES
+  FAN_OF_KNIVES (buff, single stack)
+does: deal_damage_all, deal_damage_single, get_power_amount
+upgrade: base_damage 4->6
+
+----
+
+SHOCKWAVE | Skill | Uncommon | colorless | cost 2 | target ALL_ENEMIES
+keywords: exhaust | tags: none
+damage none | block none
+vars: power 3
+applies: VULNERABLE, WEAK
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to
+upgrade: power 3->5
+
+----
+
+SHROUD | Power | Uncommon | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 2
+vars: block 2
+applies: SHROUD
+  SHROUD (buff, counter stack) hooks: after_power_amount_changed
+does: apply_power_to
+upgrade: base_block 2->3; block 2->3
+
+----
+
+SHRUG_IT_OFF | Skill | Common | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 8
+vars: cards 1
+does: draw_cards, gain_block
+upgrade: base_block 8->11
+
+----
+
+SIC_EM | Attack | Uncommon | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: osty_attack
+damage 5 | block none
+vars: osty_damage 5; sic_em 2
+applies: SIC_EM
+  SIC_EM (debuff, counter stack) hooks: after_damage_given, after_turn_end
+does: apply_power_to, deal_osty_damage_single, osty
+upgrade: base_damage 5->6; osty_damage 5->6; sic_em 2->3
+
+----
+
+SIGNAL_BOOST | Skill | Rare | defect | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: signal_boost_power 1
+applies: SIGNAL_BOOST
+  SIGNAL_BOOST (buff, counter stack) hooks: after_modifying_card_play_count, modify_card_play_count
+does: apply_power_to
+upgrade: cost 1->0
+
+----
+
+SKEWER | Attack | Uncommon | silent | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 8 | block none
+does: apply_damage, calculate_damage
+upgrade: base_damage 8->11
+
+----
+
+SKIM | Skill | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 3
+does: draw_cards
+upgrade: cards 3->4
+
+----
+
+SLEIGHT_OF_FLESH | Power | Uncommon | necrobinder | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: sleight_of_flesh 9
+applies: SLEIGHT_OF_FLESH
+  SLEIGHT_OF_FLESH (buff, counter stack) hooks: after_power_amount_changed
+does: apply_power_to
+upgrade: sleight_of_flesh 9->13
+
+----
+
+SLICE | Attack | Common | silent | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 6 | block none
+does: apply_damage, calculate_damage
+upgrade: base_damage 6->9
+
+----
+
+SLIMED | Status | Status | status | cost 1 | target NONE
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 1
+does: draw_cards
+
+----
+
+SLOTH_STATUS | Status | Status | token | cost -1 | target NONE
+keywords: none | tags: none
+damage none | block none
+vars: sloth_power 3
+
+----
+
+SMOKESTACK | Power | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: smokestack_power 5
+applies: SMOKESTACK
+  SMOKESTACK (buff, counter stack) hooks: after_card_generated_for_combat
+does: apply_power_to
+upgrade: smokestack_power 5->7
+
+----
+
+SNAKEBITE | Skill | Common | silent | cost 2 | target ANY_ENEMY
+keywords: retain | tags: none
+damage none | block none
+vars: poison_power 7
+applies: POISON
+  POISON (debuff, counter stack) hooks: after_side_turn_start
+does: apply_power_to
+upgrade: poison_power 7->10
+
+----
+
+SNAP | Attack | Common | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: osty_attack
+damage 7 | block none
+vars: osty_damage 7
+does: deal_osty_damage_single
+upgrade: base_damage 7->10; osty_damage 7->10
+
+----
+
+SNEAKY_CARD | Power | Rare | silent | cost 2 | target SELF
+keywords: sly | tags: none
+damage none | block none
+vars: sneaky_power 1
+applies: SNEAKY
+  SNEAKY (buff, counter stack) hooks: after_card_played
+does: apply_power_to
+upgrade: sneaky_power 1->2
+
+----
+
+SOLAR_STRIKE | Attack | Common | regent | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 9 | block none
+vars: stars 1
+does: deal_damage_single, gain_stars
+upgrade: base_damage 9->10; stars 1->2
+
+----
+
+SOOT | Status | Status | status | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage none | block none
+
+----
+
+SOUL | Skill | Status | token | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 2
+does: draw_cards
+upgrade: cards 2->3
+
+----
+
+SOUL_STORM | Attack | Rare | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 9 | block none
+vars: calc_base 9; extra_damage 2
+does: apply_damage, calculate_damage
+reads: exhaust_pile
+upgrade: base_damage 9->10; extra_damage 2->3
+
+----
+
+SOVEREIGN_BLADE | Attack | Status | token | cost 2 | target ANY_ENEMY
+keywords: retain | tags: none
+damage 10 | block none
+vars: calc_base 0; calc_extra 1; repeat 1
+applies: SEEKING_EDGE
+  SEEKING_EDGE (buff, single stack)
+does: callable, deal_damage_all, deal_damage_single, get_repeats, has_power
+reads: powers
+upgrade: cost 2->1
+
+----
+
+SOW | Attack | Common | necrobinder | cost 1 | target ALL_ENEMIES
+keywords: retain | tags: none
+damage 8 | block none
+does: deal_damage_all
+upgrade: base_damage 8->11
+
+----
+
+SPECTRUM_SHIFT | Power | Uncommon | regent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 1
+applies: SPECTRUM_SHIFT
+  SPECTRUM_SHIFT (buff, counter stack) hooks: before_hand_draw
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+SPEEDSTER_CARD | Power | Uncommon | silent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: speedster_power 2
+applies: SPEEDSTER
+  SPEEDSTER (buff, counter stack) hooks: on_card_drawn
+does: apply_power_to
+
+----
+
+SPINNER_CARD | Power | Rare | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: spinner_power 1
+applies: SPINNER
+  SPINNER (buff, counter stack) hooks: after_energy_reset, after_side_turn_start
+does: apply_power_to, channel_orb
+
+----
+
+SPIRIT_OF_ASH | Power | Rare | necrobinder | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: block_on_exhaust 4
+applies: SPIRIT_OF_ASH
+  SPIRIT_OF_ASH (buff, counter stack) hooks: before_card_played
+does: apply_power_to
+upgrade: block_on_exhaust 4->5
+
+----
+
+SPITE | Attack | Uncommon | ironclad | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: cards 1
+does: deal_damage_to_target, draw_cards, has_unblocked_damage_received_this_turn
+
+----
+
+SPLASH | Skill | Uncommon | colorless | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+does: add_generated_card_to_creature_hand, create_cards_from_ids, eligible_character_cards, request_card_choice, set_temporary_free_this_turn, upgrade_card
+
+----
+
+SPOILS_MAP | Quest | Quest | quest | cost -1 | target SELF
+keywords: unplayable | tags: none
+damage none | block none
+vars: gold 600; spoils_act_index 1
+
+----
+
+SPOILS_OF_BATTLE | Skill | Common | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: forge 5
+does: forge
+upgrade: forge 5->8
+
+----
+
+SPORE_MIND | Curse | Curse | curse | cost 1 | target NONE
+keywords: exhaust | tags: none
+damage none | block none
+
+----
+
+SPUR | Skill | Uncommon | necrobinder | cost 1 | target SELF
+keywords: retain | tags: none
+damage none | block none
+vars: heal 5; summon 3
+does: heal, osty, summon_osty
+upgrade: heal 5->7; summon 3->5
+
+----
+
+SQUASH | Attack | Event | event | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+vars: vulnerable 2
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 10->12; vulnerable 2->3
+
+----
+
+SQUEEZE | Attack | Rare | necrobinder | cost 3 | target ANY_ENEMY
+keywords: none | tags: osty_attack
+damage 25 | block none
+vars: calc_base 25; extra_damage 5
+does: all_cards_for_creature, deal_damage, osty
+upgrade: base_damage 25->30; calc_base 25->30; extra_damage 5->6
+
+----
+
+STACK | Skill | Event | event | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: calc_base 0; calc_extra 1
+does: calculate_block, gain_resolved_block
+upgrade: base_block 0->3; calc_base 0->3
+
+----
+
+STAMPEDE_CARD | Power | Uncommon | ironclad | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: power 1
+applies: STAMPEDE
+  STAMPEDE (buff, counter stack) hooks: before_turn_end
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+STARDUST | Attack | Uncommon | regent | cost 0 | target RANDOM_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: damage 5
+does: apply_damage, calculate_damage, modify_x_value, relics_for_creature, spend_stars
+reads: stars
+upgrade: base_damage 5->7; damage 5->7
+
+----
+
+STOKE | Skill | Rare | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+does: draw_cards, exhaust_card
+reads: hand
+
+----
+
+STOMP | Attack | Uncommon | ironclad | cost 3 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 12 | block none
+does: deal_damage_all_enemies
+upgrade: base_damage 12->15
+
+----
+
+STONE_ARMOR | Power | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: plating 4
+applies: PLATING
+  PLATING (buff, counter stack) hooks: after_turn_end, before_side_turn_start, before_turn_end_early, on_turn_end_enemy_side
+does: apply_power_to
+upgrade: plating 4->6
+
+----
+
+STORM_CARD | Power | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: storm_power 1
+applies: STORM
+  STORM (buff, counter stack) hooks: after_card_played, before_card_played
+does: apply_power_to
+upgrade: storm_power 1->2
+
+----
+
+STORM_OF_STEEL | Skill | Rare | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+does: add_generated_card_to_creature_hand, discard_cards, make_shiv
+reads: hand
+
+----
+
+STRANGLE | Attack | Uncommon | silent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 8 | block none
+vars: strangle_power 2
+applies: CONSTRICT
+  CONSTRICT (debuff, counter stack) hooks: after_turn_end
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 8->10; strangle_power 2->3
+
+----
+
+STRATAGEM | Power | Uncommon | colorless | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: STRATAGEM
+  STRATAGEM (buff, counter stack)
+does: apply_power_to
+upgrade: cost 1->0
+
+----
+
+STRIKE_DEFECT | Attack | Basic | defect | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 6 | block none
+does: apply_damage, calculate_damage
+upgrade: base_damage 6->9
+
+----
+
+STRIKE_IRONCLAD | Attack | Basic | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 6 | block none
+does: deal_damage_to_target
+upgrade: base_damage 6->9
+
+----
+
+STRIKE_NECROBINDER | Attack | Basic | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 6 | block none
+does: deal_damage_single
+upgrade: base_damage 6->9
+
+----
+
+STRIKE_REGENT | Attack | Basic | regent | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 6 | block none
+does: deal_damage_single
+upgrade: base_damage 6->9
+
+----
+
+STRIKE_SILENT | Attack | Basic | silent | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 6 | block none
+does: apply_damage, calculate_damage
+upgrade: base_damage 6->9
+
+----
+
+SUBROUTINE | Power | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: SUBROUTINE
+  SUBROUTINE (buff, counter stack) hooks: after_card_played, before_card_played
+does: apply_power_to
+upgrade: cost 1->0
+
+----
+
+SUCKER_PUNCH | Attack | Common | silent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 8 | block none
+vars: weak 1
+applies: WEAK
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 8->10; weak 1->2
+
+----
+
+SUMMON_FORTH | Skill | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: forge 8
+does: forge, move_card_to_creature_hand
+reads: discard_pile, draw_pile, exhaust_pile
+upgrade: forge 8->11
+
+----
+
+SUNDER | Attack | Uncommon | defect | cost 3 | target ANY_ENEMY
+keywords: none | tags: none
+damage 26 | block none
+vars: energy 3
+does: apply_damage, calculate_damage, gain_energy
+upgrade: base_damage 26->34
+
+----
+
+SUPERCRITICAL | Skill | Rare | defect | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: energy 4
+does: gain_energy
+upgrade: energy 4->6
+
+----
+
+SUPERMASSIVE | Attack | Uncommon | regent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: calc_base 5; extra_damage 3
+does: apply_damage, calculate_damage, count_generated_cards_this_combat
+upgrade: base_damage 5->6; extra_damage 3->4
+
+----
+
+SUPPRESS | Attack | Ancient | silent | cost 0 | target ANY_ENEMY
+keywords: innate | tags: none
+damage 11 | block none
+vars: weak 3
+applies: WEAK
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 11->17; weak 3->5
+
+----
+
+SURVIVOR | Skill | Basic | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 8
+does: calculate_block, discard_cards, gain_resolved_block, request_card_choice
+reads: hand
+upgrade: base_block 8->11
+
+----
+
+SWEEPING_BEAM | Attack | Common | defect | cost 1 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 6 | block none
+vars: cards 1
+does: apply_damage, calculate_damage, draw_cards
+upgrade: base_damage 6->9
+
+----
+
+SWEEPING_GAZE | Attack | Status | token | cost 0 | target RANDOM_ENEMY
+keywords: ethereal, exhaust | tags: osty_attack
+damage 10 | block none
+vars: osty_damage 10
+does: deal_osty_damage_single
+upgrade: base_damage 10->15; osty_damage 10->15
+
+----
+
+SWORD_BOOMERANG | Attack | Common | ironclad | cost 1 | target RANDOM_ENEMY
+keywords: none | tags: none
+damage 3 | block none
+vars: repeat 3
+does: apply_damage, calculate_damage
+upgrade: repeat 3->4
+
+----
+
+SWORD_SAGE | Power | Rare | regent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: sword_sage_power 1
+applies: SWORD_SAGE
+  SWORD_SAGE (buff, counter stack)
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+SYNCHRONIZE | Skill | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: calc_base 0; calc_extra 2
+applies: SYNCHRONIZE
+  SYNCHRONIZE (buff, counter stack) hooks: after_power_amount_changed, after_turn_end
+does: apply_power_to, get_unique_orb_type_count
+upgrade: calc_extra 2->3
+
+----
+
+SYNTHESIS | Attack | Uncommon | defect | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 14 | block none
+applies: FREE_POWER
+  FREE_POWER (buff, counter stack) hooks: before_card_played
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 14->20
+
+----
+
+TACTICIAN | Skill | Uncommon | silent | cost 3 | target SELF
+keywords: sly | tags: none
+damage none | block none
+vars: energy 1
+does: gain_energy
+upgrade: energy 1->2
+
+----
+
+TAG_TEAM | Attack | Uncommon | colorless | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 11 | block none
+applies: TAG_TEAM
+  TAG_TEAM (debuff, counter stack) hooks: after_modifying_card_play_count, after_power_amount_changed, modify_card_play_count
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 11->15
+
+----
+
+TANK_CARD | Power | Rare | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: TANK
+  TANK (buff, single stack) hooks: after_power_amount_changed, modify_damage_multiplicative
+does: apply_power_to
+upgrade: cost 1->0
+
+----
+
+TAUNT | Skill | Common | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage none | block 6
+vars: vulnerable 1
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, gain_block
+upgrade: base_block 6->7; vulnerable 1->2
+
+----
+
+TEAR_ASUNDER | Attack | Rare | ironclad | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 5 | block none
+vars: calc_base 0; calc_extra 1; repeat 1
+does: apply_damage, calculate_damage, count_unblocked_hits_received_this_combat
+upgrade: base_damage 5->7
+
+----
+
+TEMPEST | Skill | Uncommon | defect | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+does: channel_orb
+
+----
+
+TERRAFORMING | Skill | Uncommon | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: vigor 7
+applies: VIGOR
+  VIGOR (buff, counter stack) hooks: after_attack, before_attack, modify_damage_additive
+does: apply_power_to
+upgrade: vigor 7->10
+
+----
+
+TESLA_COIL | Attack | Uncommon | defect | cost 0 | target ANY_ENEMY
+keywords: none | tags: none
+damage 3 | block none
+does: apply_damage, calculate_damage, trigger_lightning_passives
+upgrade: base_damage 3->4
+
+----
+
+THE_BOMB_CARD | Skill | Uncommon | colorless | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: bomb_damage 40; turns 3
+applies: THE_BOMB
+  THE_BOMB (buff, counter stack) hooks: before_turn_end
+does: add_instance, apply_power_to, set_latest_damage
+reads: powers
+upgrade: bomb_damage 40->50
+
+----
+
+THE_GAMBIT | Skill | Rare | colorless | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block 50
+vars: block 50
+applies: THE_GAMBIT
+  THE_GAMBIT (debuff, single stack) hooks: after_damage_received
+does: apply_power_to, gain_block
+upgrade: base_block 50->75; block 50->75
+
+----
+
+THE_HUNT | Attack | Rare | silent | cost 1 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage 10 | block none
+applies: THE_HUNT
+  THE_HUNT (buff, counter stack)
+does: CardReward, add_extra_reward, apply_damage, apply_power_to, calculate_damage, should_owner_death_trigger_fatal
+upgrade: base_damage 10->15
+
+----
+
+THE_SCYTHE | Attack | Rare | necrobinder | cost 2 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage 13 | block none
+vars: increase 3
+does: deal_damage_single, increase_base_damage
+upgrade: increase 3->4
+
+----
+
+THE_SEALED_THRONE | Power | Ancient | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: THE_SEALED_THRONE
+  THE_SEALED_THRONE (buff, counter stack) hooks: before_card_played
+does: apply_power_to
+upgrade: cost 1->0
+
+----
+
+THE_SMITH | Skill | Rare | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: forge 30
+does: forge
+upgrade: forge 30->40
+
+----
+
+THINKING_AHEAD | Skill | Uncommon | colorless | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: cards 2
+does: draw_cards, insert_card_into_draw_pile, request_card_choice
+reads: hand
+
+----
+
+THRASH | Attack | Rare | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 4 | block none
+does: apply_damage, calculate_damage, calculate_untargeted_card_damage, exhaust_card, increase_base_damage
+reads: hand
+upgrade: base_damage 4->6
+
+----
+
+THRUMMING_HATCHET | Attack | Uncommon | colorless | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 11 | block none
+does: deal_damage_single
+upgrade: base_damage 11->14
+
+----
+
+THUNDERCLAP | Attack | Common | ironclad | cost 1 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 4 | block none
+vars: vulnerable 1
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_damage, apply_power_to, calculate_damage
+upgrade: base_damage 4->7
+
+----
+
+THUNDER_CARD | Power | Uncommon | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: thunder_power 6
+applies: THUNDER
+  THUNDER (buff, counter stack)
+does: apply_power_to
+upgrade: thunder_power 6->8
+
+----
+
+TIMES_UP | Attack | Rare | necrobinder | cost 2 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage none | block none
+vars: calc_base 0; extra_damage 1
+applies: DOOM
+  DOOM (debuff, counter stack) hooks: before_turn_end
+does: apply_damage, calculate_damage, get_power_amount
+
+----
+
+TOOLS_OF_THE_TRADE | Power | Rare | silent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: TOOLS_OF_THE_TRADE
+  TOOLS_OF_THE_TRADE (buff, counter stack) hooks: after_player_turn_start, modify_hand_draw
+does: apply_power_to
+upgrade: cost 1->0
+
+----
+
+TORIC_TOUGHNESS | Skill | Event | event | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block 5
+vars: turns 2
+applies: TORIC_TOUGHNESS
+  TORIC_TOUGHNESS (buff, counter stack) hooks: after_block_cleared, after_power_amount_changed
+does: apply_power_to, gain_block, set_block
+reads: powers
+upgrade: base_block 5->7
+
+----
+
+TOXIC | Status | Status | status | cost 1 | target NONE
+keywords: exhaust | tags: none
+damage 5 | block none
+vars: damage 5
+
+----
+
+TRACKING | Power | Rare | silent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: TRACKING
+  TRACKING (buff, counter stack) hooks: modify_damage_multiplicative
+does: apply_power_to, get_power_amount
+upgrade: cost 2->1
+
+----
+
+TRANSFIGURE | Skill | Rare | necrobinder | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: energy 1
+does: request_card_choice, set_combat_cost
+reads: hand
+
+----
+
+TRASH_TO_TREASURE | Power | Rare | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: TRASH_TO_TREASURE
+  TRASH_TO_TREASURE (buff, counter stack) hooks: after_card_generated_for_combat
+does: apply_power_to
+upgrade: cost 1->0
+
+----
+
+TREMBLE | Skill | Common | ironclad | cost 1 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage none | block none
+vars: vulnerable 3
+applies: VULNERABLE
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to
+upgrade: vulnerable 3->4
+
+----
+
+TRUE_GRIT | Skill | Common | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block 7
+does: exhaust_card, gain_block, request_card_choice
+reads: hand
+upgrade: base_block 7->9
+
+----
+
+TURBO | Skill | Common | defect | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: energy 2
+does: add_generated_card_to_creature_discard, gain_energy, make_void
+upgrade: energy 2->3
+
+----
+
+TWIN_STRIKE | Attack | Common | ironclad | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 5 | block none
+does: apply_damage, calculate_damage
+upgrade: base_damage 5->7
+
+----
+
+TYRANNY_CARD | Power | Rare | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: TYRANNY
+  TYRANNY (buff, counter stack) hooks: after_player_turn_start, modify_hand_draw
+does: apply_power_to
+
+----
+
+ULTIMATE_DEFEND | Skill | Uncommon | colorless | cost 1 | target SELF
+keywords: none | tags: defend
+damage none | block 11
+does: gain_block
+upgrade: base_block 11->15
+
+----
+
+ULTIMATE_STRIKE | Attack | Uncommon | colorless | cost 1 | target ANY_ENEMY
+keywords: none | tags: strike
+damage 14 | block none
+does: deal_damage_single
+upgrade: base_damage 14->20
+
+----
+
+UNDEATH | Skill | Rare | necrobinder | cost 0 | target SELF
+keywords: none | tags: none
+damage none | block 7
+does: add_generated_card_to_creature_discard, clone, gain_block, new_card_instance_id
+upgrade: base_block 7->9
+
+----
+
+UNLEASH | Attack | Basic | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: osty_attack
+damage 6 | block none
+vars: calc_base 6; extra_damage 1
+does: deal_damage, osty
+reads: current_hp
+upgrade: base_damage 6->9; calc_base 6->9
+
+----
+
+UNMOVABLE | Power | Rare | ironclad | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+applies: UNMOVABLE
+  UNMOVABLE (buff, counter stack) hooks: modify_block_multiplicative
+does: apply_power_to
+upgrade: cost 2->1
+
+----
+
+UNRELENTING | Attack | Uncommon | ironclad | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 14 | block none
+applies: FREE_ATTACK
+  FREE_ATTACK (buff, counter stack) hooks: before_card_played
+does: apply_power_to, deal_damage_to_target
+upgrade: base_damage 14->20
+
+----
+
+UNTOUCHABLE | Skill | Common | silent | cost 2 | target SELF
+keywords: sly | tags: none
+damage none | block 6
+does: calculate_block, gain_resolved_block
+upgrade: base_block 6->9
+
+----
+
+UPPERCUT | Attack | Uncommon | ironclad | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 13 | block none
+vars: power 1
+applies: VULNERABLE, WEAK
+  VULNERABLE (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+  WEAK (debuff, counter stack) hooks: modify_damage_multiplicative, on_turn_end_enemy_side
+does: apply_power_to, deal_damage_to_target
+upgrade: power 1->2
+
+----
+
+UPROAR | Attack | Common | defect | cost 2 | target ANY_ENEMY
+keywords: none | tags: none
+damage 6 | block none
+does: apply_damage, auto_play_card, calculate_damage, stable_shuffle_cards
+reads: draw_pile
+upgrade: base_damage 6->8
+
+----
+
+UP_MY_SLEEVE | Skill | Uncommon | silent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 3
+does: add_generated_card_to_creature_hand, make_shiv, set_combat_cost
+upgrade: cards 3->4
+
+----
+
+VEILPIERCER | Attack | Uncommon | necrobinder | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+vars: damage 10
+applies: VEILPIERCER
+  VEILPIERCER (buff, counter stack) hooks: before_card_played
+does: apply_power_to, deal_damage_single
+upgrade: base_damage 10->13; damage 10->13
+
+----
+
+VENERATE | Skill | Basic | regent | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: stars 2
+does: gain_stars
+upgrade: stars 2->3
+
+----
+
+VICIOUS_CARD | Power | Uncommon | ironclad | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: cards 1
+applies: VICIOUS
+  VICIOUS (buff, counter stack) hooks: after_power_amount_changed
+does: apply_power_to
+upgrade: cards 1->2
+
+----
+
+VOID | Status | Status | status | cost -1 | target NONE
+keywords: ethereal, unplayable | tags: none
+damage none | block none
+vars: energy 1
+
+----
+
+VOID_FORM | Power | Rare | regent | cost 3 | target SELF
+keywords: ethereal | tags: none
+damage none | block none
+vars: void_form_power 2
+applies: VOID_FORM
+  VOID_FORM (buff, counter stack) hooks: after_card_played, before_side_turn_start
+does: apply_power_to, request_end_turn_after_current_play
+
+----
+
+VOLLEY | Attack | Uncommon | colorless | cost 0 | target RANDOM_ENEMY
+keywords: none | tags: none
+damage 10 | block none
+vars: damage 10
+does: apply_damage, calculate_damage
+upgrade: base_damage 10->14; damage 10->14
+
+----
+
+VOLTAIC | Skill | Rare | defect | cost 3 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: calc_base 0; calc_extra 1
+does: channel_orb
+
+----
+
+WASTE_AWAY | Status | Status | token | cost -1 | target NONE
+keywords: none | tags: none
+damage none | block none
+vars: waste_away_power 1
+
+----
+
+WELL_LAID_PLANS | Power | Rare | silent | cost 2 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: retain_amount 1
+applies: WELL_LAID_PLANS
+  WELL_LAID_PLANS (buff, counter stack) hooks: before_flush_late
+does: apply_power_to
+upgrade: cost 2->1; retain_amount 1->2
+
+----
+
+WHIRLWIND | Attack | Uncommon | ironclad | cost 0 | target ALL_ENEMIES
+keywords: none | tags: none
+damage 5 | block none
+does: apply_damage, calculate_damage
+upgrade: base_damage 5->8
+
+----
+
+WHISTLE | Attack | Ancient | event | cost 2 | target ANY_ENEMY
+keywords: exhaust | tags: none
+damage 33 | block none
+does: deal_damage_single, stun_enemy
+upgrade: base_damage 33->44
+
+----
+
+WHITE_NOISE | Skill | Uncommon | defect | cost 1 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: add_generated_card_to_creature_hand, create_character_cards, set_temporary_free_this_turn
+upgrade: cost 1->0
+
+----
+
+WISH | Skill | Ancient | event | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+does: request_card_choice
+reads: draw_pile
+
+----
+
+WISP | Skill | Common | necrobinder | cost 0 | target SELF
+keywords: exhaust | tags: none
+damage none | block none
+vars: energy 1
+does: gain_energy
+
+----
+
+WOUND | Status | Status | status | cost -1 | target NONE
+keywords: unplayable | tags: none
+damage none | block none
+
+----
+
+WRAITH_FORM | Power | Ancient | silent | cost 3 | target SELF
+keywords: none | tags: none
+damage none | block none
+vars: intangible_power 2; wraith_form_power 1
+applies: INTANGIBLE, WRAITH_FORM
+  INTANGIBLE (buff, counter stack) hooks: modify_damage_cap, modify_hp_lost, on_turn_end_enemy_side
+  WRAITH_FORM (debuff, counter stack) hooks: after_side_turn_start
+does: apply_power_to
+upgrade: intangible_power 2->3
+
+----
+
+WRITHE | Curse | Curse | curse | cost -1 | target NONE
+keywords: innate, unplayable | tags: none
+damage none | block none
+
+----
+
+WROUGHT_IN_WAR | Attack | Common | regent | cost 1 | target ANY_ENEMY
+keywords: none | tags: none
+damage 7 | block none
+vars: forge 7
+does: deal_damage_single, forge
+upgrade: base_damage 7->9; forge 7->9
+
+----
+
+ZAP | Skill | Basic | defect | cost 1 | target SELF
+keywords: none | tags: none
+damage none | block none
+does: channel_orb
+upgrade: cost 1->0

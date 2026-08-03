@@ -1,0 +1,19 @@
+{
+  "model": "Qwen/Qwen3-Embedding-0.6B",
+  "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+  "template_version": 1,
+  "template_hash": "6527c193ecfd0d67",
+  "raw_dims": 1024,
+  "dims": 64,
+  "cards": 577,
+  "dtype": "float32",
+  "device_used": "cpu",
+  "pooling": "last_token",
+  "normalised": true,
+  "frozen": [
+    "model_revision",
+    "template_hash",
+    "mean.npy",
+    "projection.npy"
+  ]
+}
