@@ -203,6 +203,12 @@ def main() -> None:
         default="output/crash_log.json",
         help="JSON file written when the game crashes or disconnects mid-run.",
     )
+    parser.add_argument(
+        "--measured-drafting", action="store_true",
+        help="Choose card rewards by playing the deck with each candidate instead "
+             "of asking the policy. Costs ~4s per reward and needs no training; "
+             "the policy picked slot 2 in 19 of 28 live rewards and slot 0 in none.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -227,6 +233,7 @@ def main() -> None:
             on_run_end=recorder,
             tell_cyra=args.tell_cyra,
             combat_policy_path=args.combat_policy,
+            measured_drafting=args.measured_drafting,
         )
     except KeyboardInterrupt:
         logger.info("Interrupted.")

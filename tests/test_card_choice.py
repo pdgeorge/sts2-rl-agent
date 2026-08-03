@@ -168,3 +168,91 @@ def test_scoring_does_not_modify_the_deck_it_was_given():
     after = [(c.card_id, c.cost, c.upgraded) for c in deck]
     assert before == after
     assert len(deck) == len(before)
+
+
+# --- reconstructing a live state --------------------------------------------
+
+
+def _reward_state(deck_ids, offered_ids, floor=6, can_skip=True):
+    return {
+        "type": "card_reward",
+        "can_skip": can_skip,
+        "run_state": {"deck": [{"id": i} for i in deck_ids], "total_floor": floor},
+        "max_hp": 80,
+        "cards": [{"id": i} for i in offered_ids],
+    }
+
+
+def test_reward_context_reconstructs_a_deck():
+    from sts2_env.evaluation.from_bridge import reward_context
+
+    state = _reward_state(["STRIKE_IRONCLAD"] * 5 + ["BASH"], ["ANGER", "IRON_WAVE"])
+    context = reward_context(state)
+    assert context is not None
+    assert len(context.deck) == 6
+    assert context.resolved_fraction == 1.0
+    assert context.usable
+    assert context.floor == 6
+
+
+def test_missing_deck_is_refused_not_treated_as_empty():
+    """An empty deck would score every candidate identically and look like it
+    worked. Older mod builds send deck_size without deck."""
+    from sts2_env.evaluation.from_bridge import reward_context
+
+    assert reward_context({"type": "card_reward", "cards": [{"id": "ANGER"}]}) is None
+
+
+def test_a_badly_reconstructed_deck_is_not_usable():
+    """Evaluating a deck missing a third of its cards is worse than not
+    evaluating: it is confidently measuring something nobody owns."""
+    from sts2_env.evaluation.from_bridge import reward_context
+
+    state = _reward_state(
+        ["STRIKE_IRONCLAD", "NOT_A_REAL_CARD", "ALSO_FAKE"], ["ANGER"]
+    )
+    context = reward_context(state)
+    assert context is not None
+    assert context.resolved_fraction < 0.8
+    assert not context.usable
+
+
+def test_upgraded_cards_survive_the_round_trip():
+    """A deck read as all-unupgraded understates itself, and upgrades measurably
+    matter: the same five cards upgraded cut elite HP cost 61.1 -> 35.5."""
+    from sts2_env.evaluation.from_bridge import build_card
+
+    plain = build_card({"id": "IRON_WAVE"})
+    upgraded = build_card({"id": "IRON_WAVE", "upgraded": True})
+    assert plain is not None and upgraded is not None
+    assert upgraded.upgraded and not plain.upgraded
+
+
+def test_bridge_name_variants_resolve():
+    from sts2_env.evaluation.from_bridge import build_card
+
+    for variant in ("STRIKE_IRONCLAD", "StrikeIronclad", "strike_ironclad"):
+        card = build_card({"id": variant})
+        assert card is not None, variant
+        assert card.card_id.name == "STRIKE_IRONCLAD"
+
+
+def test_unresolvable_offered_card_is_dropped_not_guessed():
+    from sts2_env.evaluation.from_bridge import reward_context
+
+    state = _reward_state(["STRIKE_IRONCLAD"] * 10, ["ANGER", "CARD_FROM_NEXT_PATCH"])
+    context = reward_context(state)
+    assert [c.card_id.name for c in context.candidates] == ["ANGER"]
+    assert context.candidate_indexes == [0]
+
+
+@pytest.mark.slow
+def test_choose_card_index_returns_an_index_into_the_offered_list():
+    from sts2_env.evaluation.from_bridge import choose_card_index
+
+    state = _reward_state(
+        ["STRIKE_IRONCLAD"] * 5 + ["DEFEND_IRONCLAD"] * 4 + ["BASH"],
+        ["CLUMSY", "IRON_WAVE", "ANGER"],
+    )
+    picked = choose_card_index(state, greedy_pilot, seeds=(0, 1))
+    assert picked is None or 0 <= picked < 3

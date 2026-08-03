@@ -36,6 +36,7 @@ from sts2_env.bridge.protocol import (
     Phase,
 )
 from sts2_env.bridge.run_adapter import RunStateAdapter
+from sts2_env.evaluation.from_bridge import choose_card_index
 from sts2_env.bridge.state_adapter import StateAdapter
 from sts2_env.gym_env.observation import OBS_SIZE as COMBAT_OBS_SIZE
 from sts2_env.gym_env.run_env import RUN_OBS_SIZE
@@ -230,6 +231,8 @@ def run_agent(
     tell_cyra: bool = False,
     combat_policy_path: str | None = None,
     stuck_dump_path: str = "output/stuck_states.jsonl",
+    measured_drafting: bool = False,
+    draft_pilot=None,
 ) -> None:
     """Main agent loop.
 
@@ -252,6 +255,11 @@ def run_agent(
     """
     model = load_model(model_path)
     adapter = StateAdapter()
+
+    if measured_drafting and draft_pilot is None:
+        from sts2_env.evaluation.pilots import greedy_pilot
+
+        draft_pilot = greedy_pilot
 
     # Which adapter to use is decided by the model, not a flag. A combat model
     # wants 131 dims and a full-run model 277; guessing wrong produces a shape
@@ -457,6 +465,30 @@ def run_agent(
                 # is why runs stalled around floor 8: the deck was built by
                 # ("power", "attack", "skill") and the map by room priority. A
                 # run-shaped model has been trained to see the options and choose.
+                # Measured drafting takes precedence over the policy for card
+                # rewards, because that is the decision the policy is worst at and
+                # the one it has almost no chance of learning: live it picked slot
+                # 2 in 19 of 28 rewards and slot 0 in none, with mask, choice
+                # encoding and card ids all verified working. Here the deck is
+                # actually played with each candidate instead.
+                #
+                # Falls through to the policy on any failure. A ranking is not
+                # worth losing a run over.
+                if measured_drafting and msg_type == "card_reward":
+                    try:
+                        started = time.perf_counter()
+                        picked = choose_card_index(state, draft_pilot)
+                        took = time.perf_counter() - started
+                        logger.info(
+                            "CARD_REWARD measured: %s (%.1fs)",
+                            "skip" if picked is None else f"index {picked}", took,
+                        )
+                        _send_choice_or_skip(client, picked)
+                        continue
+                    except Exception:  # noqa: BLE001
+                        logger.exception(
+                            "Measured drafting failed; falling back to the policy")
+
                 if run_adapter is not None and msg_type in RUN_MODEL_STATES:
                     obs = run_adapter.encode_observation(state)
                     mask = run_adapter.compute_action_mask(state)
@@ -1082,6 +1114,12 @@ def main() -> None:
             "map, rewards, shop, rest, and events."
         ),
     )
+    parser.add_argument(
+        "--measured-drafting", action="store_true",
+        help="Choose card rewards by playing the deck with each candidate instead "
+             "of asking the policy. Costs ~4s per reward and needs no training; "
+             "the policy picked slot 2 in 19 of 28 live rewards and slot 0 in none.",
+    )
 
     args = parser.parse_args()
 
@@ -1104,6 +1142,7 @@ def main() -> None:
         speed=args.speed,
         allow_random_fallback=args.allow_random_fallback,
         combat_policy_path=args.combat_policy,
+        measured_drafting=args.measured_drafting,
     )
 
 
