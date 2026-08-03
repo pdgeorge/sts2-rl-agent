@@ -301,3 +301,63 @@ def veto_elite_rooms(state: Mapping[str, Any], pilot, **kwargs) -> bool:
         return True
     logger.info("map: elite win rate %.0f%% -- elites are fine", rate * 100)
     return False
+
+
+def choose_upgrade_indexes(
+    state: Mapping[str, Any], pilot, count: int = 1, **kwargs
+) -> list[int] | None:
+    """Which cards to upgrade on a smith screen, by measured HP value.
+
+    ONLY safe when the caller knows this selection is an upgrade. The bridge's
+    card_select payload carries `type`, `cards`, `min_select` and `max_select`
+    and nothing about *why* it is selecting, so an upgrade screen and a removal
+    screen are indistinguishable here. Ranking by "best to upgrade" on a removal
+    screen would delete the best card in the deck. The caller tracks intent
+    instead: it knows when it has just chosen smith.
+    """
+    from sts2_env.evaluation.rest_choice import rank_rest_options
+
+    entries = _read_deck_entries(state)
+    offered = state.get("cards")
+    if entries is None or not isinstance(offered, list) or not offered:
+        return None
+
+    deck = [c for c in (build_card(e) for e in entries) if c is not None]
+    if not deck or len(deck) / len(entries) < MIN_RESOLVED_FRACTION:
+        return None
+
+    # Match each offered card to a deck instance so the upgrade is evaluated
+    # against the deck that actually exists.
+    by_id: dict[Any, list] = {}
+    for card in deck:
+        by_id.setdefault(card.card_id, []).append(card)
+
+    candidates, indexes = [], []
+    for position, entry in enumerate(offered):
+        card_id = _card_id(entry)
+        pool = by_id.get(card_id) or []
+        if not pool:
+            continue
+        candidates.append(pool.pop())
+        indexes.append(int(entry.get("index", position)) if isinstance(entry, Mapping) else position)
+
+    if not candidates:
+        return None
+
+    ranked = rank_rest_options(
+        deck, candidates, pilot,
+        current_hp=10**6,          # rest is irrelevant here; make it worthless
+        max_hp=_read_int(state, "max_hp", default=80) or 80,
+        floor=_read_int(state, "total_floor", "floor", default=1),
+        **kwargs,
+    )
+    upgrades = [o for o in ranked if o.kind == "upgrade"]
+    if not upgrades:
+        return None
+
+    chosen = [indexes[o.index] for o in upgrades[:count] if o.index is not None]
+    logger.info(
+        "smith: %s",
+        "  ".join(f"{o.label}={o.hp_value:+.1f}hp" for o in upgrades[:4]),
+    )
+    return chosen or None

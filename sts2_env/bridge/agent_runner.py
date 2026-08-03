@@ -39,6 +39,7 @@ from sts2_env.bridge.run_adapter import RunStateAdapter
 from sts2_env.evaluation.from_bridge import (
     choose_card_index,
     choose_rest_option,
+    choose_upgrade_indexes,
     veto_elite_rooms,
 )
 from sts2_env.bridge.state_adapter import StateAdapter
@@ -331,6 +332,7 @@ def run_agent(
         logger.info("Connected. Starting agent loop.")
 
         step_count = 0
+        _expect_upgrade = [False]
         _last_fingerprint = [""]
         _repeat_count = [0]
         combat_count = 0
@@ -579,7 +581,15 @@ def run_agent(
                             logger.info("CARD_BUNDLE: choosing bundle %s", choice)
                         client.choose(choice)
                     elif msg_type == BridgeStateType.CARD_SELECT:
-                        indexes = _pick_card_select_indexes(state)
+                        indexes = None
+                        if measured_drafting and _expect_upgrade[0]:
+                            try:
+                                indexes = choose_upgrade_indexes(state, draft_pilot)
+                            except Exception:  # noqa: BLE001
+                                logger.exception("Measured smith failed; using heuristic")
+                        _expect_upgrade[0] = False
+                        if indexes is None:
+                            indexes = _pick_card_select_indexes(state)
                         if verbose:
                             logger.info("CARD_SELECT: choosing indexes %s", indexes)
                         if not indexes:
@@ -607,6 +617,10 @@ def run_agent(
                             logger.exception("Measured rest failed; using heuristic")
                     if choice is None:
                         choice = _pick_rest_option(state)
+                    # The next card_select is only an upgrade screen if we just
+                    # chose smith. The bridge payload cannot tell us, so intent
+                    # is tracked here instead of guessed there.
+                    _expect_upgrade[0] = _option_is_smith(state, choice)
                     if verbose:
                         logger.info("REST: choosing option %d", choice)
                     client.choose(choice)
@@ -740,6 +754,16 @@ def _pick_map_node(state: dict[str, Any], avoid_elites: bool = False) -> int:
             if _canonical_text(node.get("type")) == room_type:
                 return _read_index(node, fallback_index)
     return _read_index(nodes[0], DEFAULT_CHOICE_INDEX)
+
+
+def _option_is_smith(state: dict[str, Any], chosen_index: int) -> bool:
+    """Whether the rest option we just picked was the upgrade one."""
+    for option in _enabled_options(state):
+        if _read_index(option, -1) != chosen_index:
+            continue
+        text = _canonical_text(option.get("id") or option.get("action") or "")
+        return "SMITH" in text.upper() or "UPGRADE" in text.upper()
+    return False
 
 
 def _pick_card_select_indexes(state: dict[str, Any]) -> list[int]:

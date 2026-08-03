@@ -328,3 +328,49 @@ def test_upgrades_are_worthless_at_zero_fights_remaining():
         floor=6, fights_remaining=0, seeds=(0,),
     )
     assert ranked[0].kind == "rest"
+
+
+# --- smith screens ----------------------------------------------------------
+
+
+def test_smith_picks_the_most_valuable_upgrade_not_the_first():
+    """The heuristic took cards[:count] -- literally whatever was listed first."""
+    from sts2_env.evaluation.from_bridge import choose_upgrade_indexes
+
+    deck = [{"id": "STRIKE_IRONCLAD"}] * 5 + [{"id": "DEFEND_IRONCLAD"}] * 4 + [
+        {"id": "BASH"}, {"id": "IRON_WAVE"}
+    ]
+    state = {
+        "type": "card_select",
+        "run_state": {"deck": deck, "total_floor": 6},
+        "max_hp": 80,
+        "cards": [
+            {"id": "STRIKE_IRONCLAD", "index": 0},
+            {"id": "IRON_WAVE", "index": 1},
+            {"id": "DEFEND_IRONCLAD", "index": 2},
+        ],
+        "min_select": 1, "max_select": 1,
+    }
+    chosen = choose_upgrade_indexes(state, greedy_pilot, seeds=(0, 1))
+    assert chosen == [1], f"expected Iron Wave (index 1), got {chosen}"
+
+
+def test_smith_refuses_without_a_deck():
+    from sts2_env.evaluation.from_bridge import choose_upgrade_indexes
+
+    state = {"type": "card_select", "cards": [{"id": "BASH", "index": 0}]}
+    assert choose_upgrade_indexes(state, greedy_pilot) is None
+
+
+def test_smith_intent_gate_distinguishes_heal_from_smith():
+    """card_select carries no purpose field, so an upgrade screen and a removal
+    screen look identical. Ranking by upgrade value on a removal screen would
+    delete the best card in the deck, so intent is tracked rather than guessed."""
+    from sts2_env.bridge.agent_runner import _option_is_smith
+
+    state = {"options": [
+        {"id": "heal", "index": 0, "enabled": True},
+        {"id": "smith", "index": 1, "enabled": True},
+    ]}
+    assert _option_is_smith(state, 1) is True
+    assert _option_is_smith(state, 0) is False
