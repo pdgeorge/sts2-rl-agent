@@ -54,8 +54,15 @@ from sts2_env.gym_env.observation import OBS_SIZE as COMBAT_OBS_SIZE
 from sts2_env.gym_env.relic_potion_encoding import RELIC_POTION_OBS_SIZE
 from sts2_env.gym_env.run_level_encoding import RUN_LEVEL_SIZE
 
-OBS_LAYOUT_VERSION = 2
+OBS_LAYOUT_VERSION = 3
 """Bump whenever any column's meaning changes. See the module docstring.
+
+v3: the enemy intent_dmg column now carries EFFECTIVE damage rather than the
+    move's declared base. Same offset, same width, different quantity -- which is
+    exactly the silent kind of change this module exists to catch. A buffing
+    enemy declaring 7 actually hits for 19, so every v2 model learned an
+    incoming-damage signal that was systematically low and did not respond to
+    buffs at all.
 
 v2: card identity moved from feature hashing to frozen text embeddings. The hand
     block became per-slot (10 x 65) instead of a 256-bucket bag, and the deck

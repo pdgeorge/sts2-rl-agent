@@ -42,7 +42,7 @@ EXPECTED_RUN_LAYOUT = [
     ("choices",         2076, 126),
     ("relics_potions",  2202, 384),
 ]
-EXPECTED_RUN_SIZE = 2586
+EXPECTED_RUN_SIZE = 2586  # v3: same shape as v2, intent_dmg changed meaning
 
 EXPECTED_COMBAT_LAYOUT = [
     ("player_state",    0,  4),

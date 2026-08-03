@@ -130,7 +130,13 @@ def encode_observation(combat: CombatState) -> np.ndarray:
                     for j, it in enumerate(INTENT_TYPES):
                         if intent.intent_type == it:
                             obs[idx + 3 + j] = 1.0
-                    obs[idx + 3 + NUM_INTENT_TYPES] = intent.damage / 30.0
+                    # Effective, not declared. intent.damage is a frozen base
+                    # that ignores Strength, Weak and Vulnerable, so a buffing
+                    # enemy showing "7" hits for 19. A policy fed the declared
+                    # number cannot learn to block what it cannot see coming.
+                    obs[idx + 3 + NUM_INTENT_TYPES] = (
+                        intent.effective_damage(enemy, combat.player, combat) / 30.0
+                    )
                     obs[idx + 3 + NUM_INTENT_TYPES + 1] = intent.hits / 5.0
 
             # Enemy powers

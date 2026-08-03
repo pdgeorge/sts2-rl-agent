@@ -141,6 +141,7 @@ def play_one(
     pilot: Pilot,
     *,
     max_hp: int = IRONCLAD_STARTING_HP,
+    starting_hp: int | None = None,
     character_id: str = "Ironclad",
     max_steps: int = 600,
 ) -> FightResult:
@@ -159,7 +160,7 @@ def play_one(
     ]
 
     combat = CombatState(
-        player_hp=max_hp,
+        player_hp=max_hp if starting_hp is None else starting_hp,
         player_max_hp=max_hp,
         deck=fresh_deck,
         rng_seed=seed,
@@ -178,9 +179,10 @@ def play_one(
             # spin without advancing the turn counter.
             break
 
+    began = max_hp if starting_hp is None else starting_hp
     return FightResult(
         won=bool(combat.player_won),
-        hp_lost=max(0, max_hp - combat.player.current_hp),
+        hp_lost=max(0, began - combat.player.current_hp),
         turns=int(combat.turn_count),
     )
 
@@ -230,3 +232,122 @@ def score_deck(
         tier.name: score_cell(deck, tier, pilot, seeds=seeds, max_hp=max_hp)
         for tier in tiers
     }
+
+
+# --- gauntlet ---------------------------------------------------------------
+
+
+def gauntlet_length(
+    deck: Sequence,
+    tier: Tier,
+    pilot: Pilot,
+    *,
+    seed: int = 0,
+    max_hp: int = IRONCLAD_STARTING_HP,
+    limit: int = 60,
+) -> int:
+    """How many fights in a row this deck survives, from full HP until death.
+
+    `score_cell` resets to full HP for every fight, which quietly assumes HP is
+    free. It is not -- it is the currency a whole run is paid for in. A deck that
+    wins every fight at 60 HP a time scores well there and dies on its second
+    fight in an actual run.
+
+    Carrying HP forward turns the measurement into the thing that matters: how
+    deep this deck goes. Defence, damage and speed all cash out in the same
+    number, and a single catastrophic fight ends the count rather than being
+    averaged away.
+
+    Encounters cycle through the tier so a deck cannot be tuned to one fight.
+    """
+    encounters = encounters_for(tier)
+    if not encounters:
+        return 0
+
+    hp = max_hp
+    survived = 0
+    for index in range(limit):
+        setup = encounters[index % len(encounters)]
+        result = play_one(
+            deck, setup, seed * 1000 + index, pilot,
+            max_hp=max_hp, starting_hp=hp,
+        )
+        if not result.won:
+            return survived
+        survived += 1
+        hp -= result.hp_lost
+        if hp <= 0:
+            return survived
+    return survived
+
+
+def mean_gauntlet(
+    deck: Sequence,
+    tier: Tier,
+    pilot: Pilot,
+    *,
+    seeds: Iterable[int] = range(6),
+    max_hp: int = IRONCLAD_STARTING_HP,
+) -> float:
+    """Mean fights survived across seeds -- the headline deck-strength number."""
+    lengths = [
+        gauntlet_length(deck, tier, pilot, seed=seed, max_hp=max_hp)
+        for seed in seeds
+    ]
+    return float(np.mean(lengths)) if lengths else 0.0
+
+
+def gauntlet_hp(
+    deck: Sequence,
+    tier: Tier,
+    pilot: Pilot,
+    *,
+    seed: int = 0,
+    max_hp: int = IRONCLAD_STARTING_HP,
+    fights: int = 5,
+) -> float:
+    """HP left after `fights` consecutive fights, without healing. 0 if it dies.
+
+    This is the scoring basis the decision modules should use, and the reason is
+    the flaw it fixes: `score_cell` restarts every fight at full HP, so it cannot
+    value HP preservation at all. Ending a fight at 5 HP and at 50 HP score the
+    same there, which is why defensive cards measured as worthless -- the
+    measurement handed the deck a free full heal after every fight.
+
+    Continuous rather than a fight count, because counts land on 0, 1 or 2 for
+    the decks that exist today and cannot rank anything.
+    """
+    encounters = encounters_for(tier)
+    if not encounters:
+        return float(max_hp)
+
+    hp = float(max_hp)
+    for index in range(fights):
+        setup = encounters[index % len(encounters)]
+        result = play_one(
+            deck, setup, seed * 1000 + index, pilot,
+            max_hp=max_hp, starting_hp=int(hp),
+        )
+        if not result.won:
+            return 0.0
+        hp -= result.hp_lost
+        if hp <= 0:
+            return 0.0
+    return hp
+
+
+def mean_gauntlet_hp(
+    deck: Sequence,
+    tier: Tier,
+    pilot: Pilot,
+    *,
+    seeds: Iterable[int] = range(6),
+    max_hp: int = IRONCLAD_STARTING_HP,
+    fights: int = 5,
+) -> float:
+    """Mean HP surviving a gauntlet, across seeds. Higher is a better deck."""
+    values = [
+        gauntlet_hp(deck, tier, pilot, seed=seed, max_hp=max_hp, fights=fights)
+        for seed in seeds
+    ]
+    return float(np.mean(values)) if values else 0.0
