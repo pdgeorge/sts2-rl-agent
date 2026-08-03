@@ -264,3 +264,40 @@ def choose_rest_option(state: Mapping[str, Any], pilot, **kwargs) -> int | None:
     if not ranked:
         return None
     return heal_index if ranked[0].kind == "rest" else smith_index
+
+
+ELITE_VETO_WIN_RATE = 0.6
+"""Below this measured elite win rate, do not walk into one.
+
+Not tuned -- chosen as "clearly worse than a coin flip on the run". A starter deck
+measures 33-42%, a starter plus five solid cards measures 100%, so the threshold
+sits in a gap rather than on a slope.
+"""
+
+
+def veto_elite_rooms(state: Mapping[str, Any], pilot, **kwargs) -> bool:
+    """True when this deck should not be taking elites yet.
+
+    Deliberately a veto rather than a chooser. Ranking rooms by expected HP cost
+    picks the rest site every time, because rest is the only room with negative
+    cost and combat rewards are not modelled -- and "avoid all combat" wins
+    nothing.
+    """
+    from sts2_env.evaluation.map_choice import elite_survivability
+
+    entries = _read_deck_entries(state)
+    if entries is None:
+        return False
+    deck = [c for c in (build_card(e) for e in entries) if c is not None]
+    if not deck or len(deck) / len(entries) < MIN_RESOLVED_FRACTION:
+        return False
+
+    rate = elite_survivability(
+        deck, pilot, floor=_read_int(state, "total_floor", "floor", default=1),
+        max_hp=_read_int(state, "max_hp", default=80) or 80, **kwargs,
+    )
+    if rate < ELITE_VETO_WIN_RATE:
+        logger.info("map: elite win rate %.0f%% -- avoiding elites", rate * 100)
+        return True
+    logger.info("map: elite win rate %.0f%% -- elites are fine", rate * 100)
+    return False

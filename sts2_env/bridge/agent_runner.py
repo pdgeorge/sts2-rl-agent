@@ -36,7 +36,11 @@ from sts2_env.bridge.protocol import (
     Phase,
 )
 from sts2_env.bridge.run_adapter import RunStateAdapter
-from sts2_env.evaluation.from_bridge import choose_card_index, choose_rest_option
+from sts2_env.evaluation.from_bridge import (
+    choose_card_index,
+    choose_rest_option,
+    veto_elite_rooms,
+)
 from sts2_env.bridge.state_adapter import StateAdapter
 from sts2_env.gym_env.observation import OBS_SIZE as COMBAT_OBS_SIZE
 from sts2_env.gym_env.run_env import RUN_OBS_SIZE
@@ -557,7 +561,13 @@ def run_agent(
                         )
 
                 elif phase == Phase.MAP_SELECT:
-                    choice = _pick_map_node(state)
+                    avoid = False
+                    if measured_drafting:
+                        try:
+                            avoid = veto_elite_rooms(state, draft_pilot)
+                        except Exception:  # noqa: BLE001
+                            logger.exception("Elite veto failed; routing normally")
+                    choice = _pick_map_node(state, avoid_elites=avoid)
                     if verbose:
                         logger.info("MAP: choosing node %d", choice)
                     client.choose(choice)
@@ -702,7 +712,7 @@ def _phase_for_state(state: dict[str, Any]) -> str:
     }.get(msg_type, state.get("phase", Phase.UNKNOWN))
 
 
-def _pick_map_node(state: dict[str, Any]) -> int:
+def _pick_map_node(state: dict[str, Any], avoid_elites: bool = False) -> int:
     """Choose a reachable map node from the bridge state's node list."""
     nodes = list(state.get("nodes", []))
     if not nodes:
@@ -713,6 +723,18 @@ def _pick_map_node(state: dict[str, Any]) -> int:
         if hp_ratio is not None and hp_ratio < REST_HP_RATIO_THRESHOLD
         else ROOM_PRIORITY_HEALTHY
     )
+    # The veto, not a re-ranking. The priority order still decides; measurement
+    # only removes elites the deck demonstrably cannot beat. On a starter deck
+    # the measured act 1 elite win rate is 33-42%, and this order takes elites
+    # second -- an HP threshold cannot catch that, because being at full HP does
+    # not make an elite winnable.
+    if avoid_elites:
+        non_elite = [n for n in nodes if _canonical_text(n.get("type")) != "elite"]
+        if non_elite:
+            nodes = non_elite
+        else:
+            logger.info("map: every route is an elite; taking one anyway")
+
     for room_type in priority:
         for fallback_index, node in enumerate(nodes):
             if _canonical_text(node.get("type")) == room_type:
