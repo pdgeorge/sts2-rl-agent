@@ -37,9 +37,20 @@ from sts2_env.bridge.agent_runner import run_agent
 
 logger = logging.getLogger(__name__)
 
-# Act 1's boss sits on floor 16, so clearing it means reaching 17.
-ACT1_BOSS_FLOOR = 16
-ACT1_CLEARED_FLOOR = ACT1_BOSS_FLOOR + 1
+# Clearing act 1 means being in act 2, and nothing else.
+#
+# This used to be `floor >= 17`, on the belief that the act 1 boss sat on floor 16.
+# It does not -- floor 17 IS the boss room. Every run that reached it was counted
+# as a clear, including one that died there at 0 HP and one that hung on the boss.
+# A live batch reported "act 1 cleared 3/8" when the true figure was 0/8, and the
+# same conflation reached docs/MODELS.md, where alpha's "roughly a quarter of runs
+# now clear act 1" rests on a 16-20 floor bin that mostly means "reached the boss".
+#
+# The act number is recorded already, cannot be off by one, and says the thing we
+# actually mean. Floor thresholds are kept only for the reach-the-boss statistic,
+# which is a different and honestly-named quantity.
+ACT1_BOSS_FLOOR = 17
+ACT1_REACHED_BOSS_FLOOR = ACT1_BOSS_FLOOR
 ACT3_START_FLOOR = 33
 
 
@@ -80,13 +91,18 @@ class LiveEvalRecorder:
     def floors(self) -> list[int]:
         return [int(r.get("floor") or 0) for r in self.runs]
 
+    def _act1_cleared(self) -> int:
+        """Runs that actually left act 1. Reaching the boss room is not clearing it."""
+        return sum(1 for r in self.runs if int(r.get("act") or 1) >= 2)
+
     def one_line(self) -> str:
         f = self.floors()
         if not f:
             return "no runs yet"
-        cleared = sum(1 for x in f if x >= ACT1_CLEARED_FLOOR)
+        cleared = self._act1_cleared()
+        reached = sum(1 for x in f if x >= ACT1_REACHED_BOSS_FLOOR)
         return (f"{len(f)} runs, mean floor {statistics.mean(f):.1f}, "
-                f"act 1 cleared {cleared}/{len(f)}")
+                f"reached boss {reached}/{len(f)}, act 1 cleared {cleared}/{len(f)}")
 
     def report(self) -> str:
         f = self.floors()
@@ -95,7 +111,7 @@ class LiveEvalRecorder:
 
         n = len(f)
         reached = sum(1 for x in f if x >= ACT1_BOSS_FLOOR)
-        cleared = sum(1 for x in f if x >= ACT1_CLEARED_FLOOR)
+        cleared = self._act1_cleared()
         act3 = sum(1 for x in f if x >= ACT3_START_FLOOR)
         results: dict[str, int] = {}
         for r in self.runs:

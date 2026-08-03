@@ -27,6 +27,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions;
+using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.MonsterMoves.Intents;
@@ -56,6 +57,63 @@ public class RlCombatHandler : IRoomHandler, IHandler
     {
         PlayerCombatState? phaseState = player.PlayerCombatState;
         return phaseState != null && phaseState.Phase == PlayerTurnPhase.Play;
+    }
+
+    /// <summary>
+    /// True when the action queue will actually run what we enqueue.
+    ///
+    /// IsPlayPhase alone is not enough, and the gap between them is a real bug we
+    /// hit live: the player-side phase can still read Play while the queue
+    /// synchronizer is in EndTurnPhaseOne, and the game's own documentation for
+    /// that state says
+    ///
+    ///   "Queues are unpaused during this time to allow generated hook actions
+    ///    (like Well-Laid Plans) to execute, but all other types of actions will
+    ///    be automatically canceled to prevent interleaving of actions with hooks."
+    ///
+    /// Automatically canceled, with nothing raised. So an end turn or a card play
+    /// sent in that window vanishes, the screen re-presents unchanged, and a
+    /// deterministic agent sends the identical action again -- forever. Observed
+    /// on the act 1 boss at 28 HP: ~60 END_TURNs in nine seconds, then a timeout,
+    /// killing a run that was doing well. It only ever showed up at turbo speed,
+    /// which is exactly what a window this narrow predicts.
+    /// </summary>
+    private static bool IsQueueAcceptingActions()
+    {
+        try
+        {
+            return RunManager.Instance?.ActionQueueSynchronizer?.CombatState
+                == ActionSynchronizerCombatState.PlayPhase;
+        }
+        catch (Exception)
+        {
+            // Never let this check be the thing that stops a run. If the property
+            // moves in a future build, fall back to the old behaviour rather than
+            // refusing to play at all.
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Wait until the player may act AND the queue will accept the action.
+    /// Returns false if it never becomes actionable, so the caller can decline to
+    /// send an action into a window where it would be silently dropped.
+    /// </summary>
+    private static async Task<bool> WaitUntilActionableAsync(
+        Player player, CancellationToken ct, int timeoutMs = 5000)
+    {
+        int waited = 0;
+        while (waited < timeoutMs)
+        {
+            if (!CombatManager.Instance.IsInProgress)
+                return false;
+            if (IsPlayPhase(player) && IsQueueAcceptingActions())
+                return true;
+            await Task.Delay(25, ct);
+            waited += 25;
+        }
+        Logger.Log("[RlCombat] Queue never returned to PlayPhase; not sending action");
+        return false;
     }
 
     public async Task HandleAsync(Rng random, CancellationToken ct)
@@ -221,6 +279,11 @@ public class RlCombatHandler : IRoomHandler, IHandler
                     }
                     Logger.Log($"[RlCombat] Playing card: {card.Id.Entry} -> target_index {targetIndex}");
 
+                    if (!await WaitUntilActionableAsync(player, ct))
+                    {
+                        Logger.Log("[RlCombat] Card play skipped: queue not accepting");
+                        return false;
+                    }
                     await PlayCardAndWaitAsync(player, card, target, ct);
                     return false;
                 }
@@ -228,6 +291,14 @@ public class RlCombatHandler : IRoomHandler, IHandler
                 case "end_turn":
                 {
                     Logger.Log("[RlCombat] Agent chose to end turn");
+                    if (!await WaitUntilActionableAsync(player, ct))
+                    {
+                        // The queue would have cancelled it. Report the turn as
+                        // not ended so the caller re-reads state rather than
+                        // believing an end turn that never happened.
+                        Logger.Log("[RlCombat] End turn skipped: queue not accepting");
+                        return false;
+                    }
                     PlayerCmd.EndTurn(player, canBackOut: false);
                     return true;
                 }
@@ -386,6 +457,21 @@ public class RlCombatHandler : IRoomHandler, IHandler
                 break;
             await Task.Delay(50, ct);
             waitMs += 50;
+        }
+
+        // Energy and hand count change the moment the card LEAVES THE HAND, which
+        // for a multi-hit or X-cost card (Whirlwind queues one action per hit) is
+        // well before its effects finish. Returning there lets the next action be
+        // enqueued mid-resolution, which is how we ended up sending actions into
+        // EndTurnPhaseOne where the queue silently cancels them. Settle first.
+        int settleMs = 0;
+        while (settleMs < 3000
+               && CombatManager.Instance.IsInProgress
+               && IsPlayPhase(player)
+               && !IsQueueAcceptingActions())
+        {
+            await Task.Delay(25, ct);
+            settleMs += 25;
         }
     }
 

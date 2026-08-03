@@ -97,6 +97,58 @@ TREASURE_COLLECT_ACTION = "collect"
 BOSS_RELIC_PICK_ACTION = "pick_relic"
 
 
+
+STUCK_REPEAT_LIMIT = 25
+"""Identical (state, action) pairs in a row before we call it stuck.
+
+Generous on purpose: a legitimately repeated action -- ending several turns while
+blocking, say -- changes the state between sends, so it never trips this. What
+trips it is the state coming back byte-identical after we acted, which means the
+action did nothing at all.
+"""
+
+
+def _state_fingerprint(state: dict) -> str:
+    """A cheap, stable digest of the parts of a state an action should change."""
+    import hashlib
+    import json as _json
+
+    interesting = {
+        k: state.get(k)
+        for k in ("type", "hand", "player", "enemies", "energy", "round", "choices")
+    }
+    try:
+        blob = _json.dumps(interesting, sort_keys=True, default=str)
+    except Exception:  # noqa: BLE001
+        blob = repr(interesting)
+    return hashlib.sha256(blob.encode()).hexdigest()[:16]
+
+
+def _dump_stuck_state(state: dict, phase, repeats: int, path: str) -> None:
+    """Write the state that would otherwise have hung silently.
+
+    KNOWN_ISSUES calls this loop "the one to watch for" precisely because it
+    produces no exception, no timeout and no error line. A dump turns it into
+    something diagnosable after the fact instead of a run that simply stopped.
+    """
+    import json as _json
+    from pathlib import Path as _Path
+
+    target = _Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "repeats": repeats,
+        "phase": str(phase),
+        "state": state,
+    }
+    with target.open("a") as handle:
+        handle.write(_json.dumps(payload, default=str) + "\n")
+    logger.error(
+        "Stuck: the same action was sent %d times with the state unchanged. "
+        "The game is not executing it. State written to %s", repeats, target,
+    )
+
+
 def load_model(model_path: str, *, require_layout_match: bool = True) -> Any:
     """Load a trained MaskablePPO model, refusing one built for another layout.
 
@@ -177,6 +229,7 @@ def run_agent(
     on_run_end: "Callable[[dict[str, Any]], None] | None" = None,
     tell_cyra: bool = False,
     combat_policy_path: str | None = None,
+    stuck_dump_path: str = "output/stuck_states.jsonl",
 ) -> None:
     """Main agent loop.
 
@@ -266,6 +319,8 @@ def run_agent(
         logger.info("Connected. Starting agent loop.")
 
         step_count = 0
+        _last_fingerprint = [""]
+        _repeat_count = [0]
         combat_count = 0
         run_index = 0
         run_started = time.monotonic()
@@ -299,6 +354,25 @@ def run_agent(
                 msg_type = state.get("type", "")
                 phase = _phase_for_state(state)
                 step_count += 1
+
+                # Stuck detection. If the state comes back identical after we
+                # acted, the action did nothing -- the mod advertised something
+                # the game will not execute. A deterministic policy then re-sends
+                # it forever, which is how a floor 17 run at 28 HP was lost to
+                # ~60 identical END_TURNs and a timeout.
+                _fp = _state_fingerprint(state)
+                if _fp == _last_fingerprint[0]:
+                    _repeat_count[0] += 1
+                else:
+                    _repeat_count[0] = 0
+                    _last_fingerprint[0] = _fp
+                if _repeat_count[0] >= STUCK_REPEAT_LIMIT:
+                    _dump_stuck_state(
+                        state, phase, _repeat_count[0], stuck_dump_path)
+                    _repeat_count[0] = 0
+                    _last_fingerprint[0] = ""
+                    logger.error("Abandoning this run rather than spinning.")
+                    break
 
                 if verbose and step_count % 10 == 1:
                     logger.info("Step %d: type=%s phase=%s", step_count, msg_type, phase)
