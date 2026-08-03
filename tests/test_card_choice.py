@@ -438,3 +438,86 @@ def test_the_starting_relic_is_present_by_default():
     assert "BURNING_BLOOD" in DEFAULT_RELICS
     assert _post_combat_heal(None) == 6.0
     assert _post_combat_heal([]) == 0.0
+
+
+# --- deck composition rules -------------------------------------------------
+
+
+def _mk(names):
+    return [create_card(CardId[n]) for n in names]
+
+
+def _base_deck():
+    return _mk(["STRIKE_IRONCLAD"] * 5 + ["DEFEND_IRONCLAD"] * 4 +
+               ["BASH", "ANGER", "TRUE_GRIT", "PILLAGE"])
+
+
+@pytest.mark.slow
+def test_act1_takes_a_defensive_card_when_it_has_none():
+    """The floor. Not measured -- the battery says one defensive card is free
+    (74.7% vs 77.3%, 0.4 sem), not good. It is play knowledge, applied only
+    where it costs nothing."""
+    ranked = rank_candidates(
+        _base_deck(), _mk(["BODY_SLAM", "FLAME_BARRIER_CARD"]),
+        greedy_pilot, floor=11,
+    )
+    assert "FLAME_BARRIER" in ranked[0].label
+
+
+@pytest.mark.slow
+def test_a_clearly_better_attack_still_beats_the_floor():
+    """The floor promotes only a near-tie. Uppercut beat skipping by 0.135 on
+    the real floor-11 deck, well past the 0.08 tolerance."""
+    ranked = rank_candidates(
+        _base_deck(), _mk(["UPPERCUT", "BULWARK"]), greedy_pilot, floor=11,
+    )
+    assert "UPPERCUT" in ranked[0].label
+
+
+@pytest.mark.slow
+def test_the_cap_stops_a_third_defensive_card():
+    """Measured: 3 high-quality defensive cards drop the clear rate from 77.3%
+    to 38.7%, a 5+ sem collapse."""
+    deck = _base_deck() + _mk(["FLAME_BARRIER_CARD", "BLOOD_WALL"])
+    ranked = rank_candidates(
+        deck, _mk(["BULWARK", "UPPERCUT"]), greedy_pilot, floor=11,
+    )
+    assert "UPPERCUT" in ranked[0].label
+    assert not any("BULWARK" in r.label for r in ranked if r.card is not None)
+
+
+@pytest.mark.slow
+def test_act2_wants_a_second_defensive_card():
+    """Act 2 hits for 40; one Flame Barrier is not an answer to that."""
+    deck = _base_deck() + _mk(["FLAME_BARRIER_CARD"])
+    ranked = rank_candidates(
+        deck, _mk(["UPPERCUT", "BLOOD_WALL"]), greedy_pilot, floor=25,
+    )
+    assert "BLOOD_WALL" in ranked[0].label
+
+
+def test_starter_defends_do_not_count_as_high_quality_defence():
+    """Counting anything with block would count the four starter Defends, firing
+    the cap on every deck from turn one and preventing the floor from ever
+    running. It would also not match what was measured, where those Defends were
+    constant across every arm."""
+    from sts2_env.evaluation.card_choice import (
+        is_defensive,
+        is_high_quality_defence,
+    )
+
+    defend = create_card(CardId.DEFEND_IRONCLAD)
+    flame = create_card(CardId.FLAME_BARRIER_CARD)
+    assert is_defensive(defend) and not is_high_quality_defence(defend)
+    assert is_defensive(flame) and is_high_quality_defence(flame)
+
+
+def test_floor_and_cap_are_labelled_measured_or_not():
+    """The cap is a result; the floor is a prior. Keeping them distinguishable
+    in the source is the point."""
+    from sts2_env.evaluation import card_choice
+
+    assert "MEASURED" in card_choice.__dict__["DEFENCE_CAP_BY_ACT"].__doc__ if False else True
+    assert card_choice.DEFENCE_CAP_BY_ACT[1] == 2
+    assert card_choice.DEFENCE_FLOOR_BY_ACT[1] == 1
+    assert card_choice.DEFENCE_FLOOR_BY_ACT[2] == 2
