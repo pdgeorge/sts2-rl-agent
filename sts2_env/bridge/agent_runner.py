@@ -36,7 +36,7 @@ from sts2_env.bridge.protocol import (
     Phase,
 )
 from sts2_env.bridge.run_adapter import RunStateAdapter
-from sts2_env.evaluation.from_bridge import choose_card_index
+from sts2_env.evaluation.from_bridge import choose_card_index, choose_rest_option
 from sts2_env.bridge.state_adapter import StateAdapter
 from sts2_env.gym_env.observation import OBS_SIZE as COMBAT_OBS_SIZE
 from sts2_env.gym_env.run_env import RUN_OBS_SIZE
@@ -589,7 +589,14 @@ def run_agent(
                         _send_choice_or_skip(client, choice)
 
                 elif phase == Phase.REST:
-                    choice = _pick_rest_option(state)
+                    choice = None
+                    if measured_drafting:
+                        try:
+                            choice = choose_rest_option(state, draft_pilot)
+                        except Exception:  # noqa: BLE001
+                            logger.exception("Measured rest failed; using heuristic")
+                    if choice is None:
+                        choice = _pick_rest_option(state)
                     if verbose:
                         logger.info("REST: choosing option %d", choice)
                     client.choose(choice)

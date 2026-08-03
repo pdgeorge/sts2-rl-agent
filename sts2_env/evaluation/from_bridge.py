@@ -192,6 +192,25 @@ def choose_card_index(state: Mapping[str, Any], pilot, **kwargs) -> int | None:
     if not ranked:
         return None
 
+    # Log what was chosen and what it beat. "index 2" is unreadable after the
+    # fact: diagnosing a draft needs the card names, the scores, and the margin,
+    # because a 0.002 margin means the measurement did not actually separate them
+    # and the pick is arbitrary.
+    logger.info(
+        "draft: %s",
+        "  ".join(
+            f"{'SKIP' if s.card is None else s.label}={s.score:+.3f}"
+            for s in ranked
+        ),
+    )
+    if len(ranked) >= 2:
+        gap = ranked[0].score - ranked[1].score
+        if gap < 0.01:
+            logger.info(
+                "draft: margin %.4f -- too close to call, pick is effectively "
+                "arbitrary", gap,
+            )
+
     winner = ranked[0].card
     if winner is None:
         return None
@@ -199,3 +218,49 @@ def choose_card_index(state: Mapping[str, Any], pilot, **kwargs) -> int | None:
         if card is winner:
             return context.candidate_indexes[position]
     return None
+
+
+def choose_rest_option(state: Mapping[str, Any], pilot, **kwargs) -> int | None:
+    """Measured rest-site choice: the index of heal or smith, or None to fall back.
+
+    Only decides heal-versus-smith. Which card to smith comes on a separate
+    card-select screen and is still handled by the old heuristic.
+    """
+    from sts2_env.evaluation.rest_choice import rank_rest_options
+
+    entries = _read_deck_entries(state)
+    if entries is None:
+        return None
+    deck = [c for c in (build_card(e) for e in entries) if c is not None]
+    if not deck or len(deck) / len(entries) < MIN_RESOLVED_FRACTION:
+        return None
+
+    options = state.get("options")
+    if not isinstance(options, list) or not options:
+        return None
+
+    def _find(*wanted: str) -> int | None:
+        for index, option in enumerate(options):
+            text = _canonical(option.get("id") or option.get("action") or "")
+            if any(w in text for w in wanted):
+                return int(option.get("index", index))
+        return None
+
+    heal_index = _find("HEAL", "REST")
+    smith_index = _find("SMITH", "UPGRADE")
+    if heal_index is None or smith_index is None:
+        return None  # only one real option; nothing to decide
+
+    current_hp = _read_int(state, "hp", "current_hp", default=0)
+    max_hp = _read_int(state, "max_hp", default=80) or 80
+    upgradable = [c for c in deck if not getattr(c, "upgraded", False)]
+
+    ranked = rank_rest_options(
+        deck, upgradable, pilot,
+        current_hp=current_hp, max_hp=max_hp,
+        floor=_read_int(state, "total_floor", "floor", default=1),
+        **kwargs,
+    )
+    if not ranked:
+        return None
+    return heal_index if ranked[0].kind == "rest" else smith_index

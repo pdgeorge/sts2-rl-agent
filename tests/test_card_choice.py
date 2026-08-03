@@ -256,3 +256,45 @@ def test_choose_card_index_returns_an_index_into_the_offered_list():
     )
     picked = choose_card_index(state, greedy_pilot, seeds=(0, 1))
     assert picked is None or 0 <= picked < 3
+
+
+# --- rest sites -------------------------------------------------------------
+
+
+def test_rest_value_is_capped_by_missing_hp():
+    """At full HP a rest is worth nothing. A 50%-threshold rule takes it anyway."""
+    from sts2_env.evaluation.rest_choice import rest_heal_value
+
+    assert rest_heal_value(30, 80) == 24.0     # floor(80*0.3)
+    assert rest_heal_value(78, 80) == 2.0      # capped by what is missing
+    assert rest_heal_value(80, 80) == 0.0
+
+
+def test_upgrade_value_scales_with_fights_remaining():
+    """An upgrade pays out every remaining fight; a rest pays once. A fixed
+    threshold cannot express that, and rest sites cluster where it matters most."""
+    from sts2_env.evaluation.rest_choice import RestOption
+
+    per_fight = 3.0
+    early = RestOption(kind="upgrade", hp_value=per_fight * 8)
+    late = RestOption(kind="upgrade", hp_value=per_fight * 1)
+    assert early.hp_value > late.hp_value
+
+
+@pytest.mark.slow
+def test_rest_wins_when_hurt_and_upgrade_wins_when_healthy():
+    from sts2_env.evaluation.rest_choice import rank_rest_options
+
+    deck = _starter() + [create_card(CardId.IRON_WAVE)]
+    upgradable = [deck[-1]]
+
+    hurt = rank_rest_options(
+        deck, upgradable, greedy_pilot, current_hp=20, max_hp=80,
+        floor=6, fights_remaining=6, seeds=(0, 1),
+    )
+    healthy = rank_rest_options(
+        deck, upgradable, greedy_pilot, current_hp=79, max_hp=80,
+        floor=6, fights_remaining=6, seeds=(0, 1),
+    )
+    assert hurt[0].kind == "rest"
+    assert healthy[0].kind == "upgrade"
