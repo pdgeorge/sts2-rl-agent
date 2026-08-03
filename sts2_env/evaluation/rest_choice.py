@@ -15,6 +15,14 @@ Resting is a one-off payment. An upgrade pays out on every remaining fight, whic
 is why it usually wins early in an act and loses late. The heuristic had no way to
 express that; this gets it for free from the arithmetic.
 
+A RESULT WORTH KNOWING
+
+At 20/80 HP with Iron Wave upgradable, the upgrade scores ~+50 HP against a
++24 HP heal, stably across seed counts. So the right move at 25% health is to
+upgrade, not to rest -- and the old rule heals there every time, because it never
+looks at what the upgrade is worth. A test asserting "hurt means rest" was written
+here and failed; the code was right and the test encoded the heuristic's habit.
+
 WHY FIGHTS_REMAINING MATTERS MORE THAN IT LOOKS
 
 An upgrade worth 3 HP a fight is worth 24 HP with eight fights left and 3 HP with
