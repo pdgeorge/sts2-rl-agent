@@ -18,6 +18,25 @@ from pathlib import Path
 import numpy as np
 
 
+def _stamp(output_dir, layout) -> None:
+    """Record the observation layout beside every checkpoint this run produced.
+
+    Both the final model and EvalCallback's best_model, because the runner
+    verifies whichever one it is pointed at. A checkpoint without a sidecar is
+    allowed to load with a warning, so an unstamped model is not an error -- it
+    is simply a model nobody can prove is current.
+    """
+    from pathlib import Path
+
+    from sts2_env.gym_env.layout import stamp_checkpoint
+
+    for candidate in (Path(f"{output_dir}/final_model.zip"),
+                      Path(f"{output_dir}/best_model/best_model.zip")):
+        if candidate.is_file():
+            stamp_checkpoint(candidate, layout)
+            print(f"Stamped observation layout on {candidate}")
+
+
 def make_env(seed: int = 0):
     """Create a single STS2CombatEnv."""
     from sts2_env.gym_env.combat_env import STS2CombatEnv
@@ -172,6 +191,9 @@ def train(args):
     # Save final model
     final_path = str(output_dir / "final_model")
     model.save(final_path)
+
+    from sts2_env.gym_env.layout import COMBAT_OBS_LAYOUT
+    _stamp(output_dir, COMBAT_OBS_LAYOUT)
     print(f"\nTraining complete in {elapsed:.1f}s")
     print(f"Final model saved to: {final_path}")
     print(f"Best model saved to: {output_dir / 'best_model'}")

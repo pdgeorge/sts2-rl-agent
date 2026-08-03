@@ -21,6 +21,7 @@ import logging
 import sys
 import time
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from sts2_env.bridge.client import STS2GameClient
@@ -121,24 +122,43 @@ def load_model(model_path: str, *, require_layout_match: bool = True) -> Any:
         )
         raise
 
+    logger.info("Loading model from %s", model_path)
+    model = MaskablePPO.load(model_path)
+
     if require_layout_match:
+        import json
+
         from sts2_env.gym_env.layout import (
             OBS_LAYOUT_VERSION,
             SIDECAR_SUFFIX,
+            layout_for_size,
             verify_checkpoint,
         )
 
-        verify_checkpoint(model_path)  # raises ObservationLayoutMismatch
-        if not Path(str(model_path) + SIDECAR_SUFFIX).is_file():
+        sidecar = Path(str(model_path) + SIDECAR_SUFFIX)
+        if sidecar.is_file():
+            # Verify against the layout matching the checkpoint's own width, not
+            # a default. A combat model checked against the full-run layout would
+            # be rejected for being the wrong kind of model rather than for being
+            # stale, which is a confusing way to fail.
+            recorded = json.loads(sidecar.read_text())
+            layout = layout_for_size(int(recorded.get("size", -1)))
+            if layout is None:
+                raise ValueError(
+                    f"{model_path} records observation size "
+                    f"{recorded.get('size')}, which matches neither known layout. "
+                    f"It was trained against a build that no longer exists."
+                )
+            verify_checkpoint(model_path, layout)  # raises on mismatch
+        else:
             logger.warning(
                 "%s has no %s sidecar, so the observation layout it was trained "
-                "against is unknown. This build is v%d. If it was trained before "
-                "the layout was versioned, it is probably stale.",
+                "against is unknown. This build is v%d. Combat models (%d dims) "
+                "are unaffected by v2; full-run models from before it are stale.",
                 model_path, SIDECAR_SUFFIX, OBS_LAYOUT_VERSION,
+                int(model.observation_space.shape[0]),
             )
 
-    logger.info("Loading model from %s", model_path)
-    model = MaskablePPO.load(model_path)
     logger.info("Model loaded successfully.")
     return model
 

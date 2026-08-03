@@ -151,6 +151,20 @@ def layout_manifest(layout: tuple[Block, ...] = RUN_OBS_LAYOUT) -> dict:
     }
 
 
+def layout_for_size(size: int) -> tuple[Block, ...] | None:
+    """Which known layout produces a vector of this width, if any.
+
+    A checkpoint is either a combat model or a full-run model, and the two have
+    very different widths, so the size identifies the layout unambiguously. This
+    exists so callers that do not yet know which kind of model they hold can
+    still verify it against the right one instead of the wrong one.
+    """
+    for layout in (COMBAT_OBS_LAYOUT, RUN_OBS_LAYOUT):
+        if layout_size(layout) == size:
+            return layout
+    return None
+
+
 def _sidecar_path(model_path: str | Path) -> Path:
     path = Path(model_path)
     return path.with_suffix(path.suffix + SIDECAR_SUFFIX)
