@@ -238,6 +238,7 @@ def run_agent(
     stuck_dump_path: str = "output/stuck_states.jsonl",
     measured_drafting: bool = False,
     draft_pilot=None,
+    allow_layout_mismatch: bool = False,
 ) -> None:
     """Main agent loop.
 
@@ -258,7 +259,7 @@ def run_agent(
         tell_cyra: Publish the four run milestones to cyra_brain. Off by default
             so training and evaluation never depend on a broker being up.
     """
-    model = load_model(model_path)
+    model = load_model(model_path, require_layout_match=not allow_layout_mismatch)
     adapter = StateAdapter()
 
     if measured_drafting and draft_pilot is None:
@@ -430,6 +431,18 @@ def run_agent(
                               "room_type"):
                     if field in state:
                         progress[field] = state[field]
+
+                # The deck itself, not just its size. Every deck measurement so
+                # far was taken on 10-15 card decks written by hand, while the
+                # agent plays 28-card decks nobody has ever measured -- so none
+                # of those results are known to apply to what it actually builds.
+                # Recording the deck lets a finished run be replayed through the
+                # battery instead of guessed at. It also means a run like the
+                # floor-31 one can be inspected afterwards rather than lost.
+                deck_now = _read_deck_list(state)
+                if deck_now:
+                    progress["deck"] = deck_now
+                    progress["relics"] = _read_relic_list(state)
 
                 if phase in TERMINAL_PHASES:
                     result = state.get("result", state.get("message", "unknown"))
@@ -940,6 +953,49 @@ def _first_matching_option(
     return None
 
 
+def _read_deck_list(state: dict[str, Any]) -> list[str]:
+    """Card names in the current deck, upgrades marked, or [] if not sent.
+
+    Names rather than raw entries so a run record stays readable and small; the
+    battery only needs identities to rebuild the deck.
+    """
+    run_state = state.get("run_state")
+    deck = run_state.get("deck") if isinstance(run_state, dict) else None
+    if not isinstance(deck, list):
+        deck = state.get("deck")
+    if not isinstance(deck, list):
+        return []
+
+    names: list[str] = []
+    for entry in deck:
+        if isinstance(entry, dict):
+            name = entry.get("id") or entry.get("name")
+            if name and (entry.get("upgraded") or entry.get("is_upgraded")):
+                name = f"{name}+"
+        else:
+            name = entry
+        if name:
+            names.append(str(name))
+    return names
+
+
+def _read_relic_list(state: dict[str, Any]) -> list[str]:
+    """Relic names, which change deck value enough that a deck without them is
+    not the deck that was played."""
+    run_state = state.get("run_state")
+    relics = run_state.get("relics") if isinstance(run_state, dict) else None
+    if not isinstance(relics, list):
+        relics = state.get("relics")
+    if not isinstance(relics, list):
+        return []
+    out = []
+    for entry in relics:
+        name = entry.get("id") or entry.get("name") if isinstance(entry, dict) else entry
+        if name:
+            out.append(str(name))
+    return out
+
+
 def _read_deck_size(state: dict[str, Any]) -> int:
     run_state = state.get("run_state", {})
     if isinstance(run_state, dict):
@@ -1174,6 +1230,12 @@ def main() -> None:
              "the policy picked slot 2 in 19 of 28 live rewards and slot 0 in none.",
     )
 
+    parser.add_argument(
+        "--allow-layout-mismatch", action="store_true",
+        help="Run a model trained against a different observation layout. It will "
+             "read at least one column as something other than what it learned, so "
+             "expect degraded play; use it to keep testing, not to measure.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -1196,6 +1258,7 @@ def main() -> None:
         allow_random_fallback=args.allow_random_fallback,
         combat_policy_path=args.combat_policy,
         measured_drafting=args.measured_drafting,
+        allow_layout_mismatch=args.allow_layout_mismatch,
     )
 
 

@@ -209,6 +209,12 @@ def main() -> None:
              "of asking the policy. Costs ~4s per reward and needs no training; "
              "the policy picked slot 2 in 19 of 28 live rewards and slot 0 in none.",
     )
+    parser.add_argument(
+        "--allow-layout-mismatch", action="store_true",
+        help="Run a model trained against a different observation layout. It will "
+             "read at least one column as something other than what it learned, so "
+             "expect degraded play; use it to keep testing, not to measure.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -234,6 +240,7 @@ def main() -> None:
             tell_cyra=args.tell_cyra,
             combat_policy_path=args.combat_policy,
             measured_drafting=args.measured_drafting,
+            allow_layout_mismatch=args.allow_layout_mismatch,
         )
     except KeyboardInterrupt:
         logger.info("Interrupted.")
