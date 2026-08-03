@@ -61,6 +61,18 @@ Also worth keeping: removing a Strike from a ten-card deck scores NEGATIVE.
 Removal is good in bloated decks, not lean ones, and the priority list it
 replaces would have taken it."""
 
+BUDGET_NOTE = """Six seeds and four candidates per side, not eight and six.
+
+Measured on a realistic 28-card deck, a shop decision took 14.5s against the
+mod's 30s agent timeout -- thin enough that a larger deck or a fuller shop could
+cross it, and a timed-out decision leaves the game waiting on an answer that
+never comes. Two turbo sessions crashed with no log, and this was one of the
+suspects.
+
+Six seeds still ranks a curse below leaving (the eight-seed table below holds at
+six); three does not. Four candidates a side is a real cap: it is chosen, not
+sampled, so a good buy in slot five is never seen."""
+
 MIN_WORTHWHILE_HP = 2.0
 """Below this, a purchase is noise rather than an improvement.
 
@@ -93,8 +105,8 @@ def rank_shop_options(
     floor: int = 1,
     max_hp: int = IRONCLAD_STARTING_HP,
     fights_remaining: int = DEFAULT_FIGHTS_REMAINING,
-    seeds: Sequence[int] = (0, 1, 2, 3, 4, 5, 6, 7),
-    max_considered: int = 6,
+    seeds: Sequence[int] = (0, 1, 2, 3, 4, 5),
+    max_considered: int = 4,
 ) -> list[ShopOption]:
     """Price the measurable shop options in HP, best first.
 

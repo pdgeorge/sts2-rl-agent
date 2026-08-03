@@ -55,8 +55,15 @@ public class RlCombatHandler : IRoomHandler, IHandler
     /// </summary>
     private static bool IsPlayPhase(Player player)
     {
-        PlayerCombatState? phaseState = player.PlayerCombatState;
-        return phaseState != null && phaseState.Phase == PlayerTurnPhase.Play;
+        try
+        {
+            PlayerCombatState? phaseState = player?.PlayerCombatState;
+            return phaseState != null && phaseState.Phase == PlayerTurnPhase.Play;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -105,10 +112,28 @@ public class RlCombatHandler : IRoomHandler, IHandler
         int waited = 0;
         while (waited < timeoutMs)
         {
-            if (!CombatManager.Instance.IsInProgress)
+            // Every read here is guarded. This loop runs every 25ms on the hot
+            // path and touches singletons that are torn down and rebuilt across
+            // scene transitions, so CombatManager.Instance can be null exactly
+            // while a fight is ending. An unguarded read throws inside the room
+            // handler, which is a candidate for two turbo-session crashes that
+            // left no log. Treating a missing manager as "combat is over" is the
+            // same conclusion the caller would reach anyway.
+            try
+            {
+                if (CombatManager.Instance == null
+                    || !CombatManager.Instance.IsInProgress)
+                    return false;
+                if (IsPlayPhase(player) && IsQueueAcceptingActions())
+                    return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"[RlCombat] Actionable check threw ({ex.GetType().Name}); "
+                           + "treating combat as over");
                 return false;
-            if (IsPlayPhase(player) && IsQueueAcceptingActions())
-                return true;
+            }
+
             await Task.Delay(25, ct);
             waited += 25;
         }
@@ -465,11 +490,20 @@ public class RlCombatHandler : IRoomHandler, IHandler
         // enqueued mid-resolution, which is how we ended up sending actions into
         // EndTurnPhaseOne where the queue silently cancels them. Settle first.
         int settleMs = 0;
-        while (settleMs < 3000
-               && CombatManager.Instance.IsInProgress
-               && IsPlayPhase(player)
-               && !IsQueueAcceptingActions())
+        while (settleMs < 3000)
         {
+            try
+            {
+                if (CombatManager.Instance == null
+                    || !CombatManager.Instance.IsInProgress
+                    || !IsPlayPhase(player)
+                    || IsQueueAcceptingActions())
+                    break;
+            }
+            catch (Exception)
+            {
+                break;
+            }
             await Task.Delay(25, ct);
             settleMs += 25;
         }
