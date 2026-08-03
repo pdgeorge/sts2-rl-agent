@@ -130,7 +130,7 @@ class LiveEvalRecorder:
             "",
             f"  reached the act 1 boss (f>={ACT1_BOSS_FLOOR})   "
             f"{reached:>3}/{n}  {reached / n:5.1%}",
-            f"  CLEARED act 1          (f>={ACT1_CLEARED_FLOOR})   "
+            f"  CLEARED act 1          (act>=2)  "
             f"{cleared:>3}/{n}  {cleared / n:5.1%}",
             f"  reached act 3          (f>={ACT3_START_FLOOR})   "
             f"{act3:>3}/{n}  {act3 / n:5.1%}",

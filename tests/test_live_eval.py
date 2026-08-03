@@ -43,17 +43,20 @@ def test_records_each_run(recorder):
     assert recorder.floors() == [8, 19]
 
 
-def test_act1_clear_counts_floor_17_not_16(recorder):
-    """Floor 16 is the boss itself; reaching it is not beating it."""
-    recorder(_run(1, 16))
+def test_reaching_the_boss_room_is_not_clearing_the_act(recorder):
+    """The bug this replaces: floor >= 17 counted as a clear, but floor 17 IS the
+    boss room. A live batch reported "act 1 cleared 3/8" when thetrue figure was
+    0/8 -- one of those runs died to the boss at 0 HP and another hung on it.
+    Clearing act 1 means being in act 2, which the run record already states."""
+    recorder(_run(1, 17))                       # at the boss, still act 1
     report = _norm(recorder.report())
-    assert "reached the act 1 boss (f>=16) 1/1 100.0%" in report
-    assert "CLEARED act 1 (f>=17) 0/1 0.0%" in report
+    assert "reached the act 1 boss (f>=17) 1/1 100.0%" in report
+    assert "CLEARED act 1 (act>=2) 0/1 0.0%" in report
 
 
-def test_act1_clear_counts_a_run_past_the_boss(recorder):
-    recorder(_run(1, 17))
-    assert "CLEARED act 1 (f>=17) 1/1 100.0%" in _norm(recorder.report())
+def test_act1_clear_counts_a_run_that_reached_act_2(recorder):
+    recorder(_run(1, 20, act=2))
+    assert "CLEARED act 1 (act>=2) 1/1 100.0%" in _norm(recorder.report())
 
 
 def test_log_is_written_and_flushed_per_run(tmp_path):
