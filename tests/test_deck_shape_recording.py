@@ -54,3 +54,21 @@ def test_the_recorder_attaches_the_shape():
     recorder({"floor": 12, "deck": STARTER})
     assert recorder.runs[0]["block_density"] == 0.4
     assert recorder.runs[0]["cycle_time"] == 2.0
+
+
+def test_the_games_card_ids_resolve_even_without_our_CARD_suffix():
+    """The bridge sends FLAME_BARRIER; our enum calls it FLAME_BARRIER_CARD.
+
+    Caught on the first live run after shape recording shipped -- 19 of 20 cards
+    resolved, and the one that did not was a block card, so it biased the exact
+    number most likely to be acted on. Block read 26.3% against a true 30%, and
+    the band that decides whether to draft more defence starts at 25%.
+    """
+    from sts2_env.core.enums import CardId
+
+    assert not hasattr(CardId, "FLAME_BARRIER")        # the name the game sends
+    assert hasattr(CardId, "FLAME_BARRIER_CARD")       # the name we carry
+
+    shape = deck_shape(STARTER + ["FLAME_BARRIER"])
+    assert shape["shape_cards_resolved"] == 11
+    assert shape["block_density"] > 0.4                # the Defends plus one more

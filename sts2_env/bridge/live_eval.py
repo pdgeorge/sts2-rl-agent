@@ -92,11 +92,21 @@ def deck_shape(deck: Any) -> dict[str, Any]:
             upgraded = name.endswith("+")
             if isinstance(entry, dict):
                 upgraded = bool(entry.get("upgraded") or entry.get("is_upgraded"))
-            try:
-                cards.append(create_card(CardId[name.rstrip("+").upper()],
-                                         upgraded=upgraded))
-            except Exception:  # noqa: BLE001 -- one unreadable card is not a lost run
-                continue
+            # The bridge sends the game's id, which for some cards lacks the
+            # `_CARD` suffix our enum carries -- FLAME_BARRIER against
+            # FLAME_BARRIER_CARD. Without the fallback those cards silently drop
+            # out of the shape, and a block card dropping out biases the one
+            # number most likely to be acted on.
+            base = name.rstrip("+").upper()
+            for candidate in (base, f"{base}_CARD"):
+                member = getattr(CardId, candidate, None)
+                if member is None:
+                    continue
+                try:
+                    cards.append(create_card(member, upgraded=upgraded))
+                except Exception:  # noqa: BLE001 -- one bad card is not a lost run
+                    pass
+                break
         if not cards:
             return {}
         return {
