@@ -284,6 +284,18 @@ def main() -> None:
              "the policy picked slot 2 in 19 of 28 live rewards and slot 0 in none.",
     )
     parser.add_argument(
+        "--pilot-combat", action="store_true",
+        help="Play fights with the evaluation pilot instead of the trained "
+             "model. See agent_runner for the measurement behind it.",
+    )
+    parser.add_argument(
+        "--record-replay", default=None,
+        help="Save the real bridge states to this path while running. The states "
+             "the game actually sends, for replaying decisions against instead "
+             "of hand-written ones -- which is how a live HP field read as zero "
+             "for a week while 4,700 synthetic-state tests passed.",
+    )
+    parser.add_argument(
         "--allow-layout-mismatch", action="store_true",
         help="Run a model trained against a different observation layout. It will "
              "read at least one column as something other than what it learned, so "
@@ -314,6 +326,8 @@ def main() -> None:
             tell_cyra=args.tell_cyra,
             combat_policy_path=args.combat_policy,
             measured_drafting=args.measured_drafting,
+            pilot_combat=args.pilot_combat,
+            record_replay_path=args.record_replay,
             allow_layout_mismatch=args.allow_layout_mismatch,
         )
     except KeyboardInterrupt:
