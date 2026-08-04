@@ -104,6 +104,18 @@ class BridgeReplayStep:
 
     action: dict[str, Any]
     resulting_state: dict[str, Any]
+    # The UNTRIMMED state, exactly as the bridge sent it.
+    #
+    # `resulting_state` is normalised into a fixed comparison shape for combat
+    # parity, which drops `deck`, `run_state` and everything else the run-level
+    # decisions need. That made a recorded trace useless for testing the very
+    # decisions most likely to be wrong -- and they were: `from_bridge` read
+    # "hp" while the mod sends "run_hp", so every live rest decision was
+    # computed on ZERO HP while 4,700 synthetic-state tests passed.
+    #
+    # Keeping the raw state is what lets a test assert against what the game
+    # actually sends instead of what someone assumed it sends.
+    raw_state: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -136,6 +148,7 @@ class BridgeReplayTrace:
                 BridgeReplayStep(
                     action=dict(step.get("action", {})),
                     resulting_state=dict(step.get("resulting_state", {})),
+                    raw_state=dict(step.get("raw_state", {})),
                 )
                 for step in data.get("steps", [])
             ],
@@ -181,6 +194,7 @@ class BridgeReplayRecorder:
                 BridgeReplayStep(
                     action=dict(self._pending_action),
                     resulting_state=normalized,
+                    raw_state=dict(state),
                 )
             )
             self._pending_action = None
