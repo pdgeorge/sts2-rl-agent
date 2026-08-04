@@ -521,3 +521,23 @@ def test_floor_and_cap_are_labelled_measured_or_not():
     assert card_choice.DEFENCE_CAP_BY_ACT[1] == 2
     assert card_choice.DEFENCE_FLOOR_BY_ACT[1] == 1
     assert card_choice.DEFENCE_FLOOR_BY_ACT[2] == 2
+
+
+def test_rest_evaluates_distinct_cards_not_the_first_n():
+    """A real bug: a starter-ordered deck begins with five Strikes and four
+    Defends, so an 8-candidate cap evaluated only those and never saw the drafted
+    cards. It upgraded Strikes because Uppercut was past the cap."""
+    from sts2_env.evaluation.rest_choice import rank_rest_options
+
+    deck = _base_deck() + _mk(["UPPERCUT", "IRON_WAVE"])
+    ranked = rank_rest_options(
+        deck, [c for c in deck if not c.upgraded], greedy_pilot,
+        current_hp=45, max_hp=80, floor=12, seeds=(0, 1),
+    )
+    labels = [o.label for o in ranked if o.kind == "upgrade"]
+    assert any("UPPERCUT" in l for l in labels), (
+        "drafted cards must be evaluated, not crowded out by starter duplicates"
+    )
+    # one entry per distinct card, so nine starter cards do not eat the budget
+    strikes = [l for l in labels if "STRIKE_IRONCLAD" in l]
+    assert len(strikes) <= 1

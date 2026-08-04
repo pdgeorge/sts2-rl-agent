@@ -107,6 +107,16 @@ def _hp_cost_per_fight(
     return total_weighted / total_fights if total_fights else float(max_hp)
 
 
+def _boss_win_rate(
+    deck: Sequence, pilot: Pilot, floor: int, seeds: Sequence[int], max_hp: int
+) -> float:
+    """Win rate against this act's boss with the deck as it stands."""
+    from sts2_env.evaluation.battery import Tier, score_cell
+
+    act = 1 if floor <= 17 else (2 if floor <= 34 else 3)
+    return score_cell(deck, Tier(act, "boss"), pilot, seeds=seeds, max_hp=max_hp).win_rate
+
+
 def rank_rest_options(
     deck: Sequence,
     upgradable: Sequence,
@@ -118,6 +128,7 @@ def rank_rest_options(
     fights_remaining: int = DEFAULT_FIGHTS_REMAINING,
     seeds: Sequence[int] = (0, 1, 2, 3),
     max_upgrades_considered: int = 8,
+    boss_next: bool = False,
 ) -> list[RestOption]:
     """Price every option in HP and return them best first.
 
@@ -130,16 +141,38 @@ def rank_rest_options(
 
     tiers = tiers_for_floor(floor)
     baseline = _hp_cost_per_fight(deck, pilot, tiers, seeds, max_hp)
+    boss_baseline = (
+        _boss_win_rate(deck, pilot, floor, seeds, max_hp) if boss_next else 0.0
+    )
 
     options: list[RestOption] = [
         RestOption(kind="rest", hp_value=rest_heal_value(current_hp, max_hp))
     ]
 
-    considered = list(upgradable)[:max_upgrades_considered]
-    if len(upgradable) > len(considered):
+    # One candidate per distinct card, not the first N in deck order.
+    #
+    # Taking the first N was a real bug: a starter-ordered deck begins with five
+    # Strikes and four Defends, so an 8-candidate cap evaluated nothing but those
+    # and never saw the drafted cards at all. It upgraded Strikes because Uppercut
+    # was past the cap. Deduplicating collapses those nine into two entries and
+    # leaves room for the cards worth upgrading.
+    #
+    # Upgrading one Strike is the same decision as upgrading another, so nothing
+    # is lost by collapsing them.
+    seen: set = set()
+    deduped = []
+    for card in upgradable:
+        key = getattr(card, "card_id", card)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(card)
+
+    considered = deduped[:max_upgrades_considered]
+    if len(deduped) > len(considered):
         logger.info(
-            "rest: considering %d of %d upgradable cards; the rest are not "
-            "evaluated", len(considered), len(upgradable),
+            "rest: %d distinct upgradable cards, evaluating %d",
+            len(deduped), len(considered),
         )
 
     for index, card in enumerate(considered):
@@ -159,10 +192,22 @@ def rank_rest_options(
 
         cost = _hp_cost_per_fight(upgraded_deck, pilot, tiers, seeds, max_hp)
         saved_per_fight = baseline - cost
+        value = saved_per_fight * fights_remaining
+
+        if boss_next:
+            # The rest before a boss is not an ordinary rest. Upgrading the same
+            # eight cards moved the act 1 boss from 13.9% to 69.4% -- a 55-point
+            # swing that HP-per-hallway-fight cannot represent, because it is not
+            # about attrition, it is about whether the fight is winnable at all.
+            # Priced as the win-rate gain times what losing costs: the run.
+            swing = _boss_win_rate(upgraded_deck, pilot, floor, seeds, max_hp) \
+                - boss_baseline
+            value = max(value, swing * float(current_hp))
+
         options.append(
             RestOption(
                 kind="upgrade",
-                hp_value=saved_per_fight * fights_remaining,
+                hp_value=value,
                 card=card,
                 index=index,
             )
