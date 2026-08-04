@@ -117,79 +117,46 @@ Barrier is 12 and Blood Wall 16; a 5-block Defend does not qualify, and against
 the 40-damage hits of act 2 it genuinely is not defence.
 """
 
-DEFENCE_CAP_BY_ACT = {1: 2, 2: 3, 3: 3}
-"""MEASURED, for act 1. Clear rate over 75 runs of 3 weak + 1 hallway + elite,
-across all three act 1 elites:
+DENSITY_POINTS = 40.0
+"""Run-winrate points per unit of block-density correction.
 
-    0 defensive cards   77.3% +/- 4.8%
-    1 defensive card    74.7% +/- 5.0%
-    2 defensive cards   74.7% +/- 5.0%
-    3 defensive cards   38.7% +/- 5.6%     <- collapse
+Replaces DEFENCE_CAP_BY_ACT and DEFENCE_FLOOR_BY_ACT, which counted cards. A
+count is not a stable target: four Defends is 40% of a starter deck and 16% of a
+25-card one, so "two defensive cards by act 2" silently weakened exactly as the
+run got deadlier. Density is the quantity that stays meaningful.
 
-One or two cost nothing detectable; the third is a 5+ sem drop. Acts 2 and 3 are
-EXTRAPOLATED -- their enemies hit harder, so the ceiling should be higher, but
-nobody has measured it. Treat those two numbers as guesses.
-"""
+Scale. One card moves a 20-card deck's density by ~0.05, so a deck sitting 0.05
+below the band gets ~1.5 points of push toward a block card -- enough to flip a
+close call, not enough to overturn the 3-point prior gap between a strong card
+and a weak one. Calibrated to that, not to taste.
 
-DEFENCE_FLOOR_BY_ACT = {1: 1, 2: 2, 3: 2}
-"""NOT MEASURED. This is pdgeorge's play knowledge, recorded as a prior.
+WHY THIS IS ONE TERM AND NOT TWO RULES
 
-A healthy Ironclad run picks up a Flame Barrier or Blood Wall early even over a
-good attack, and wants a second by act 2 to have any answer to a 40-damage hit.
-The battery does not reproduce that: it says one defensive card is *free*
-(74.7% against 77.3%, 0.4 sem), not that it is good.
+The old pair were a hard cap (drop candidates) and a floor (promote one within a
+tolerance), and they fought each other. Forcing the act 2 floor to fire needed a
+3.5-point tolerance that also promoted BULWARK over UPPERCUT -- a prior given
+enough room to beat real data has enough room to beat everything else. A signed,
+continuous term has no tolerance to widen: it rewards block below the band and
+penalises it above, which is what the cap and floor were each half-saying.
 
-Including it anyway is defensible precisely because it is free -- it buys
-something the measurement cannot see at no measured cost. There is a standing
-reason the measurement may understate it: the greedy pilot attacks first and
-blocks with leftover energy, so a defensive card does less in its hands than in a
-player's.
+WHAT THIS RETIRES
 
-If a better pilot ever shows defence actively helping, this graduates from prior
-to result and the comment should say so.
-"""
+DEFENCE_CAP_BY_ACT was labelled MEASURED on this table:
 
-DEFENCE_TOLERANCE = 1.0
-"""How far behind the winner a defensive card may sit and still be taken.
+    0 defensive cards 77.3%   1 card 74.7%   2 cards 74.7%   3 cards 38.7%
 
-One run-winrate point, which is 0.08 in the gauntlet-HP units this used to be
-scored in -- the same tolerance restated, not a loosened one. It fires on a
-near-tie and not otherwise.
+produced by `greedy_pilot`, which ranks by base_damage alone and therefore plays
+block cards only with leftover energy after everything damaging. Handed three
+block cards it holds three near-dead cards, so the "collapse" is as easily a
+measurement of the pilot as of the deck. Under density, three block cards in a
+12-card deck is 25% -- the bottom of the healthy band, not a collapse.
 
-THE ACT 2 FLOOR NO LONGER FIRES AGAINST A STRONG ALTERNATIVE, and that is a real
-behaviour change rather than an oversight:
-
-    UPPERCUT     act 2 draft  run +1%   3,500 offers   picked ...  ->  +0.41
-    BLOOD_WALL   act 2 draft  run -4%  10,000 offers   picked 22%  ->  -2.67
-                                                            gap = 3.08
-
-3.08 points apart, so at a 1.0 tolerance Blood Wall is not promoted. Raising the
-tolerance to 3.5 to force it was tried and reverted: it also promoted BULWARK
-over UPPERCUT on a floor-11 deck, which is precisely the hijacking the tolerance
-exists to prevent. A prior cannot be given enough room to beat real data without
-also giving it room to beat everything else.
-
-The measurement disagrees with the act 2 floor consistently:
-
-    act 1 defence    FLAME_BARRIER +0% (61% pick)   SHRUG_IT_OFF +1%   IMPERVIOUS +6%
-    act 2 defence    FLAME_BARRIER -4% (46% pick)   SHRUG_IT_OFF -1%   BLOOD_WALL -4%
-
-The act 1 floor is supported and now graduates from prior to result: near-neutral
-to positive cards at high take rates, which is what "free, and buys something the
-sim cannot see" looks like once someone checks. It still fires, because act 1
-defensive cards are not 3 points behind anything.
-
-The act 2 floor of two is NOT supported by anything here. It remains in
-DEFENCE_FLOOR_BY_ACT because it was asked for twice and the failure it targets --
-dying to a 40-damage hit with no block -- is a failure of THIS agent, which
-untapped's human population does not share. But it will now only promote a
-defensive card that is genuinely close, which on current data it rarely is.
-
-Real reasons the human number might not transfer: a player converts block with
-sequencing and potions the pilot cannot, and by act 2 a human is executing a deck
-plan that a reactive block card dilutes -- while this agent has no plan to
-dilute. None of that is measured. If the act 2 floor is ever dropped, drop this
-back to 1.0 with it; it exists only to let the floor fire.
+DEFENCE_FLOOR_BY_ACT was pdgeorge's play knowledge, and its act 2 half sat
+against untapped's thick sample (BLOOD_WALL -4% over 10,000 offers). The band
+dissolves that argument rather than settling it: density needs no per-act
+tuning, because "have block you can actually draw" is true in every act, and the
+untapped figure was a card-level average over decks at 45% density and decks at
+10% -- a conditional quantity estimated by an unconditional statistic.
 """
 
 BATTERY_POINTS_PER_UNIT = 5.0
@@ -268,47 +235,59 @@ def apply_composition_rules(
     already close. Neither invents a score -- the ranking below the top is
     untouched, so `margin` still reports what the measurement actually said.
     """
-    act = _act_for_floor(floor)
-    # Both rules count HIGH-QUALITY defence only. Counting anything with block
-    # would count the four starter Defends, so the cap fired on every deck from
-    # turn one and the floor could never run. It would also not match what was
-    # measured: the variants added Flame Barrier / Blood Wall / Bulwark on top of
-    # those Defends, which were constant across every arm.
-    held_good = sum(1 for c in deck if is_high_quality_defence(c))
-    held = held_good
+    import dataclasses
 
-    cap = DEFENCE_CAP_BY_ACT.get(act, 3)
-    if held >= cap:
-        trimmed = [
-            r for r in ranked
-            if r.card is None or not is_high_quality_defence(r.card)
-        ]
-        if trimmed:
-            logger.info(
-                "composition: deck already holds %d high-quality defensive cards "
-                "(act %d cap %d); further defence dropped", held, act, cap,
+    from sts2_env.evaluation.deck_metrics import (
+        BLOCK_DENSITY_MAX,
+        BLOCK_DENSITY_MIN,
+        block_density,
+    )
+
+    if not ranked:
+        return ranked
+
+    before = _band_distance(block_density(deck))
+    rescored = []
+    for candidate in ranked:
+        if candidate.card is None:
+            rescored.append(candidate)
+            continue
+        after = _band_distance(block_density(list(deck) + [candidate.card]))
+        # Positive when the card moves the deck TOWARD the band, negative when it
+        # pushes further out. One term replaces the old cap and floor because it
+        # is signed: block is rewarded below the band and penalised above it,
+        # which is what the cap and the floor were separately trying to say.
+        move = (before - after) * DENSITY_POINTS
+        if move:
+            rescored.append(
+                dataclasses.replace(candidate, score=candidate.score + move)
             )
-            ranked = trimmed
+        else:
+            rescored.append(candidate)
 
-    needed = DEFENCE_FLOOR_BY_ACT.get(act, 1)
-    if held_good < needed and ranked:
-        best = ranked[0].score
-        for index, candidate in enumerate(ranked):
-            if index == 0 or candidate.card is None:
-                continue
-            if not is_high_quality_defence(candidate.card):
-                continue
-            if best - candidate.score <= DEFENCE_TOLERANCE:
-                logger.info(
-                    "composition: deck has %d/%d high-quality defensive cards for "
-                    "act %d; promoting %s (%.3f behind the winner, tolerance %.2f)",
-                    held_good, needed, act, candidate.label,
-                    best - candidate.score, DEFENCE_TOLERANCE,
-                )
-                return [candidate] + [r for r in ranked if r is not candidate]
-            break
+    rescored.sort(key=lambda s: s.score, reverse=True)
 
-    return ranked
+    density = block_density(deck)
+    if not (BLOCK_DENSITY_MIN <= density <= BLOCK_DENSITY_MAX):
+        logger.info(
+            "composition: block density %.0f%% is outside the %.0f-%.0f%% band; "
+            "candidates moved by up to %.2f points",
+            density * 100, BLOCK_DENSITY_MIN * 100, BLOCK_DENSITY_MAX * 100,
+            max((abs(a.score - b.score) for a, b in zip(rescored, ranked)),
+                default=0.0),
+        )
+    return rescored
+
+
+def _band_distance(density: float) -> float:
+    """How far outside the healthy block band a density sits. 0.0 inside it."""
+    from sts2_env.evaluation.deck_metrics import BLOCK_DENSITY_MAX, BLOCK_DENSITY_MIN
+
+    if density < BLOCK_DENSITY_MIN:
+        return BLOCK_DENSITY_MIN - density
+    if density > BLOCK_DENSITY_MAX:
+        return density - BLOCK_DENSITY_MAX
+    return 0.0
 
 
 def _combined(win_rate: float, hp_lost: float, max_hp: int) -> float:

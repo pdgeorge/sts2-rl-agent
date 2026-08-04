@@ -469,84 +469,130 @@ def _base_deck():
                ["BASH", "ANGER", "TRUE_GRIT", "PILLAGE"])
 
 
+def _thin_deck():
+    """A real shape from live play: 20 cards, 20% block, 28% of opening hands
+    with no block at all. This is what pdgeorge reported watching -- "taking big
+    hits but having no block cards in the deck"."""
+    return _mk(["STRIKE_IRONCLAD"] * 5 + ["DEFEND_IRONCLAD"] * 4 + ["BASH"] +
+               ["UPPERCUT", "ANGER", "RAMPAGE", "INFLAME", "SPITE",
+                "PILLAGE", "BULLY", "WHIRLWIND", "THUNDERCLAP", "MOLTEN_FIST"])
+
+
+def _flooded_deck():
+    return _mk(["STRIKE_IRONCLAD"] * 5 + ["DEFEND_IRONCLAD"] * 4 + ["BASH"] +
+               ["TAUNT", "TAUNT", "SHRUG_IT_OFF", "SHRUG_IT_OFF",
+                "BLOOD_WALL", "EVIL_EYE"])
+
+
 @pytest.mark.slow
-def test_act1_takes_a_defensive_card_when_it_has_none():
-    """The floor. Not measured -- the battery says one defensive card is free
-    (74.7% vs 77.3%, 0.4 sem), not good. It is play knowledge, applied only
-    where it costs nothing."""
+def test_a_deck_below_the_band_is_pushed_toward_block():
+    """The floor, restated as density. A count could not express this: the deck
+    holds four Defends, which the old rule counted as defence it already had,
+    while they are 20% of twenty cards and it bricks one hand in four."""
+    from sts2_env.evaluation.deck_metrics import BLOCK_DENSITY_MIN, block_density
+
+    deck = _thin_deck()
+    assert block_density(deck) < BLOCK_DENSITY_MIN
     ranked = rank_candidates(
-        _base_deck(), _mk(["BODY_SLAM", "FLAME_BARRIER_CARD"]),
-        greedy_pilot, floor=11,
+        deck, _mk(["TAUNT", "UPPERCUT"]), greedy_pilot, floor=11, seeds=(0, 1, 2, 3),
     )
-    assert "FLAME_BARRIER" in ranked[0].label
+    assert "TAUNT" in ranked[0].label, [r.label for r in ranked]
 
 
 @pytest.mark.slow
-def test_a_clearly_better_attack_still_beats_the_floor():
-    """The floor promotes only a near-tie. Uppercut beat skipping by 0.135 on
-    the real floor-11 deck, well past the 0.08 tolerance."""
+def test_a_deck_above_the_band_is_pushed_away_from_block():
+    """The cap, restated as density -- and it now scores block BELOW skipping
+    rather than deleting the candidate, so `margin` still reports what the
+    measurement said."""
+    from sts2_env.evaluation.deck_metrics import BLOCK_DENSITY_MAX, block_density
+
+    deck = _flooded_deck()
+    assert block_density(deck) > BLOCK_DENSITY_MAX
     ranked = rank_candidates(
-        _base_deck(), _mk(["UPPERCUT", "BULWARK"]), greedy_pilot, floor=11,
+        deck, _mk(["TAUNT", "UPPERCUT"]), greedy_pilot, floor=11, seeds=(0, 1, 2, 3),
     )
     assert "UPPERCUT" in ranked[0].label
+    taunt = next(r for r in ranked if r.card is not None and "TAUNT" in r.label)
+    skip = next(r for r in ranked if r.card is None)
+    assert taunt.score < skip.score
 
 
 @pytest.mark.slow
-def test_the_cap_stops_a_third_defensive_card():
-    """Measured: 3 high-quality defensive cards drop the clear rate from 77.3%
-    to 38.7%, a 5+ sem collapse."""
-    deck = _base_deck() + _mk(["FLAME_BARRIER_CARD", "BLOOD_WALL"])
-    ranked = rank_candidates(
-        deck, _mk(["BULWARK", "UPPERCUT"]), greedy_pilot, floor=11,
+def test_a_deck_inside_the_band_gets_no_push_either_way():
+    """The term must be silent where it has nothing to say, or it is just a
+    standing thumb on the scale for block."""
+    from sts2_env.evaluation.deck_metrics import (
+        BLOCK_DENSITY_MAX,
+        BLOCK_DENSITY_MIN,
+        block_density,
     )
-    assert "UPPERCUT" in ranked[0].label
-    assert not any("BULWARK" in r.label for r in ranked if r.card is not None)
+
+    from sts2_env.evaluation.card_choice import _band_distance
+
+    deck = _base_deck()
+    assert BLOCK_DENSITY_MIN <= block_density(deck) <= BLOCK_DENSITY_MAX
+
+    # The term is (distance_before - distance_after) * DENSITY_POINTS, so it
+    # contributes exactly zero when both are zero. Asserted on the distance
+    # itself rather than on a score, because a score assertion here would pass
+    # for any number at all -- which an earlier draft of this test did.
+    assert _band_distance(block_density(deck)) == 0.0
+    assert _band_distance(block_density(deck + [create_card(CardId.TAUNT)])) == 0.0
 
 
-@pytest.mark.xfail(
-    reason="Act 2 defence is measured NEGATIVE on untapped -- BLOOD_WALL -4% over "
-           "10,000 offers, FLAME_BARRIER -4% -- so the floor no longer promotes it "
-           "past a 1.0 tolerance. Kept failing rather than deleted or loosened: "
-           "the act 2 defence floor is a live design decision, not a settled one, "
-           "and forcing it through needed a 3.5 tolerance that also promoted "
-           "BULWARK over UPPERCUT. Delete this test if the act 2 floor is dropped.",
-    strict=True,
-)
 @pytest.mark.slow
-def test_act2_wants_a_second_defensive_card():
-    """Act 2 hits for 40; one Flame Barrier is not an answer to that."""
-    deck = _base_deck() + _mk(["FLAME_BARRIER_CARD"])
+def test_a_clearly_better_card_still_beats_the_density_push():
+    """The property that killed the 3.5-point tolerance. A correction big enough
+    to force block through is big enough to force anything through, so the push
+    has to lose to a card that is genuinely better.
+
+    BATTLE_TRANCE is +4% run winrate over 9,700 offers against TAUNT's +1% over
+    15,000, and it wins on a deck that wants block -- 1.81 to 1.65 -- because the
+    density term is ~1.5 points, not unbounded.
+    """
     ranked = rank_candidates(
-        deck, _mk(["UPPERCUT", "BLOOD_WALL"]), greedy_pilot, floor=25,
+        _thin_deck(), _mk(["TAUNT", "BATTLE_TRANCE"]), greedy_pilot,
+        floor=11, seeds=(0, 1, 2, 3),
     )
-    assert "BLOOD_WALL" in ranked[0].label
+    assert "BATTLE_TRANCE" in ranked[0].label, [r.label for r in ranked]
+
+
+def test_the_density_term_is_signed_not_a_distance():
+    """One term replaces a cap and a floor only because it changes sign. A
+    distance would push toward block from both walls."""
+    from sts2_env.evaluation.card_choice import _band_distance
+    from sts2_env.evaluation.deck_metrics import (
+        BLOCK_DENSITY_MAX,
+        BLOCK_DENSITY_MIN,
+        block_density,
+    )
+
+    thin, flooded = _thin_deck(), _flooded_deck()
+    taunt = create_card(CardId.TAUNT)
+
+    # Below the band, adding block reduces the distance; above it, increases.
+    assert _band_distance(block_density(thin + [taunt])) < _band_distance(block_density(thin))
+    assert _band_distance(block_density(flooded + [taunt])) > _band_distance(block_density(flooded))
+    assert _band_distance((BLOCK_DENSITY_MIN + BLOCK_DENSITY_MAX) / 2) == 0.0
 
 
 def test_starter_defends_do_not_count_as_high_quality_defence():
-    """Counting anything with block would count the four starter Defends, firing
-    the cap on every deck from turn one and preventing the floor from ever
-    running. It would also not match what was measured, where those Defends were
-    constant across every arm."""
+    """`HIGH_QUALITY_BLOCK` still answers "is this real defence against a
+    40-damage hit" and still excludes Defend. Density answers a different
+    question -- "will I have block in hand" -- and counts Defend fully. Both
+    thresholds are right for their own question; pinned so they do not get
+    merged."""
     from sts2_env.evaluation.card_choice import (
         is_defensive,
         is_high_quality_defence,
     )
+    from sts2_env.evaluation.deck_metrics import block_density
 
     defend = create_card(CardId.DEFEND_IRONCLAD)
     flame = create_card(CardId.FLAME_BARRIER_CARD)
     assert is_defensive(defend) and not is_high_quality_defence(defend)
     assert is_defensive(flame) and is_high_quality_defence(flame)
-
-
-def test_floor_and_cap_are_labelled_measured_or_not():
-    """The cap is a result; the floor is a prior. Keeping them distinguishable
-    in the source is the point."""
-    from sts2_env.evaluation import card_choice
-
-    assert "MEASURED" in card_choice.__dict__["DEFENCE_CAP_BY_ACT"].__doc__ if False else True
-    assert card_choice.DEFENCE_CAP_BY_ACT[1] == 2
-    assert card_choice.DEFENCE_FLOOR_BY_ACT[1] == 1
-    assert card_choice.DEFENCE_FLOOR_BY_ACT[2] == 2
+    assert block_density([defend]) == 1.0     # density counts it in full
 
 
 def test_rest_evaluates_distinct_cards_not_the_first_n():
