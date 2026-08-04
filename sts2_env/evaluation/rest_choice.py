@@ -156,6 +156,61 @@ def rest_heal_value(current_hp: int, max_hp: int) -> float:
     return max(restored * 0.25, gain * float(max_hp))
 
 
+POOR_UPGRADE_SAMPLE = 800
+"""Smith observations needed before untapped may veto an upgrade.
+
+Below this the delta is mostly rounding: the site quantises to whole percent, so
+a -1% drawn from 200 smiths is not evidence of anything.
+"""
+
+POOR_UPGRADE_MIN_TAKE_RATE = 20
+"""Percent of players who take the upgrade, below which the delta is unusable.
+
+This is the guard against reading a selection effect as a causal one, and it is
+not hypothetical -- it changes the answer on a real card:
+
+    IRON_WAVE   run -2%   act -9%   4,600 seen   upgraded  7%
+    ARMAMENTS   run +1%   act  0%   7,400 seen   upgraded 66%
+
+Iron Wave looks like a catastrophic upgrade on a healthy 4,600-smith sample. But
+it is chosen 7% of the time, and the runs where someone upgrades it are
+disproportionately runs where nothing better was on offer -- weak decks, already
+losing. The delta measures the situation, not the upgrade.
+
+Sample size does not fix this and more data makes it worse, not better: the bias
+is in which runs enter the sample. A high take rate is the only cheap defence,
+because a card upgraded by two thirds of players is being upgraded from strong
+positions and weak ones alike.
+"""
+
+
+def _upgrading_is_measured_bad(card, floor: int) -> bool:
+    """Does untapped say upgrading this card loses runs?
+
+    The smith column is a different question from the draft column and they
+    disagree in useful ways. Fiend Fire is roughly neutral to draft in act 1
+    (-1% run, thin sample) and clearly bad to UPGRADE there: -6% act winrate and
+    -2% run over 1,000 smiths. A single "card quality" number would have averaged
+    those into a shrug.
+
+    Held below resting rather than merely penalised, for the same reason as
+    Strike and Defend: a smith spent on a card that makes the run worse is worse
+    than the HP, and there is no exchange rate between HP-per-fight and run
+    winrate honest enough to write down.
+    """
+    from sts2_env.evaluation.card_priors import card_stats
+
+    stats = card_stats(card, decision="smith", floor=floor)
+    if not stats or (stats.get("offered") or 0) < POOR_UPGRADE_SAMPLE:
+        return False
+    if (stats.get("taken_pct") or 0) < POOR_UPGRADE_MIN_TAKE_RATE:
+        return False
+    delta = stats.get("run_winrate")
+    if delta is None:
+        delta = stats.get("act_winrate")
+    return delta is not None and delta < 0
+
+
 def _hp_cost_per_fight(
     deck: Sequence, pilot: Pilot, tiers: Sequence[Tier], seeds: Sequence[int], max_hp: int
 ) -> float:
@@ -266,7 +321,7 @@ def rank_rest_options(
         saved_per_fight = baseline - cost
         value = saved_per_fight * fights_remaining
 
-        if card.card_id in LOW_PRIORITY_UPGRADES:
+        if card.card_id in LOW_PRIORITY_UPGRADES or _upgrading_is_measured_bad(card, floor):
             # pdgeorge's rule, and it is a play-knowledge prior rather than a
             # measured one: an upgraded Defend is +3 block once a fight, an
             # upgraded Uppercut changes what the deck can beat. Measurement at

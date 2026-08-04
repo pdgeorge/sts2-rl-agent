@@ -503,6 +503,15 @@ def test_the_cap_stops_a_third_defensive_card():
     assert not any("BULWARK" in r.label for r in ranked if r.card is not None)
 
 
+@pytest.mark.xfail(
+    reason="Act 2 defence is measured NEGATIVE on untapped -- BLOOD_WALL -4% over "
+           "10,000 offers, FLAME_BARRIER -4% -- so the floor no longer promotes it "
+           "past a 1.0 tolerance. Kept failing rather than deleted or loosened: "
+           "the act 2 defence floor is a live design decision, not a settled one, "
+           "and forcing it through needed a 3.5 tolerance that also promoted "
+           "BULWARK over UPPERCUT. Delete this test if the act 2 floor is dropped.",
+    strict=True,
+)
 @pytest.mark.slow
 def test_act2_wants_a_second_defensive_card():
     """Act 2 hits for 40; one Flame Barrier is not an answer to that."""
@@ -602,3 +611,37 @@ def test_starter_upgrades_rank_below_resting():
         deck, starters, greedy_pilot, current_hp=55, floor=6, seeds=(0, 1),
     )
     assert ranked[0].kind == "rest"
+
+
+def test_an_unknown_card_gets_no_prior_rather_than_an_average_one():
+    """A card from a patch untapped has not seen must not be scored as neutral.
+
+    Zero is not "no opinion" here -- it is better than every card measured as
+    negative, so a silent fallback to 0 would rank an unmeasured card above most
+    of the real pool. It has to stay out of the prior term entirely.
+    """
+    from sts2_env.evaluation.card_priors import prior_score
+
+    assert prior_score("NOT_A_REAL_CARD_FROM_ANY_PATCH",
+                       decision="card_reward", floor=1) is None
+
+
+def test_a_thin_sample_is_shrunk_toward_zero():
+    """Fiend Fire's -1% comes from 970 offers and Taunt's +1% from 15,000. Read
+    at face value the two look symmetric; they are not remotely."""
+    from sts2_env.evaluation.card_priors import prior_score
+
+    taunt = prior_score(create_card(CardId.TAUNT), decision="card_reward", floor=1)
+    fiend = prior_score(create_card(CardId.FIEND_FIRE), decision="card_reward", floor=1)
+    assert taunt is not None and fiend is not None
+    assert abs(taunt) > 3 * abs(fiend)
+
+
+def test_a_rarely_taken_upgrade_is_not_vetoed_on_its_winrate():
+    """IRON_WAVE reads -9% act winrate to upgrade on 4,600 smiths, but only 7% of
+    players take it -- so the sample is the runs where nothing better was on
+    offer. Vetoing on that would punish the card for the company it keeps."""
+    from sts2_env.evaluation.rest_choice import _upgrading_is_measured_bad
+
+    assert not _upgrading_is_measured_bad(create_card(CardId.IRON_WAVE), floor=6)
+    assert _upgrading_is_measured_bad(create_card(CardId.FIEND_FIRE), floor=6)

@@ -1,0 +1,4167 @@
+{
+ "cards": {
+  "AGGRESSION_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 11,
+     "offered": 920,
+     "run_winrate": 6,
+     "taken_pct": 54
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 3300,
+     "run_winrate": 1,
+     "taken_pct": 27
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": 0,
+     "taken_pct": 23
+    }
+   },
+   "slug": "aggression",
+   "smith": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 720,
+     "run_winrate": 1,
+     "taken_pct": 34
+    },
+    "2": {
+     "act_winrate": 5,
+     "offered": 1300,
+     "run_winrate": 1,
+     "taken_pct": 21
+    },
+    "3": {
+     "offered": 970,
+     "run_winrate": 3,
+     "taken_pct": 19
+    }
+   }
+  },
+  "ANGER": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 7,
+     "offered": 27000,
+     "run_winrate": 1,
+     "taken_pct": 24
+    },
+    "2": {
+     "act_winrate": -10,
+     "offered": 10000,
+     "run_winrate": -9,
+     "taken_pct": 7
+    },
+    "3": {
+     "offered": 4300,
+     "run_winrate": -5,
+     "taken_pct": 3
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 2,
+     "offered": 3900,
+     "run_winrate": -2,
+     "taken_pct": 13
+    },
+    "2": {
+     "offered": 2000,
+     "taken_pct": 4
+    },
+    "3": {
+     "offered": 1200,
+     "taken_pct": 5
+    }
+   },
+   "slug": "anger",
+   "smith": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 9500,
+     "run_winrate": -4,
+     "taken_pct": 10
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 5300,
+     "run_winrate": 2,
+     "taken_pct": 2
+    },
+    "3": {
+     "offered": 2800,
+     "taken_pct": 1
+    }
+   }
+  },
+  "ARMAMENTS": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 27000,
+     "run_winrate": -1,
+     "taken_pct": 27
+    },
+    "2": {
+     "act_winrate": -5,
+     "offered": 10000,
+     "run_winrate": -5,
+     "taken_pct": 11
+    },
+    "3": {
+     "offered": 4200,
+     "run_winrate": -4,
+     "taken_pct": 4
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 7200,
+     "run_winrate": -1,
+     "taken_pct": 15
+    },
+    "2": {
+     "act_winrate": -12,
+     "offered": 4000,
+     "run_winrate": -6,
+     "taken_pct": 6
+    },
+    "3": {
+     "offered": 2400,
+     "run_winrate": -5,
+     "taken_pct": 4
+    }
+   },
+   "slug": "armaments",
+   "smith": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 7400,
+     "run_winrate": 1,
+     "taken_pct": 66
+    },
+    "2": {
+     "act_winrate": 0,
+     "offered": 2500,
+     "run_winrate": -1,
+     "taken_pct": 37
+    },
+    "3": {
+     "offered": 990,
+     "run_winrate": 0,
+     "taken_pct": 24
+    }
+   }
+  },
+  "ASHEN_STRIKE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 9400,
+     "run_winrate": 0,
+     "taken_pct": 42
+    },
+    "2": {
+     "act_winrate": -3,
+     "offered": 3500,
+     "run_winrate": -3,
+     "taken_pct": 35
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": -2,
+     "taken_pct": 28
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 3,
+     "offered": 2300,
+     "run_winrate": 0,
+     "taken_pct": 23
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 1200,
+     "run_winrate": -4,
+     "taken_pct": 24
+    },
+    "3": {
+     "offered": 730,
+     "run_winrate": 0,
+     "taken_pct": 23
+    }
+   },
+   "slug": "ashen-strike",
+   "smith": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 4900,
+     "run_winrate": -2,
+     "taken_pct": 9
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 3900,
+     "run_winrate": 1,
+     "taken_pct": 6
+    },
+    "3": {
+     "offered": 2400,
+     "run_winrate": -4,
+     "taken_pct": 7
+    }
+   }
+  },
+  "BARRICADE_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 940,
+     "run_winrate": 2,
+     "taken_pct": 32
+    },
+    "2": {
+     "act_winrate": -5,
+     "offered": 3200,
+     "run_winrate": 2,
+     "taken_pct": 20
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": 8,
+     "taken_pct": 29
+    }
+   },
+   "slug": "barricade",
+   "smith": {
+    "2": {
+     "act_winrate": -2,
+     "offered": 680,
+     "run_winrate": 1,
+     "taken_pct": 55
+    },
+    "3": {
+     "offered": 600,
+     "run_winrate": -4,
+     "taken_pct": 49
+    }
+   }
+  },
+  "BASH": {
+   "slug": "bash",
+   "smith": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 63000,
+     "run_winrate": -2,
+     "taken_pct": 8
+    },
+    "2": {
+     "act_winrate": 5,
+     "offered": 20000,
+     "run_winrate": 5,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 9700,
+     "run_winrate": -1,
+     "taken_pct": 1
+    }
+   }
+  },
+  "BATTLE_TRANCE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 6,
+     "offered": 9700,
+     "run_winrate": 4,
+     "taken_pct": 61
+    },
+    "2": {
+     "act_winrate": 4,
+     "offered": 3600,
+     "run_winrate": 2,
+     "taken_pct": 56
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": -1,
+     "taken_pct": 44
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 5,
+     "offered": 2400,
+     "run_winrate": 4,
+     "taken_pct": 39
+    },
+    "2": {
+     "act_winrate": 7,
+     "offered": 1400,
+     "run_winrate": 3,
+     "taken_pct": 41
+    },
+    "3": {
+     "offered": 810,
+     "run_winrate": -3,
+     "taken_pct": 33
+    }
+   },
+   "slug": "battle-trance",
+   "smith": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 8100,
+     "run_winrate": 6,
+     "taken_pct": 9
+    },
+    "2": {
+     "act_winrate": 4,
+     "offered": 7400,
+     "run_winrate": 5,
+     "taken_pct": 7
+    },
+    "3": {
+     "offered": 4700,
+     "run_winrate": 4,
+     "taken_pct": 8
+    }
+   }
+  },
+  "BLOODLETTING": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 21000,
+     "run_winrate": -1,
+     "taken_pct": 47
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 8100,
+     "run_winrate": -1,
+     "taken_pct": 40
+    },
+    "3": {
+     "offered": 3300,
+     "run_winrate": -3,
+     "taken_pct": 33
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 5600,
+     "run_winrate": 0,
+     "taken_pct": 36
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 3200,
+     "run_winrate": -2,
+     "taken_pct": 33
+    },
+    "3": {
+     "offered": 1800,
+     "run_winrate": -3,
+     "taken_pct": 27
+    }
+   },
+   "slug": "bloodletting",
+   "smith": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 13000,
+     "run_winrate": 1,
+     "taken_pct": 8
+    },
+    "2": {
+     "act_winrate": 3,
+     "offered": 10000,
+     "run_winrate": 7,
+     "taken_pct": 7
+    },
+    "3": {
+     "offered": 6500,
+     "run_winrate": 6,
+     "taken_pct": 9
+    }
+   }
+  },
+  "BLOOD_WALL": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -5,
+     "offered": 27000,
+     "run_winrate": -2,
+     "taken_pct": 32
+    },
+    "2": {
+     "act_winrate": -5,
+     "offered": 10000,
+     "run_winrate": -4,
+     "taken_pct": 22
+    },
+    "3": {
+     "offered": 4300,
+     "run_winrate": -5,
+     "taken_pct": 14
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 7100,
+     "run_winrate": -1,
+     "taken_pct": 21
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 4100,
+     "run_winrate": -6,
+     "taken_pct": 14
+    },
+    "3": {
+     "offered": 2300,
+     "run_winrate": -5,
+     "taken_pct": 12
+    }
+   },
+   "slug": "blood-wall",
+   "smith": {
+    "1": {
+     "act_winrate": -7,
+     "offered": 11000,
+     "run_winrate": -5,
+     "taken_pct": 4
+    },
+    "2": {
+     "act_winrate": -3,
+     "offered": 8200,
+     "run_winrate": -2,
+     "taken_pct": 2
+    },
+    "3": {
+     "offered": 4800,
+     "taken_pct": 2
+    }
+   }
+  },
+  "BLUDGEON": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 5,
+     "offered": 9500,
+     "run_winrate": 0,
+     "taken_pct": 33
+    },
+    "2": {
+     "act_winrate": -10,
+     "offered": 3600,
+     "run_winrate": -10,
+     "taken_pct": 12
+    },
+    "3": {
+     "offered": 1400,
+     "taken_pct": 6
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 2200,
+     "run_winrate": -2,
+     "taken_pct": 15
+    },
+    "2": {
+     "offered": 1300,
+     "taken_pct": 6
+    },
+    "3": {
+     "offered": 680,
+     "taken_pct": 6
+    }
+   },
+   "slug": "bludgeon",
+   "smith": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 4000,
+     "run_winrate": -2,
+     "taken_pct": 26
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 1800,
+     "run_winrate": -1,
+     "taken_pct": 7
+    },
+    "3": {
+     "offered": 960,
+     "taken_pct": 3
+    }
+   }
+  },
+  "BODY_SLAM": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -9,
+     "offered": 27000,
+     "run_winrate": 0,
+     "taken_pct": 11
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 10000,
+     "run_winrate": 2,
+     "taken_pct": 8
+    },
+    "3": {
+     "offered": 4300,
+     "run_winrate": 1,
+     "taken_pct": 7
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -5,
+     "offered": 3800,
+     "run_winrate": 2,
+     "taken_pct": 6
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 2100,
+     "run_winrate": 5,
+     "taken_pct": 5
+    },
+    "3": {
+     "offered": 1200,
+     "taken_pct": 6
+    }
+   },
+   "slug": "body-slam",
+   "smith": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 3100,
+     "run_winrate": 0,
+     "taken_pct": 48
+    },
+    "2": {
+     "act_winrate": 0,
+     "offered": 1600,
+     "run_winrate": -1,
+     "taken_pct": 32
+    },
+    "3": {
+     "offered": 1000,
+     "run_winrate": -3,
+     "taken_pct": 24
+    }
+   }
+  },
+  "BRAND": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 5,
+     "offered": 890,
+     "run_winrate": 0,
+     "taken_pct": 69
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 3200,
+     "run_winrate": -3,
+     "taken_pct": 39
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -5,
+     "taken_pct": 34
+    }
+   },
+   "slug": "brand",
+   "smith": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 850,
+     "run_winrate": 0,
+     "taken_pct": 38
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 1600,
+     "run_winrate": -4,
+     "taken_pct": 17
+    },
+    "3": {
+     "offered": 1300,
+     "run_winrate": -2,
+     "taken_pct": 12
+    }
+   }
+  },
+  "BREAKTHROUGH": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 27000,
+     "run_winrate": -3,
+     "taken_pct": 24
+    },
+    "2": {
+     "act_winrate": -10,
+     "offered": 10000,
+     "run_winrate": -8,
+     "taken_pct": 8
+    },
+    "3": {
+     "offered": 4300,
+     "taken_pct": 2
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 3700,
+     "run_winrate": -4,
+     "taken_pct": 15
+    },
+    "2": {
+     "offered": 2200,
+     "taken_pct": 4
+    },
+    "3": {
+     "offered": 1300,
+     "taken_pct": 3
+    }
+   },
+   "slug": "breakthrough",
+   "smith": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 9100,
+     "run_winrate": -3,
+     "taken_pct": 6
+    },
+    "2": {
+     "offered": 4900,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 2400,
+     "taken_pct": 0
+    }
+   }
+  },
+  "BULLY": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 7,
+     "offered": 9500,
+     "run_winrate": 1,
+     "taken_pct": 39
+    },
+    "2": {
+     "act_winrate": 2,
+     "offered": 3600,
+     "run_winrate": -2,
+     "taken_pct": 30
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": -1,
+     "taken_pct": 24
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 2200,
+     "run_winrate": 1,
+     "taken_pct": 18
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 1300,
+     "run_winrate": -4,
+     "taken_pct": 18
+    },
+    "3": {
+     "offered": 710,
+     "taken_pct": 13
+    }
+   },
+   "slug": "bully",
+   "smith": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 4800,
+     "run_winrate": -1,
+     "taken_pct": 8
+    },
+    "2": {
+     "act_winrate": 3,
+     "offered": 4000,
+     "run_winrate": -3,
+     "taken_pct": 5
+    },
+    "3": {
+     "offered": 2500,
+     "run_winrate": 2,
+     "taken_pct": 6
+    }
+   }
+  },
+  "BURNING_PACT": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -7,
+     "offered": 9300,
+     "run_winrate": -1,
+     "taken_pct": 39
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 3600,
+     "run_winrate": 1,
+     "taken_pct": 40
+    },
+    "3": {
+     "offered": 1400,
+     "run_winrate": 3,
+     "taken_pct": 37
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 2500,
+     "run_winrate": 2,
+     "taken_pct": 20
+    },
+    "2": {
+     "act_winrate": -3,
+     "offered": 1300,
+     "run_winrate": 2,
+     "taken_pct": 24
+    },
+    "3": {
+     "offered": 830,
+     "run_winrate": 7,
+     "taken_pct": 28
+    }
+   },
+   "slug": "burning-pact",
+   "smith": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 4300,
+     "run_winrate": 2,
+     "taken_pct": 9
+    },
+    "2": {
+     "act_winrate": 7,
+     "offered": 4000,
+     "run_winrate": 7,
+     "taken_pct": 10
+    },
+    "3": {
+     "offered": 2800,
+     "run_winrate": 9,
+     "taken_pct": 10
+    }
+   }
+  },
+  "CASCADE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 910,
+     "run_winrate": 3,
+     "taken_pct": 50
+    },
+    "2": {
+     "act_winrate": 4,
+     "offered": 3100,
+     "run_winrate": 5,
+     "taken_pct": 24
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": 4,
+     "taken_pct": 20
+    }
+   },
+   "slug": "cascade",
+   "smith": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 660,
+     "run_winrate": 2,
+     "taken_pct": 63
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 840,
+     "run_winrate": 0,
+     "taken_pct": 41
+    },
+    "3": {
+     "offered": 580,
+     "run_winrate": -2,
+     "taken_pct": 37
+    }
+   }
+  },
+  "CINDER": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -6,
+     "offered": 27000,
+     "run_winrate": -2,
+     "taken_pct": 12
+    },
+    "2": {
+     "act_winrate": -14,
+     "offered": 10000,
+     "run_winrate": -13,
+     "taken_pct": 2
+    },
+    "3": {
+     "offered": 4300,
+     "taken_pct": 1
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 3800,
+     "run_winrate": -4,
+     "taken_pct": 5
+    },
+    "2": {
+     "offered": 2100,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 1300,
+     "taken_pct": 3
+    }
+   },
+   "slug": "cinder",
+   "smith": {
+    "1": {
+     "act_winrate": -5,
+     "offered": 4300,
+     "run_winrate": 1,
+     "taken_pct": 11
+    },
+    "2": {
+     "offered": 1900,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 970,
+     "taken_pct": 1
+    }
+   }
+  },
+  "COLOSSUS_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 9200,
+     "run_winrate": 1,
+     "taken_pct": 67
+    },
+    "2": {
+     "act_winrate": 0,
+     "offered": 3500,
+     "run_winrate": 0,
+     "taken_pct": 68
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": 0,
+     "taken_pct": 61
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 2400,
+     "run_winrate": -1,
+     "taken_pct": 45
+    },
+    "2": {
+     "act_winrate": 0,
+     "offered": 1300,
+     "run_winrate": -1,
+     "taken_pct": 50
+    },
+    "3": {
+     "offered": 820,
+     "run_winrate": 0,
+     "taken_pct": 46
+    }
+   },
+   "slug": "colossus",
+   "smith": {
+    "1": {
+     "act_winrate": -7,
+     "offered": 7900,
+     "run_winrate": -3,
+     "taken_pct": 5
+    },
+    "2": {
+     "act_winrate": 3,
+     "offered": 7400,
+     "run_winrate": -2,
+     "taken_pct": 2
+    },
+    "3": {
+     "offered": 5200,
+     "taken_pct": 2
+    }
+   }
+  },
+  "CONFLAGRATION": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 5,
+     "offered": 910,
+     "run_winrate": 2,
+     "taken_pct": 61
+    },
+    "2": {
+     "act_winrate": 6,
+     "offered": 3200,
+     "run_winrate": 1,
+     "taken_pct": 32
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": -3,
+     "taken_pct": 25
+    }
+   },
+   "slug": "conflagration",
+   "smith": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 1000,
+     "run_winrate": -1,
+     "taken_pct": 28
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 1600,
+     "run_winrate": 1,
+     "taken_pct": 14
+    },
+    "3": {
+     "offered": 1200,
+     "run_winrate": 2,
+     "taken_pct": 11
+    }
+   }
+  },
+  "CRIMSON_MANTLE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 13,
+     "offered": 970,
+     "run_winrate": 5,
+     "taken_pct": 79
+    },
+    "2": {
+     "act_winrate": 5,
+     "offered": 3300,
+     "run_winrate": 3,
+     "taken_pct": 55
+    },
+    "3": {
+     "offered": 1700,
+     "run_winrate": 0,
+     "taken_pct": 47
+    }
+   },
+   "slug": "crimson-mantle",
+   "smith": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 1000,
+     "run_winrate": 1,
+     "taken_pct": 38
+    },
+    "2": {
+     "act_winrate": 2,
+     "offered": 2300,
+     "run_winrate": 3,
+     "taken_pct": 26
+    },
+    "3": {
+     "offered": 1700,
+     "run_winrate": 1,
+     "taken_pct": 21
+    }
+   }
+  },
+  "CRUELTY_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -7,
+     "offered": 3900,
+     "run_winrate": -3,
+     "taken_pct": 59
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 3500,
+     "run_winrate": -3,
+     "taken_pct": 52
+    },
+    "3": {
+     "offered": 1700,
+     "run_winrate": -1,
+     "taken_pct": 48
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -6,
+     "offered": 1400,
+     "run_winrate": -3,
+     "taken_pct": 34
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 1000,
+     "run_winrate": 2,
+     "taken_pct": 34
+    },
+    "3": {
+     "offered": 580,
+     "run_winrate": 1,
+     "taken_pct": 36
+    }
+   },
+   "slug": "cruelty",
+   "smith": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 2400,
+     "run_winrate": 0,
+     "taken_pct": 44
+    },
+    "2": {
+     "act_winrate": 4,
+     "offered": 2500,
+     "run_winrate": 2,
+     "taken_pct": 41
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": 4,
+     "taken_pct": 43
+    }
+   }
+  },
+  "DARK_EMBRACE_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -9,
+     "offered": 850,
+     "run_winrate": -2,
+     "taken_pct": 37
+    },
+    "2": {
+     "act_winrate": -5,
+     "offered": 3400,
+     "run_winrate": 3,
+     "taken_pct": 23
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": 4,
+     "taken_pct": 28
+    }
+   },
+   "slug": "dark-embrace",
+   "smith": {
+    "2": {
+     "act_winrate": 3,
+     "offered": 860,
+     "run_winrate": 2,
+     "taken_pct": 51
+    },
+    "3": {
+     "offered": 710,
+     "run_winrate": 2,
+     "taken_pct": 46
+    }
+   }
+  },
+  "DEFEND_IRONCLAD": {
+   "slug": "defend-ironclad",
+   "smith": {
+    "1": {
+     "act_winrate": -10,
+     "offered": 71000,
+     "run_winrate": 0,
+     "taken_pct": 0
+    },
+    "2": {
+     "offered": 29000,
+     "taken_pct": 0
+    },
+    "3": {
+     "offered": 15000,
+     "taken_pct": 0
+    }
+   }
+  },
+  "DEMON_FORM_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 10,
+     "offered": 950,
+     "run_winrate": 3,
+     "taken_pct": 34
+    },
+    "2": {
+     "act_winrate": -3,
+     "offered": 3300,
+     "run_winrate": -1,
+     "taken_pct": 15
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -1,
+     "taken_pct": 16
+    }
+   },
+   "slug": "demon-form",
+   "smith": {
+    "1": {
+     "act_winrate": 3,
+     "offered": 520,
+     "run_winrate": -2,
+     "taken_pct": 30
+    },
+    "2": {
+     "act_winrate": 5,
+     "offered": 680,
+     "run_winrate": 0,
+     "taken_pct": 24
+    },
+    "3": {
+     "offered": 550,
+     "run_winrate": -3,
+     "taken_pct": 27
+    }
+   }
+  },
+  "DISMANTLE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 4,
+     "offered": 9500,
+     "run_winrate": -2,
+     "taken_pct": 42
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 3500,
+     "run_winrate": -7,
+     "taken_pct": 24
+    },
+    "3": {
+     "offered": 1400,
+     "run_winrate": -7,
+     "taken_pct": 14
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 9,
+     "offered": 2100,
+     "run_winrate": -3,
+     "taken_pct": 21
+    },
+    "2": {
+     "act_winrate": -6,
+     "offered": 1300,
+     "run_winrate": -9,
+     "taken_pct": 15
+    },
+    "3": {
+     "offered": 740,
+     "taken_pct": 10
+    }
+   },
+   "slug": "dismantle",
+   "smith": {
+    "1": {
+     "act_winrate": -5,
+     "offered": 5200,
+     "run_winrate": -3,
+     "taken_pct": 10
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 3600,
+     "run_winrate": -1,
+     "taken_pct": 3
+    },
+    "3": {
+     "offered": 2100,
+     "taken_pct": 2
+    }
+   }
+  },
+  "DOMINATE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 9,
+     "offered": 6500,
+     "run_winrate": 4,
+     "taken_pct": 82
+    },
+    "2": {
+     "act_winrate": 5,
+     "offered": 3500,
+     "run_winrate": 1,
+     "taken_pct": 72
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": -2,
+     "taken_pct": 65
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 10,
+     "offered": 1700,
+     "run_winrate": 2,
+     "taken_pct": 57
+    },
+    "2": {
+     "act_winrate": 4,
+     "offered": 950,
+     "run_winrate": 4,
+     "taken_pct": 55
+    },
+    "3": {
+     "offered": 530,
+     "run_winrate": 2,
+     "taken_pct": 53
+    }
+   },
+   "slug": "dominate",
+   "smith": {
+    "1": {
+     "act_winrate": 2,
+     "offered": 6000,
+     "run_winrate": -1,
+     "taken_pct": 41
+    },
+    "2": {
+     "act_winrate": 0,
+     "offered": 5100,
+     "run_winrate": -2,
+     "taken_pct": 21
+    },
+    "3": {
+     "offered": 3500,
+     "run_winrate": -1,
+     "taken_pct": 15
+    }
+   }
+  },
+  "DRUM_OF_BATTLE_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -12,
+     "offered": 9700,
+     "run_winrate": -2,
+     "taken_pct": 10
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 3700,
+     "run_winrate": 3,
+     "taken_pct": 15
+    },
+    "3": {
+     "offered": 1400,
+     "run_winrate": 6,
+     "taken_pct": 15
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -17,
+     "offered": 2400,
+     "run_winrate": 0,
+     "taken_pct": 4
+    },
+    "2": {
+     "act_winrate": -9,
+     "offered": 1300,
+     "run_winrate": 4,
+     "taken_pct": 8
+    },
+    "3": {
+     "offered": 830,
+     "taken_pct": 10
+    }
+   },
+   "slug": "drum-of-battle",
+   "smith": {
+    "1": {
+     "offered": 1200,
+     "taken_pct": 2
+    },
+    "2": {
+     "offered": 1400,
+     "taken_pct": 2
+    },
+    "3": {
+     "offered": 1100,
+     "taken_pct": 2
+    }
+   }
+  },
+  "EVIL_EYE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 9500,
+     "run_winrate": -1,
+     "taken_pct": 44
+    },
+    "2": {
+     "act_winrate": -3,
+     "offered": 3500,
+     "run_winrate": -1,
+     "taken_pct": 41
+    },
+    "3": {
+     "offered": 1400,
+     "run_winrate": -4,
+     "taken_pct": 35
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 2400,
+     "run_winrate": 0,
+     "taken_pct": 22
+    },
+    "2": {
+     "act_winrate": 2,
+     "offered": 1400,
+     "run_winrate": 2,
+     "taken_pct": 25
+    },
+    "3": {
+     "offered": 770,
+     "run_winrate": 3,
+     "taken_pct": 21
+    }
+   },
+   "slug": "evil-eye",
+   "smith": {
+    "1": {
+     "act_winrate": -7,
+     "offered": 5400,
+     "run_winrate": -2,
+     "taken_pct": 6
+    },
+    "2": {
+     "act_winrate": -8,
+     "offered": 4700,
+     "run_winrate": -5,
+     "taken_pct": 4
+    },
+    "3": {
+     "offered": 3200,
+     "run_winrate": 4,
+     "taken_pct": 3
+    }
+   }
+  },
+  "EXPECT_A_FIGHT": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 9500,
+     "run_winrate": -1,
+     "taken_pct": 25
+    },
+    "2": {
+     "act_winrate": 0,
+     "offered": 3600,
+     "run_winrate": -1,
+     "taken_pct": 24
+    },
+    "3": {
+     "offered": 1400,
+     "run_winrate": 2,
+     "taken_pct": 21
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -9,
+     "offered": 2500,
+     "run_winrate": -3,
+     "taken_pct": 11
+    },
+    "2": {
+     "act_winrate": -6,
+     "offered": 1400,
+     "run_winrate": 0,
+     "taken_pct": 12
+    },
+    "3": {
+     "offered": 740,
+     "taken_pct": 13
+    }
+   },
+   "slug": "expect-a-fight",
+   "smith": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 2400,
+     "run_winrate": -2,
+     "taken_pct": 46
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 1700,
+     "run_winrate": -1,
+     "taken_pct": 31
+    },
+    "3": {
+     "offered": 1000,
+     "run_winrate": -5,
+     "taken_pct": 24
+    }
+   }
+  },
+  "FEED": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 1000,
+     "run_winrate": 1,
+     "taken_pct": 72
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 3100,
+     "run_winrate": -2,
+     "taken_pct": 36
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": -5,
+     "taken_pct": 15
+    }
+   },
+   "slug": "feed",
+   "smith": {
+    "1": {
+     "act_winrate": -7,
+     "offered": 1100,
+     "run_winrate": -3,
+     "taken_pct": 25
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 1800,
+     "run_winrate": -8,
+     "taken_pct": 8
+    },
+    "3": {
+     "offered": 1200,
+     "taken_pct": 1
+    }
+   }
+  },
+  "FEEL_NO_PAIN_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -8,
+     "offered": 9600,
+     "run_winrate": 0,
+     "taken_pct": 32
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 3700,
+     "run_winrate": 1,
+     "taken_pct": 37
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": 1,
+     "taken_pct": 35
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 4900,
+     "run_winrate": 1,
+     "taken_pct": 18
+    },
+    "2": {
+     "act_winrate": 2,
+     "offered": 2700,
+     "run_winrate": 7,
+     "taken_pct": 26
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -1,
+     "taken_pct": 28
+    }
+   },
+   "slug": "feel-no-pain",
+   "smith": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 4100,
+     "run_winrate": 3,
+     "taken_pct": 9
+    },
+    "2": {
+     "act_winrate": 4,
+     "offered": 4200,
+     "run_winrate": 6,
+     "taken_pct": 12
+    },
+    "3": {
+     "offered": 3000,
+     "run_winrate": 5,
+     "taken_pct": 15
+    }
+   }
+  },
+  "FIEND_FIRE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 970,
+     "run_winrate": -1,
+     "taken_pct": 67
+    },
+    "2": {
+     "act_winrate": 0,
+     "offered": 3200,
+     "run_winrate": 0,
+     "taken_pct": 39
+    },
+    "3": {
+     "offered": 1700,
+     "run_winrate": -3,
+     "taken_pct": 30
+    }
+   },
+   "slug": "fiend-fire",
+   "smith": {
+    "1": {
+     "act_winrate": -6,
+     "offered": 1000,
+     "run_winrate": -2,
+     "taken_pct": 30
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 1900,
+     "run_winrate": 0,
+     "taken_pct": 13
+    },
+    "3": {
+     "offered": 1300,
+     "run_winrate": -2,
+     "taken_pct": 8
+    }
+   }
+  },
+  "FIGHT_ME": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 7,
+     "offered": 9400,
+     "run_winrate": 1,
+     "taken_pct": 36
+    },
+    "2": {
+     "act_winrate": -6,
+     "offered": 3800,
+     "run_winrate": -7,
+     "taken_pct": 19
+    },
+    "3": {
+     "offered": 1400,
+     "run_winrate": -5,
+     "taken_pct": 11
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 8,
+     "offered": 2200,
+     "run_winrate": -2,
+     "taken_pct": 18
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 1300,
+     "run_winrate": -9,
+     "taken_pct": 9
+    },
+    "3": {
+     "offered": 750,
+     "taken_pct": 7
+    }
+   },
+   "slug": "fight-me",
+   "smith": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 3800,
+     "run_winrate": -1,
+     "taken_pct": 34
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 2200,
+     "run_winrate": -5,
+     "taken_pct": 12
+    },
+    "3": {
+     "offered": 1200,
+     "taken_pct": 7
+    }
+   }
+  },
+  "FLAME_BARRIER_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 9600,
+     "run_winrate": 0,
+     "taken_pct": 61
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 3600,
+     "run_winrate": -4,
+     "taken_pct": 46
+    },
+    "3": {
+     "offered": 1300,
+     "run_winrate": -10,
+     "taken_pct": 28
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 2400,
+     "run_winrate": -1,
+     "taken_pct": 35
+    },
+    "2": {
+     "act_winrate": -5,
+     "offered": 1400,
+     "run_winrate": -8,
+     "taken_pct": 26
+    },
+    "3": {
+     "offered": 840,
+     "run_winrate": -5,
+     "taken_pct": 18
+    }
+   },
+   "slug": "flame-barrier",
+   "smith": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 7200,
+     "run_winrate": 0,
+     "taken_pct": 18
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 5200,
+     "run_winrate": -5,
+     "taken_pct": 7
+    },
+    "3": {
+     "offered": 3100,
+     "run_winrate": -8,
+     "taken_pct": 5
+    }
+   }
+  },
+  "FORGOTTEN_RITUAL": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -8,
+     "offered": 9400,
+     "run_winrate": -3,
+     "taken_pct": 13
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 3500,
+     "run_winrate": 4,
+     "taken_pct": 20
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": 0,
+     "taken_pct": 21
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -10,
+     "offered": 2400,
+     "run_winrate": 0,
+     "taken_pct": 6
+    },
+    "2": {
+     "act_winrate": -7,
+     "offered": 1400,
+     "run_winrate": 2,
+     "taken_pct": 11
+    },
+    "3": {
+     "offered": 850,
+     "run_winrate": -1,
+     "taken_pct": 14
+    }
+   },
+   "slug": "forgotten-ritual",
+   "smith": {
+    "1": {
+     "offered": 1400,
+     "taken_pct": 2
+    },
+    "2": {
+     "offered": 1600,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 1400,
+     "taken_pct": 3
+    }
+   }
+  },
+  "HAVOC": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -5,
+     "offered": 27000,
+     "run_winrate": -1,
+     "taken_pct": 3
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 10000,
+     "run_winrate": 1,
+     "taken_pct": 2
+    },
+    "3": {
+     "offered": 4200,
+     "taken_pct": 1
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 7200,
+     "run_winrate": 0,
+     "taken_pct": 2
+    },
+    "2": {
+     "offered": 3900,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 2300,
+     "taken_pct": 3
+    }
+   },
+   "slug": "havoc",
+   "smith": {
+    "1": {
+     "act_winrate": 2,
+     "offered": 1000,
+     "run_winrate": 3,
+     "taken_pct": 37
+    },
+    "2": {
+     "act_winrate": 7,
+     "offered": 520,
+     "run_winrate": 9,
+     "taken_pct": 22
+    }
+   }
+  },
+  "HEADBUTT": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 27000,
+     "run_winrate": 0,
+     "taken_pct": 19
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 10000,
+     "run_winrate": -2,
+     "taken_pct": 11
+    },
+    "3": {
+     "offered": 4400,
+     "run_winrate": -4,
+     "taken_pct": 6
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 3800,
+     "run_winrate": -1,
+     "taken_pct": 8
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 2200,
+     "run_winrate": 3,
+     "taken_pct": 5
+    },
+    "3": {
+     "offered": 1200,
+     "taken_pct": 6
+    }
+   },
+   "slug": "headbutt",
+   "smith": {
+    "1": {
+     "offered": 7500,
+     "taken_pct": 1
+    },
+    "2": {
+     "offered": 5500,
+     "taken_pct": 0
+    },
+    "3": {
+     "offered": 3200,
+     "taken_pct": 0
+    }
+   }
+  },
+  "HELLRAISER_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 3,
+     "offered": 920,
+     "run_winrate": -1,
+     "taken_pct": 31
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 3300,
+     "run_winrate": 1,
+     "taken_pct": 20
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -2,
+     "taken_pct": 16
+    }
+   },
+   "slug": "hellraiser",
+   "smith": {
+    "1": {
+     "act_winrate": -5,
+     "offered": 580,
+     "run_winrate": -2,
+     "taken_pct": 68
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 650,
+     "run_winrate": -3,
+     "taken_pct": 53
+    }
+   }
+  },
+  "HEMOKINESIS": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 9600,
+     "run_winrate": -1,
+     "taken_pct": 27
+    },
+    "2": {
+     "act_winrate": -8,
+     "offered": 3600,
+     "run_winrate": -6,
+     "taken_pct": 8
+    },
+    "3": {
+     "offered": 1400,
+     "taken_pct": 4
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -5,
+     "offered": 2200,
+     "run_winrate": -2,
+     "taken_pct": 11
+    },
+    "2": {
+     "offered": 1300,
+     "taken_pct": 3
+    },
+    "3": {
+     "offered": 740,
+     "taken_pct": 4
+    }
+   },
+   "slug": "hemokinesis",
+   "smith": {
+    "1": {
+     "act_winrate": -7,
+     "offered": 3500,
+     "run_winrate": 1,
+     "taken_pct": 10
+    },
+    "2": {
+     "offered": 1800,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 970,
+     "taken_pct": 0
+    }
+   }
+  },
+  "HOWL_FROM_BEYOND": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 9500,
+     "run_winrate": -1,
+     "taken_pct": 21
+    },
+    "2": {
+     "act_winrate": -5,
+     "offered": 3500,
+     "run_winrate": -6,
+     "taken_pct": 14
+    },
+    "3": {
+     "offered": 1400,
+     "run_winrate": -11,
+     "taken_pct": 8
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -12,
+     "offered": 2200,
+     "run_winrate": -5,
+     "taken_pct": 11
+    },
+    "2": {
+     "offered": 1200,
+     "taken_pct": 8
+    },
+    "3": {
+     "offered": 770,
+     "taken_pct": 6
+    }
+   },
+   "slug": "howl-from-beyond",
+   "smith": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 2600,
+     "run_winrate": -2,
+     "taken_pct": 11
+    },
+    "2": {
+     "offered": 1800,
+     "taken_pct": 4
+    },
+    "3": {
+     "offered": 1100,
+     "taken_pct": 2
+    }
+   }
+  },
+  "IMPERVIOUS": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 5,
+     "offered": 850,
+     "run_winrate": 6,
+     "taken_pct": 69
+    },
+    "2": {
+     "act_winrate": 2,
+     "offered": 3100,
+     "run_winrate": 1,
+     "taken_pct": 39
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": 4,
+     "taken_pct": 44
+    }
+   },
+   "slug": "impervious",
+   "smith": {
+    "1": {
+     "offered": 960,
+     "taken_pct": 2
+    },
+    "2": {
+     "offered": 2300,
+     "taken_pct": 2
+    },
+    "3": {
+     "offered": 2100,
+     "taken_pct": 3
+    }
+   }
+  },
+  "INFERNAL_BLADE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 2,
+     "offered": 9400,
+     "run_winrate": -1,
+     "taken_pct": 27
+    },
+    "2": {
+     "act_winrate": -14,
+     "offered": 3600,
+     "run_winrate": -12,
+     "taken_pct": 13
+    },
+    "3": {
+     "offered": 1400,
+     "run_winrate": -13,
+     "taken_pct": 10
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 2500,
+     "run_winrate": -4,
+     "taken_pct": 9
+    },
+    "2": {
+     "offered": 1300,
+     "taken_pct": 6
+    },
+    "3": {
+     "offered": 840,
+     "taken_pct": 8
+    }
+   },
+   "slug": "infernal-blade",
+   "smith": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 2800,
+     "run_winrate": -4,
+     "taken_pct": 32
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 1500,
+     "run_winrate": -8,
+     "taken_pct": 15
+    },
+    "3": {
+     "offered": 880,
+     "taken_pct": 11
+    }
+   }
+  },
+  "INFERNO_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 4,
+     "offered": 9500,
+     "run_winrate": -1,
+     "taken_pct": 39
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 3900,
+     "run_winrate": -5,
+     "taken_pct": 20
+    },
+    "3": {
+     "offered": 1700,
+     "run_winrate": -9,
+     "taken_pct": 12
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 2,
+     "offered": 4800,
+     "run_winrate": -2,
+     "taken_pct": 25
+    },
+    "2": {
+     "act_winrate": -7,
+     "offered": 2800,
+     "run_winrate": -7,
+     "taken_pct": 16
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -9,
+     "taken_pct": 10
+    }
+   },
+   "slug": "inferno",
+   "smith": {
+    "1": {
+     "act_winrate": 2,
+     "offered": 4800,
+     "run_winrate": 2,
+     "taken_pct": 26
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 3100,
+     "run_winrate": -4,
+     "taken_pct": 11
+    },
+    "3": {
+     "offered": 1800,
+     "taken_pct": 5
+    }
+   }
+  },
+  "INFLAME": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 2,
+     "offered": 9500,
+     "run_winrate": -2,
+     "taken_pct": 24
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 3900,
+     "run_winrate": -5,
+     "taken_pct": 12
+    },
+    "3": {
+     "offered": 1700,
+     "run_winrate": -9,
+     "taken_pct": 9
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 2,
+     "offered": 4900,
+     "run_winrate": -1,
+     "taken_pct": 11
+    },
+    "2": {
+     "act_winrate": -5,
+     "offered": 2700,
+     "run_winrate": -8,
+     "taken_pct": 6
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -8,
+     "taken_pct": 8
+    }
+   },
+   "slug": "inflame",
+   "smith": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 3000,
+     "run_winrate": 1,
+     "taken_pct": 24
+    },
+    "2": {
+     "act_winrate": 5,
+     "offered": 1900,
+     "run_winrate": 2,
+     "taken_pct": 9
+    },
+    "3": {
+     "offered": 1100,
+     "taken_pct": 5
+    }
+   }
+  },
+  "IRON_WAVE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 27000,
+     "run_winrate": -1,
+     "taken_pct": 13
+    },
+    "2": {
+     "act_winrate": -8,
+     "offered": 10000,
+     "run_winrate": -12,
+     "taken_pct": 4
+    },
+    "3": {
+     "offered": 4300,
+     "taken_pct": 1
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -11,
+     "offered": 3800,
+     "run_winrate": -1,
+     "taken_pct": 5
+    },
+    "2": {
+     "offered": 2200,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 1300,
+     "taken_pct": 4
+    }
+   },
+   "slug": "iron-wave",
+   "smith": {
+    "1": {
+     "act_winrate": -9,
+     "offered": 4600,
+     "run_winrate": -2,
+     "taken_pct": 7
+    },
+    "2": {
+     "offered": 2600,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 1300,
+     "taken_pct": 1
+    }
+   }
+  },
+  "JUGGERNAUT_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 7,
+     "offered": 940,
+     "run_winrate": 0,
+     "taken_pct": 38
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 3300,
+     "run_winrate": -1,
+     "taken_pct": 17
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": 1,
+     "taken_pct": 16
+    }
+   },
+   "slug": "juggernaut",
+   "smith": {
+    "1": {
+     "act_winrate": 4,
+     "offered": 610,
+     "run_winrate": 0,
+     "taken_pct": 34
+    },
+    "2": {
+     "act_winrate": 5,
+     "offered": 770,
+     "run_winrate": -2,
+     "taken_pct": 17
+    },
+    "3": {
+     "offered": 650,
+     "taken_pct": 14
+    }
+   }
+  },
+  "JUGGLING_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 9600,
+     "run_winrate": -3,
+     "taken_pct": 6
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 3800,
+     "run_winrate": -2,
+     "taken_pct": 7
+    },
+    "3": {
+     "offered": 1700,
+     "run_winrate": 3,
+     "taken_pct": 7
+    }
+   },
+   "shop": {
+    "1": {
+     "offered": 4800,
+     "taken_pct": 2
+    },
+    "2": {
+     "offered": 2700,
+     "taken_pct": 3
+    },
+    "3": {
+     "offered": 1500,
+     "taken_pct": 5
+    }
+   },
+   "slug": "juggling",
+   "smith": {
+    "1": {
+     "act_winrate": -5,
+     "offered": 820,
+     "run_winrate": -4,
+     "taken_pct": 15
+    },
+    "2": {
+     "act_winrate": 0,
+     "offered": 880,
+     "run_winrate": 1,
+     "taken_pct": 12
+    },
+    "3": {
+     "offered": 700,
+     "taken_pct": 11
+    }
+   }
+  },
+  "MANGLE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 900,
+     "run_winrate": -1,
+     "taken_pct": 35
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 3300,
+     "run_winrate": -1,
+     "taken_pct": 14
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": -3,
+     "taken_pct": 12
+    }
+   },
+   "slug": "mangle",
+   "smith": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 640,
+     "run_winrate": -1,
+     "taken_pct": 27
+    },
+    "2": {
+     "act_winrate": -6,
+     "offered": 850,
+     "run_winrate": -3,
+     "taken_pct": 12
+    },
+    "3": {
+     "offered": 670,
+     "taken_pct": 10
+    }
+   }
+  },
+  "MOLTEN_FIST": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 27000,
+     "run_winrate": -2,
+     "taken_pct": 23
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 10000,
+     "run_winrate": -4,
+     "taken_pct": 17
+    },
+    "3": {
+     "offered": 4400,
+     "run_winrate": -4,
+     "taken_pct": 12
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 3800,
+     "run_winrate": 1,
+     "taken_pct": 13
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 2200,
+     "run_winrate": -6,
+     "taken_pct": 9
+    },
+    "3": {
+     "offered": 1200,
+     "run_winrate": 3,
+     "taken_pct": 9
+    }
+   },
+   "slug": "molten-fist",
+   "smith": {
+    "1": {
+     "offered": 7600,
+     "taken_pct": 1
+    },
+    "2": {
+     "offered": 5900,
+     "taken_pct": 0
+    },
+    "3": {
+     "offered": 3700,
+     "taken_pct": 0
+    }
+   }
+  },
+  "OFFERING": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 7,
+     "offered": 860,
+     "run_winrate": 7,
+     "taken_pct": 91
+    },
+    "2": {
+     "act_winrate": 8,
+     "offered": 3200,
+     "run_winrate": 5,
+     "taken_pct": 75
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": 4,
+     "taken_pct": 76
+    }
+   },
+   "slug": "offering",
+   "smith": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 1300,
+     "run_winrate": -1,
+     "taken_pct": 19
+    },
+    "2": {
+     "act_winrate": 3,
+     "offered": 3400,
+     "run_winrate": -1,
+     "taken_pct": 19
+    },
+    "3": {
+     "offered": 2800,
+     "run_winrate": -2,
+     "taken_pct": 18
+    }
+   }
+  },
+  "ONE_TWO_PUNCH_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 3,
+     "offered": 860,
+     "run_winrate": -4,
+     "taken_pct": 45
+    },
+    "2": {
+     "act_winrate": -6,
+     "offered": 3300,
+     "run_winrate": -6,
+     "taken_pct": 23
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -10,
+     "taken_pct": 22
+    }
+   },
+   "slug": "one-two-punch",
+   "smith": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 620,
+     "run_winrate": -2,
+     "taken_pct": 33
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 910,
+     "run_winrate": 4,
+     "taken_pct": 26
+    },
+    "3": {
+     "offered": 700,
+     "run_winrate": 1,
+     "taken_pct": 25
+    }
+   }
+  },
+  "PACTS_END": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 880,
+     "run_winrate": 1,
+     "taken_pct": 43
+    },
+    "2": {
+     "act_winrate": 2,
+     "offered": 3200,
+     "run_winrate": 0,
+     "taken_pct": 28
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -4,
+     "taken_pct": 23
+    }
+   },
+   "shop": {
+    "1": {
+     "offered": 510,
+     "taken_pct": 11
+    }
+   },
+   "slug": "pacts-end",
+   "smith": {
+    "1": {
+     "offered": 780,
+     "taken_pct": 10
+    },
+    "2": {
+     "offered": 1500,
+     "taken_pct": 5
+    },
+    "3": {
+     "offered": 1200,
+     "taken_pct": 2
+    }
+   }
+  },
+  "PERFECTED_STRIKE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 5,
+     "offered": 27000,
+     "run_winrate": 1,
+     "taken_pct": 26
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 10000,
+     "run_winrate": -3,
+     "taken_pct": 13
+    },
+    "3": {
+     "offered": 4300,
+     "run_winrate": -1,
+     "taken_pct": 10
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 4,
+     "offered": 3700,
+     "run_winrate": 0,
+     "taken_pct": 16
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 2100,
+     "run_winrate": -2,
+     "taken_pct": 8
+    },
+    "3": {
+     "offered": 1300,
+     "run_winrate": -9,
+     "taken_pct": 9
+    }
+   },
+   "slug": "perfected-strike",
+   "smith": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 7900,
+     "run_winrate": 3,
+     "taken_pct": 24
+    },
+    "2": {
+     "act_winrate": 3,
+     "offered": 3900,
+     "run_winrate": 3,
+     "taken_pct": 10
+    },
+    "3": {
+     "offered": 2100,
+     "run_winrate": 1,
+     "taken_pct": 7
+    }
+   }
+  },
+  "PILLAGE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 9400,
+     "run_winrate": -2,
+     "taken_pct": 29
+    },
+    "2": {
+     "act_winrate": -3,
+     "offered": 3600,
+     "run_winrate": -4,
+     "taken_pct": 23
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": -1,
+     "taken_pct": 15
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 2200,
+     "run_winrate": 0,
+     "taken_pct": 14
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 1300,
+     "run_winrate": -7,
+     "taken_pct": 11
+    },
+    "3": {
+     "offered": 710,
+     "taken_pct": 11
+    }
+   },
+   "slug": "pillage",
+   "smith": {
+    "1": {
+     "offered": 3700,
+     "taken_pct": 1
+    },
+    "2": {
+     "offered": 3100,
+     "taken_pct": 0
+    },
+    "3": {
+     "offered": 2000,
+     "taken_pct": 0
+    }
+   }
+  },
+  "POMMEL_STRIKE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 27000,
+     "run_winrate": 1,
+     "taken_pct": 61
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 10000,
+     "run_winrate": -1,
+     "taken_pct": 41
+    },
+    "3": {
+     "offered": 4400,
+     "run_winrate": -2,
+     "taken_pct": 27
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 3900,
+     "run_winrate": 0,
+     "taken_pct": 41
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 2100,
+     "run_winrate": -1,
+     "taken_pct": 29
+    },
+    "3": {
+     "offered": 1200,
+     "run_winrate": 0,
+     "taken_pct": 21
+    }
+   },
+   "slug": "pommel-strike",
+   "smith": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 18000,
+     "run_winrate": 2,
+     "taken_pct": 26
+    },
+    "2": {
+     "act_winrate": 5,
+     "offered": 10000,
+     "run_winrate": 4,
+     "taken_pct": 18
+    },
+    "3": {
+     "offered": 5600,
+     "run_winrate": 4,
+     "taken_pct": 16
+    }
+   }
+  },
+  "PRIMAL_FORCE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 16,
+     "offered": 910,
+     "run_winrate": 2,
+     "taken_pct": 31
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 3300,
+     "run_winrate": 0,
+     "taken_pct": 9
+    },
+    "3": {
+     "offered": 1500,
+     "taken_pct": 3
+    }
+   },
+   "slug": "primal-force",
+   "smith": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 830,
+     "run_winrate": -1,
+     "taken_pct": 40
+    },
+    "2": {
+     "offered": 640,
+     "taken_pct": 13
+    }
+   }
+  },
+  "PYRE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 9,
+     "offered": 940,
+     "run_winrate": 0,
+     "taken_pct": 61
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 3300,
+     "run_winrate": 1,
+     "taken_pct": 39
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -1,
+     "taken_pct": 36
+    }
+   },
+   "slug": "pyre",
+   "smith": {
+    "1": {
+     "act_winrate": 2,
+     "offered": 730,
+     "run_winrate": 1,
+     "taken_pct": 56
+    },
+    "2": {
+     "act_winrate": 2,
+     "offered": 1200,
+     "run_winrate": 2,
+     "taken_pct": 53
+    },
+    "3": {
+     "offered": 880,
+     "run_winrate": 3,
+     "taken_pct": 51
+    }
+   }
+  },
+  "RAGE_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 9500,
+     "run_winrate": -1,
+     "taken_pct": 43
+    },
+    "2": {
+     "act_winrate": -5,
+     "offered": 3500,
+     "run_winrate": -4,
+     "taken_pct": 36
+    },
+    "3": {
+     "offered": 1300,
+     "run_winrate": -6,
+     "taken_pct": 29
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 2400,
+     "run_winrate": -2,
+     "taken_pct": 22
+    },
+    "2": {
+     "act_winrate": -3,
+     "offered": 1200,
+     "run_winrate": 0,
+     "taken_pct": 22
+    },
+    "3": {
+     "offered": 790,
+     "run_winrate": 4,
+     "taken_pct": 19
+    }
+   },
+   "slug": "rage",
+   "smith": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 4900,
+     "run_winrate": 1,
+     "taken_pct": 22
+    },
+    "2": {
+     "act_winrate": 0,
+     "offered": 3600,
+     "run_winrate": 5,
+     "taken_pct": 11
+    },
+    "3": {
+     "offered": 2300,
+     "run_winrate": -2,
+     "taken_pct": 8
+    }
+   }
+  },
+  "RAMPAGE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 9600,
+     "run_winrate": -4,
+     "taken_pct": 13
+    },
+    "2": {
+     "act_winrate": -8,
+     "offered": 3500,
+     "run_winrate": -9,
+     "taken_pct": 3
+    },
+    "3": {
+     "offered": 1500,
+     "taken_pct": 2
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 2300,
+     "run_winrate": -2,
+     "taken_pct": 5
+    },
+    "2": {
+     "offered": 1200,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 730,
+     "taken_pct": 3
+    }
+   },
+   "slug": "rampage",
+   "smith": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 1400,
+     "run_winrate": -3,
+     "taken_pct": 21
+    },
+    "2": {
+     "offered": 610,
+     "taken_pct": 4
+    }
+   }
+  },
+  "RUPTURE_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -5,
+     "offered": 9600,
+     "run_winrate": -3,
+     "taken_pct": 28
+    },
+    "2": {
+     "act_winrate": -5,
+     "offered": 3800,
+     "run_winrate": -4,
+     "taken_pct": 26
+    },
+    "3": {
+     "offered": 1700,
+     "run_winrate": -8,
+     "taken_pct": 20
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 4900,
+     "run_winrate": -2,
+     "taken_pct": 17
+    },
+    "2": {
+     "act_winrate": -7,
+     "offered": 2800,
+     "run_winrate": -7,
+     "taken_pct": 18
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -5,
+     "taken_pct": 15
+    }
+   },
+   "slug": "rupture",
+   "smith": {
+    "1": {
+     "act_winrate": 2,
+     "offered": 2900,
+     "run_winrate": 2,
+     "taken_pct": 38
+    },
+    "2": {
+     "act_winrate": 3,
+     "offered": 2200,
+     "run_winrate": 3,
+     "taken_pct": 33
+    },
+    "3": {
+     "offered": 1300,
+     "run_winrate": 2,
+     "taken_pct": 27
+    }
+   }
+  },
+  "SECOND_WIND": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -6,
+     "offered": 9600,
+     "run_winrate": -1,
+     "taken_pct": 26
+    },
+    "2": {
+     "act_winrate": -3,
+     "offered": 3500,
+     "run_winrate": 0,
+     "taken_pct": 25
+    },
+    "3": {
+     "offered": 1400,
+     "run_winrate": -2,
+     "taken_pct": 26
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -7,
+     "offered": 2400,
+     "run_winrate": -2,
+     "taken_pct": 12
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 1400,
+     "run_winrate": 3,
+     "taken_pct": 15
+    },
+    "3": {
+     "offered": 800,
+     "run_winrate": 2,
+     "taken_pct": 18
+    }
+   },
+   "slug": "second-wind",
+   "smith": {
+    "1": {
+     "act_winrate": -3,
+     "offered": 3200,
+     "run_winrate": -4,
+     "taken_pct": 5
+    },
+    "2": {
+     "offered": 2900,
+     "taken_pct": 3
+    },
+    "3": {
+     "offered": 2100,
+     "taken_pct": 4
+    }
+   }
+  },
+  "SETUP_STRIKE_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 27000,
+     "run_winrate": -2,
+     "taken_pct": 13
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 10000,
+     "run_winrate": -2,
+     "taken_pct": 5
+    },
+    "3": {
+     "offered": 4400,
+     "run_winrate": -5,
+     "taken_pct": 4
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 3900,
+     "run_winrate": -1,
+     "taken_pct": 6
+    },
+    "2": {
+     "offered": 2200,
+     "taken_pct": 4
+    },
+    "3": {
+     "offered": 1200,
+     "taken_pct": 5
+    }
+   },
+   "slug": "setup-strike",
+   "smith": {
+    "1": {
+     "act_winrate": -7,
+     "offered": 4500,
+     "run_winrate": -2,
+     "taken_pct": 7
+    },
+    "2": {
+     "offered": 2600,
+     "taken_pct": 2
+    },
+    "3": {
+     "offered": 1500,
+     "taken_pct": 2
+    }
+   }
+  },
+  "SHRUG_IT_OFF": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 27000,
+     "run_winrate": 1,
+     "taken_pct": 40
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 10000,
+     "run_winrate": -1,
+     "taken_pct": 28
+    },
+    "3": {
+     "offered": 4300,
+     "run_winrate": -2,
+     "taken_pct": 16
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 7000,
+     "run_winrate": 1,
+     "taken_pct": 25
+    },
+    "2": {
+     "act_winrate": -3,
+     "offered": 4100,
+     "run_winrate": -2,
+     "taken_pct": 17
+    },
+    "3": {
+     "offered": 2300,
+     "run_winrate": -3,
+     "taken_pct": 13
+    }
+   },
+   "slug": "shrug-it-off",
+   "smith": {
+    "1": {
+     "act_winrate": -5,
+     "offered": 14000,
+     "run_winrate": -1,
+     "taken_pct": 4
+    },
+    "2": {
+     "act_winrate": 3,
+     "offered": 11000,
+     "run_winrate": 4,
+     "taken_pct": 2
+    },
+    "3": {
+     "offered": 6800,
+     "taken_pct": 1
+    }
+   }
+  },
+  "SPITE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 3,
+     "offered": 9400,
+     "run_winrate": -1,
+     "taken_pct": 14
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 3500,
+     "run_winrate": -7,
+     "taken_pct": 11
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": -13,
+     "taken_pct": 7
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 2200,
+     "run_winrate": -2,
+     "taken_pct": 6
+    },
+    "2": {
+     "offered": 1300,
+     "taken_pct": 4
+    },
+    "3": {
+     "offered": 730,
+     "taken_pct": 5
+    }
+   },
+   "slug": "spite",
+   "smith": {
+    "1": {
+     "act_winrate": -8,
+     "offered": 1700,
+     "run_winrate": -4,
+     "taken_pct": 11
+    },
+    "2": {
+     "offered": 1300,
+     "taken_pct": 5
+    },
+    "3": {
+     "offered": 800,
+     "taken_pct": 4
+    }
+   }
+  },
+  "STAMPEDE_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 4,
+     "offered": 9900,
+     "run_winrate": -2,
+     "taken_pct": 25
+    },
+    "2": {
+     "act_winrate": -7,
+     "offered": 3800,
+     "run_winrate": -5,
+     "taken_pct": 16
+    },
+    "3": {
+     "offered": 1700,
+     "run_winrate": -9,
+     "taken_pct": 12
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 5,
+     "offered": 4900,
+     "run_winrate": -2,
+     "taken_pct": 13
+    },
+    "2": {
+     "act_winrate": -5,
+     "offered": 2900,
+     "run_winrate": -4,
+     "taken_pct": 11
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": -11,
+     "taken_pct": 11
+    }
+   },
+   "slug": "stampede",
+   "smith": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 2600,
+     "run_winrate": -1,
+     "taken_pct": 65
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 1500,
+     "run_winrate": -3,
+     "taken_pct": 40
+    },
+    "3": {
+     "offered": 790,
+     "run_winrate": -6,
+     "taken_pct": 25
+    }
+   }
+  },
+  "STOKE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 9,
+     "offered": 840,
+     "run_winrate": 6,
+     "taken_pct": 62
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 3200,
+     "run_winrate": 4,
+     "taken_pct": 39
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": 2,
+     "taken_pct": 35
+    }
+   },
+   "slug": "stoke",
+   "smith": {
+    "1": {
+     "act_winrate": 3,
+     "offered": 770,
+     "run_winrate": 3,
+     "taken_pct": 68
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 1300,
+     "run_winrate": 2,
+     "taken_pct": 50
+    },
+    "3": {
+     "offered": 900,
+     "run_winrate": 3,
+     "taken_pct": 46
+    }
+   }
+  },
+  "STOMP": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 9500,
+     "run_winrate": -1,
+     "taken_pct": 34
+    },
+    "2": {
+     "act_winrate": -7,
+     "offered": 3600,
+     "run_winrate": -5,
+     "taken_pct": 16
+    },
+    "3": {
+     "offered": 1500,
+     "taken_pct": 6
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 2200,
+     "run_winrate": -2,
+     "taken_pct": 12
+    },
+    "2": {
+     "offered": 1300,
+     "taken_pct": 7
+    },
+    "3": {
+     "offered": 760,
+     "taken_pct": 5
+    }
+   },
+   "slug": "stomp",
+   "smith": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 4400,
+     "run_winrate": -4,
+     "taken_pct": 6
+    },
+    "2": {
+     "offered": 2900,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 1600,
+     "taken_pct": 1
+    }
+   }
+  },
+  "STONE_ARMOR": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 9600,
+     "run_winrate": 2,
+     "taken_pct": 31
+    },
+    "2": {
+     "act_winrate": 0,
+     "offered": 3800,
+     "run_winrate": 0,
+     "taken_pct": 21
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -1,
+     "taken_pct": 18
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -5,
+     "offered": 5000,
+     "run_winrate": -3,
+     "taken_pct": 13
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 2800,
+     "run_winrate": 3,
+     "taken_pct": 11
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": 3,
+     "taken_pct": 12
+    }
+   },
+   "slug": "stone-armor",
+   "smith": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 3400,
+     "run_winrate": 1,
+     "taken_pct": 29
+    },
+    "2": {
+     "act_winrate": 5,
+     "offered": 2500,
+     "run_winrate": 9,
+     "taken_pct": 15
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": 4,
+     "taken_pct": 14
+    }
+   }
+  },
+  "STRIKE_IRONCLAD": {
+   "slug": "strike-ironclad",
+   "smith": {
+    "1": {
+     "offered": 71000,
+     "taken_pct": 0
+    },
+    "2": {
+     "offered": 29000,
+     "taken_pct": 0
+    },
+    "3": {
+     "offered": 15000,
+     "taken_pct": 0
+    }
+   }
+  },
+  "SWORD_BOOMERANG": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 2,
+     "offered": 27000,
+     "run_winrate": -1,
+     "taken_pct": 10
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 10000,
+     "run_winrate": 1,
+     "taken_pct": 5
+    },
+    "3": {
+     "offered": 4300,
+     "run_winrate": -10,
+     "taken_pct": 4
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 3800,
+     "run_winrate": -1,
+     "taken_pct": 5
+    },
+    "2": {
+     "offered": 2100,
+     "taken_pct": 3
+    },
+    "3": {
+     "offered": 1200,
+     "taken_pct": 4
+    }
+   },
+   "slug": "sword-boomerang",
+   "smith": {
+    "1": {
+     "act_winrate": 4,
+     "offered": 3200,
+     "run_winrate": 2,
+     "taken_pct": 15
+    },
+    "2": {
+     "act_winrate": 5,
+     "offered": 1900,
+     "run_winrate": 1,
+     "taken_pct": 6
+    },
+    "3": {
+     "offered": 1100,
+     "taken_pct": 6
+    }
+   }
+  },
+  "TAUNT": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 15000,
+     "run_winrate": 1,
+     "taken_pct": 60
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 5900,
+     "run_winrate": -2,
+     "taken_pct": 41
+    },
+    "3": {
+     "offered": 2500,
+     "run_winrate": -1,
+     "taken_pct": 23
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 4,
+     "offered": 3800,
+     "run_winrate": 1,
+     "taken_pct": 40
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 2300,
+     "run_winrate": -1,
+     "taken_pct": 24
+    },
+    "3": {
+     "offered": 1300,
+     "run_winrate": 1,
+     "taken_pct": 19
+    }
+   },
+   "slug": "taunt",
+   "smith": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 10000,
+     "run_winrate": 1,
+     "taken_pct": 29
+    },
+    "2": {
+     "act_winrate": 3,
+     "offered": 6800,
+     "run_winrate": 1,
+     "taken_pct": 12
+    },
+    "3": {
+     "offered": 4100,
+     "run_winrate": 1,
+     "taken_pct": 8
+    }
+   }
+  },
+  "TEAR_ASUNDER": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 7,
+     "offered": 900,
+     "run_winrate": 5,
+     "taken_pct": 37
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 3300,
+     "run_winrate": -3,
+     "taken_pct": 21
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -2,
+     "taken_pct": 20
+    }
+   },
+   "slug": "tear-asunder",
+   "smith": {
+    "1": {
+     "act_winrate": 3,
+     "offered": 620,
+     "run_winrate": -1,
+     "taken_pct": 21
+    },
+    "2": {
+     "offered": 1000,
+     "taken_pct": 9
+    },
+    "3": {
+     "offered": 850,
+     "taken_pct": 9
+    }
+   }
+  },
+  "THRASH": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 11,
+     "offered": 930,
+     "run_winrate": 4,
+     "taken_pct": 75
+    },
+    "2": {
+     "act_winrate": -3,
+     "offered": 3300,
+     "run_winrate": -1,
+     "taken_pct": 50
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -3,
+     "taken_pct": 39
+    }
+   },
+   "slug": "thrash",
+   "smith": {
+    "1": {
+     "act_winrate": -6,
+     "offered": 1200,
+     "run_winrate": -6,
+     "taken_pct": 13
+    },
+    "2": {
+     "offered": 2800,
+     "taken_pct": 3
+    },
+    "3": {
+     "offered": 2200,
+     "taken_pct": 3
+    }
+   }
+  },
+  "THUNDERCLAP": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 27000,
+     "run_winrate": -2,
+     "taken_pct": 12
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 10000,
+     "run_winrate": -4,
+     "taken_pct": 5
+    },
+    "3": {
+     "offered": 4300,
+     "run_winrate": -1,
+     "taken_pct": 3
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 3700,
+     "run_winrate": 2,
+     "taken_pct": 7
+    },
+    "2": {
+     "offered": 2100,
+     "taken_pct": 3
+    },
+    "3": {
+     "offered": 1200,
+     "taken_pct": 4
+    }
+   },
+   "slug": "thunderclap",
+   "smith": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 4300,
+     "run_winrate": 1,
+     "taken_pct": 3
+    },
+    "2": {
+     "offered": 2800,
+     "taken_pct": 0
+    },
+    "3": {
+     "offered": 1600,
+     "taken_pct": 0
+    }
+   }
+  },
+  "TREMBLE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 27000,
+     "run_winrate": -1,
+     "taken_pct": 43
+    },
+    "2": {
+     "act_winrate": -1,
+     "offered": 10000,
+     "run_winrate": -1,
+     "taken_pct": 30
+    },
+    "3": {
+     "offered": 4200,
+     "run_winrate": 0,
+     "taken_pct": 20
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 7200,
+     "run_winrate": -1,
+     "taken_pct": 32
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 4100,
+     "run_winrate": -1,
+     "taken_pct": 22
+    },
+    "3": {
+     "offered": 2300,
+     "run_winrate": -1,
+     "taken_pct": 18
+    }
+   },
+   "slug": "tremble",
+   "smith": {
+    "1": {
+     "act_winrate": -6,
+     "offered": 15000,
+     "run_winrate": -5,
+     "taken_pct": 4
+    },
+    "2": {
+     "act_winrate": 5,
+     "offered": 12000,
+     "run_winrate": 2,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 7400,
+     "run_winrate": 7,
+     "taken_pct": 1
+    }
+   }
+  },
+  "TRUE_GRIT": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -6,
+     "offered": 27000,
+     "run_winrate": -2,
+     "taken_pct": 30
+    },
+    "2": {
+     "act_winrate": -6,
+     "offered": 10000,
+     "run_winrate": -4,
+     "taken_pct": 17
+    },
+    "3": {
+     "offered": 4300,
+     "run_winrate": -4,
+     "taken_pct": 9
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -7,
+     "offered": 7100,
+     "run_winrate": -1,
+     "taken_pct": 18
+    },
+    "2": {
+     "act_winrate": -5,
+     "offered": 4100,
+     "run_winrate": -5,
+     "taken_pct": 11
+    },
+    "3": {
+     "offered": 2300,
+     "run_winrate": -4,
+     "taken_pct": 9
+    }
+   },
+   "slug": "true-grit",
+   "smith": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 8800,
+     "run_winrate": 0,
+     "taken_pct": 48
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 4200,
+     "run_winrate": -2,
+     "taken_pct": 27
+    },
+    "3": {
+     "offered": 2100,
+     "run_winrate": 0,
+     "taken_pct": 19
+    }
+   }
+  },
+  "TWIN_STRIKE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 2,
+     "offered": 27000,
+     "run_winrate": 0,
+     "taken_pct": 12
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 10000,
+     "run_winrate": -2,
+     "taken_pct": 6
+    },
+    "3": {
+     "offered": 4200,
+     "run_winrate": -5,
+     "taken_pct": 4
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 5,
+     "offered": 3900,
+     "run_winrate": -4,
+     "taken_pct": 7
+    },
+    "2": {
+     "act_winrate": -11,
+     "offered": 2200,
+     "run_winrate": -7,
+     "taken_pct": 5
+    },
+    "3": {
+     "offered": 1200,
+     "taken_pct": 5
+    }
+   },
+   "slug": "twin-strike",
+   "smith": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 4300,
+     "run_winrate": 5,
+     "taken_pct": 4
+    },
+    "2": {
+     "offered": 2900,
+     "taken_pct": 1
+    },
+    "3": {
+     "offered": 1700,
+     "taken_pct": 1
+    }
+   }
+  },
+  "UNMOVABLE": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 6,
+     "offered": 900,
+     "run_winrate": 4,
+     "taken_pct": 85
+    },
+    "2": {
+     "act_winrate": 2,
+     "offered": 3300,
+     "run_winrate": 1,
+     "taken_pct": 64
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": 0,
+     "taken_pct": 59
+    }
+   },
+   "slug": "unmovable",
+   "smith": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 1000,
+     "run_winrate": 0,
+     "taken_pct": 72
+    },
+    "2": {
+     "act_winrate": 1,
+     "offered": 2000,
+     "run_winrate": 1,
+     "taken_pct": 62
+    },
+    "3": {
+     "offered": 1300,
+     "run_winrate": -1,
+     "taken_pct": 50
+    }
+   }
+  },
+  "UNRELENTING": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 10,
+     "offered": 9700,
+     "run_winrate": 3,
+     "taken_pct": 24
+    },
+    "2": {
+     "act_winrate": -8,
+     "offered": 3600,
+     "run_winrate": -9,
+     "taken_pct": 10
+    },
+    "3": {
+     "offered": 1500,
+     "taken_pct": 5
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 6,
+     "offered": 2200,
+     "run_winrate": -1,
+     "taken_pct": 9
+    },
+    "2": {
+     "offered": 1200,
+     "taken_pct": 5
+    },
+    "3": {
+     "offered": 730,
+     "taken_pct": 4
+    }
+   },
+   "slug": "unrelenting",
+   "smith": {
+    "1": {
+     "act_winrate": -2,
+     "offered": 3500,
+     "run_winrate": -1,
+     "taken_pct": 12
+    },
+    "2": {
+     "offered": 2100,
+     "taken_pct": 2
+    },
+    "3": {
+     "offered": 1200,
+     "taken_pct": 1
+    }
+   }
+  },
+  "UPPERCUT": {
+   "card_reward": {
+    "1": {
+     "act_winrate": 4,
+     "offered": 9400,
+     "run_winrate": 3,
+     "taken_pct": 50
+    },
+    "2": {
+     "act_winrate": 0,
+     "offered": 3500,
+     "run_winrate": 1,
+     "taken_pct": 28
+    },
+    "3": {
+     "offered": 1500,
+     "run_winrate": -3,
+     "taken_pct": 19
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": 4,
+     "offered": 2200,
+     "run_winrate": 1,
+     "taken_pct": 24
+    },
+    "2": {
+     "act_winrate": -4,
+     "offered": 1200,
+     "run_winrate": 1,
+     "taken_pct": 12
+    },
+    "3": {
+     "offered": 720,
+     "taken_pct": 13
+    }
+   },
+   "slug": "uppercut",
+   "smith": {
+    "1": {
+     "act_winrate": 1,
+     "offered": 5000,
+     "run_winrate": 2,
+     "taken_pct": 52
+    },
+    "2": {
+     "act_winrate": 5,
+     "offered": 2400,
+     "run_winrate": 1,
+     "taken_pct": 26
+    },
+    "3": {
+     "offered": 1300,
+     "run_winrate": 4,
+     "taken_pct": 19
+    }
+   }
+  },
+  "VICIOUS_CARD": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -10,
+     "offered": 9600,
+     "run_winrate": -2,
+     "taken_pct": 34
+    },
+    "2": {
+     "act_winrate": -2,
+     "offered": 3900,
+     "run_winrate": -1,
+     "taken_pct": 34
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": -3,
+     "taken_pct": 28
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -7,
+     "offered": 4900,
+     "run_winrate": 0,
+     "taken_pct": 17
+    },
+    "2": {
+     "act_winrate": 2,
+     "offered": 2800,
+     "run_winrate": 4,
+     "taken_pct": 23
+    },
+    "3": {
+     "offered": 1600,
+     "run_winrate": 1,
+     "taken_pct": 22
+    }
+   },
+   "slug": "vicious",
+   "smith": {
+    "1": {
+     "act_winrate": 0,
+     "offered": 3900,
+     "run_winrate": 3,
+     "taken_pct": 22
+    },
+    "2": {
+     "act_winrate": 6,
+     "offered": 3500,
+     "run_winrate": 8,
+     "taken_pct": 22
+    },
+    "3": {
+     "offered": 2300,
+     "run_winrate": 7,
+     "taken_pct": 22
+    }
+   }
+  },
+  "WHIRLWIND": {
+   "card_reward": {
+    "1": {
+     "act_winrate": -4,
+     "offered": 9600,
+     "run_winrate": -1,
+     "taken_pct": 34
+    },
+    "2": {
+     "act_winrate": -3,
+     "offered": 3500,
+     "run_winrate": -5,
+     "taken_pct": 16
+    },
+    "3": {
+     "offered": 1400,
+     "taken_pct": 7
+    }
+   },
+   "shop": {
+    "1": {
+     "act_winrate": -7,
+     "offered": 2200,
+     "run_winrate": -2,
+     "taken_pct": 16
+    },
+    "2": {
+     "offered": 1200,
+     "taken_pct": 7
+    },
+    "3": {
+     "offered": 750,
+     "taken_pct": 5
+    }
+   },
+   "slug": "whirlwind",
+   "smith": {
+    "1": {
+     "act_winrate": -1,
+     "offered": 3600,
+     "run_winrate": 0,
+     "taken_pct": 35
+    },
+    "2": {
+     "act_winrate": 0,
+     "offered": 1700,
+     "run_winrate": -3,
+     "taken_pct": 13
+    },
+    "3": {
+     "offered": 960,
+     "taken_pct": 5
+    }
+   }
+  }
+ },
+ "character": "ironclad",
+ "source": "https://sts2.untapped.gg/en/cards"
+}

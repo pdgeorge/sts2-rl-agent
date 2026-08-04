@@ -199,13 +199,13 @@ def choose_card_index(state: Mapping[str, Any], pilot, **kwargs) -> int | None:
     logger.info(
         "draft: %s",
         "  ".join(
-            f"{'SKIP' if s.card is None else s.label}={s.score:+.3f}"
+            f"{'SKIP' if s.card is None else s.label}={s.score:+.2f}"
             for s in ranked
         ),
     )
     if len(ranked) >= 2:
         gap = ranked[0].score - ranked[1].score
-        if gap < 0.01:
+        if gap < 0.15:
             logger.info(
                 "draft: margin %.4f -- too close to call, pick is effectively "
                 "arbitrary", gap,

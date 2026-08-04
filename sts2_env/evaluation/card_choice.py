@@ -149,13 +149,65 @@ If a better pilot ever shows defence actively helping, this graduates from prior
 to result and the comment should say so.
 """
 
-DEFENCE_TOLERANCE = 0.08
+DEFENCE_TOLERANCE = 1.0
 """How far behind the winner a defensive card may sit and still be taken.
 
-In score units, which are gauntlet HP over max HP, so roughly 6 HP on an 80 HP
-bar. For scale: Uppercut beat skipping by 0.135 on the real floor-11 deck, so at
-this tolerance the floor would NOT have overridden that pick, and only fires on a
-genuine near-tie.
+One run-winrate point, which is 0.08 in the gauntlet-HP units this used to be
+scored in -- the same tolerance restated, not a loosened one. It fires on a
+near-tie and not otherwise.
+
+THE ACT 2 FLOOR NO LONGER FIRES AGAINST A STRONG ALTERNATIVE, and that is a real
+behaviour change rather than an oversight:
+
+    UPPERCUT     act 2 draft  run +1%   3,500 offers   picked ...  ->  +0.41
+    BLOOD_WALL   act 2 draft  run -4%  10,000 offers   picked 22%  ->  -2.67
+                                                            gap = 3.08
+
+3.08 points apart, so at a 1.0 tolerance Blood Wall is not promoted. Raising the
+tolerance to 3.5 to force it was tried and reverted: it also promoted BULWARK
+over UPPERCUT on a floor-11 deck, which is precisely the hijacking the tolerance
+exists to prevent. A prior cannot be given enough room to beat real data without
+also giving it room to beat everything else.
+
+The measurement disagrees with the act 2 floor consistently:
+
+    act 1 defence    FLAME_BARRIER +0% (61% pick)   SHRUG_IT_OFF +1%   IMPERVIOUS +6%
+    act 2 defence    FLAME_BARRIER -4% (46% pick)   SHRUG_IT_OFF -1%   BLOOD_WALL -4%
+
+The act 1 floor is supported and now graduates from prior to result: near-neutral
+to positive cards at high take rates, which is what "free, and buys something the
+sim cannot see" looks like once someone checks. It still fires, because act 1
+defensive cards are not 3 points behind anything.
+
+The act 2 floor of two is NOT supported by anything here. It remains in
+DEFENCE_FLOOR_BY_ACT because it was asked for twice and the failure it targets --
+dying to a 40-damage hit with no block -- is a failure of THIS agent, which
+untapped's human population does not share. But it will now only promote a
+defensive card that is genuinely close, which on current data it rarely is.
+
+Real reasons the human number might not transfer: a player converts block with
+sequencing and potions the pilot cannot, and by act 2 a human is executing a deck
+plan that a reactive block card dilutes -- while this agent has no plan to
+dilute. None of that is measured. If the act 2 floor is ever dropped, drop this
+back to 1.0 with it; it exists only to let the floor fire.
+"""
+
+BATTERY_POINTS_PER_UNIT = 5.0
+"""Run-winrate points per unit of battery score. The rate at which simulation is
+allowed to argue with tens of thousands of real runs.
+
+The battery's spread across one reward screen is ~0.2-0.3 units, so at 5 it moves
+a candidate by about a point. Priors between candidates on a screen typically
+differ by 1-3 points. So the prior sets the ordering, and the battery adjusts
+within it -- which is what "prior leads" has to mean numerically.
+
+It was 12 first, giving the battery ~3 points of swing. That is more than most
+prior gaps, so the sim still led and the prior was decoration. Worth stating
+because "we added a prior" and "the prior decides anything" are different claims
+and only the second one is worth having.
+
+Raise it and simulation overrules real data; drop it to 0 and the agent drafts
+off a tier list with no idea what is already in its deck.
 """
 
 HP_WEIGHT = 0.5
@@ -174,6 +226,9 @@ class CandidateScore:
     win_rate: float
     hp_lost: float
     fights: int
+    prior: float = 0.0
+    """Untapped's contribution to `score`, already included in it. Kept separate
+    so a log line can say whether the sim or the real-run data made the call."""
 
     @property
     def label(self) -> str:
@@ -312,6 +367,7 @@ def rank_candidates(
     seeds: Sequence[int] = DEFAULT_SEEDS,
     max_hp: int = IRONCLAD_STARTING_HP,
     include_skip: bool = True,
+    use_priors: bool = True,
 ) -> list[CandidateScore]:
     """Rank the cards on offer, best first.
 
@@ -319,6 +375,11 @@ def rank_candidates(
     card is a real option rather than something the caller has to special-case.
     Skipping genuinely wins sometimes -- a bad card is worse than no card, and
     that is a thing this can measure rather than assume.
+
+    `use_priors` folds in untapped's real-run winrate for each card. The prior
+    leads on card quality and the battery adjusts for deck fit, because the two
+    are good at different questions: 16,000 real offers know Taunt beats Fiend
+    Fire, and only the simulation knows the deck already holds three Taunts.
     """
     tiers = tiers_for_floor(floor)
     options = list(candidates) + ([None] if include_skip else [])
@@ -329,8 +390,60 @@ def rank_candidates(
         )
         for card in options
     ]
+    scored = _to_winrate_points(scored, floor, use_priors)
     scored.sort(key=lambda s: s.score, reverse=True)
     return apply_composition_rules(scored, deck, floor)
+
+
+def _to_winrate_points(
+    scored: list[CandidateScore], floor: int, use_priors: bool
+) -> list[CandidateScore]:
+    """Rescore everything in percentage points of run win rate.
+
+    The prior sets the units because it is the quantity with 27,000 runs behind
+    it, and the battery is converted onto that scale as an adjustment. Doing it
+    the other way -- adding a prior into battery units -- was the first attempt
+    and it did nothing at all:
+
+        battery only       FIEND_FIRE +0.636   TAUNT +0.395
+        prior as an add-on FIEND_FIRE +0.629   TAUNT +0.425   (still loses)
+
+    A 0.24 battery gap cannot be overturned by a 0.03 nudge. If the prior is
+    meant to lead, it has to be the base quantity, not a tiebreak.
+
+    ZERO IS SKIPPING
+
+    Untapped's deltas are already relative to not taking the card, so skip is the
+    natural origin: its battery score becomes the reference and it lands at 0.0.
+    A candidate's score then reads directly as "run win rate points against
+    declining", which is what the decision actually is. Without a skip option the
+    mean stands in, and only the ordering is meaningful.
+    """
+    import dataclasses
+
+    from sts2_env.evaluation.card_priors import prior_score
+
+    if not scored:
+        return scored
+
+    skips = [s.score for s in scored if s.card is None]
+    reference = skips[0] if skips else sum(s.score for s in scored) / len(scored)
+
+    rescored = []
+    for candidate in scored:
+        prior = 0.0
+        if use_priors and candidate.card is not None:
+            # None means untapped has never seen this card -- a patch's new card,
+            # or one our enum names differently. It keeps a zero prior and is
+            # ranked on the battery alone, rather than being scored as average.
+            prior = prior_score(
+                candidate.card, decision="card_reward", floor=floor
+            ) or 0.0
+        adjustment = (candidate.score - reference) * BATTERY_POINTS_PER_UNIT
+        rescored.append(
+            dataclasses.replace(candidate, score=prior + adjustment, prior=prior)
+        )
+    return rescored
 
 
 def best_index(ranked: Sequence[CandidateScore], candidates: Sequence) -> int | None:
