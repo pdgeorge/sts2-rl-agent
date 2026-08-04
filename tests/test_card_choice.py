@@ -265,9 +265,26 @@ def test_rest_value_is_capped_by_missing_hp():
     """At full HP a rest is worth nothing. A 50%-threshold rule takes it anyway."""
     from sts2_env.evaluation.rest_choice import rest_heal_value
 
-    assert rest_heal_value(30, 80) == 24.0     # floor(80*0.3)
-    assert rest_heal_value(78, 80) == 2.0      # capped by what is missing
     assert rest_heal_value(80, 80) == 0.0
+    assert rest_heal_value(78, 80) < 6.0       # only 2 hp is missing to restore
+
+
+def test_rest_value_is_worth_most_crossing_the_danger_zone():
+    """Measured: survival is ~3% at half HP and ~67% at 80%, so the same 24 hp
+    restored is worth several times more landing in that band than below it.
+
+    Pinned because flat `min(heal, missing_hp)` priced all three identically, and
+    that is the pricing that let a rest at 30% look as good as a rest at 50%
+    when one leaves you dead and the other does not.
+    """
+    from sts2_env.evaluation.rest_choice import rest_heal_value
+
+    deep = rest_heal_value(20, 80)      # 25% -> 55%, still likely dead
+    band = rest_heal_value(40, 80)      # 50% -> 80%, the steep stretch
+    topped = rest_heal_value(72, 80)    # 90% -> 100%, mostly wasted
+
+    assert band > 2 * deep
+    assert band > 2 * topped
 
 
 def test_upgrade_value_scales_with_fights_remaining():
@@ -541,3 +558,47 @@ def test_rest_evaluates_distinct_cards_not_the_first_n():
     # one entry per distinct card, so nine starter cards do not eat the budget
     strikes = [l for l in labels if "STRIKE_IRONCLAD" in l]
     assert len(strikes) <= 1
+
+
+def test_rest_option_index_points_into_the_callers_list():
+    """`index` is a position in `upgradable`, not in the deduplicated list.
+
+    A live bug: dedup collapsed nine starter cards into two entries, so the third
+    distinct card came back as index 2, and `from_bridge` mapped that through the
+    *offered* list and upgraded a Defend. It ranked correctly and upgraded
+    something else, which is the worst shape of wrong -- the logs looked right.
+    """
+    from sts2_env.cards.factory import create_card
+    from sts2_env.cards.ironclad import create_ironclad_starter_deck
+    from sts2_env.core.enums import CardId
+    from sts2_env.evaluation.pilots import greedy_pilot
+    from sts2_env.evaluation.rest_choice import rank_rest_options
+
+    deck = create_ironclad_starter_deck() + [create_card(CardId.IRON_WAVE)]
+    ranked = rank_rest_options(
+        deck, list(deck), greedy_pilot, current_hp=70, floor=6, seeds=(0,),
+    )
+    for option in ranked:
+        if option.kind == "upgrade":
+            assert deck[option.index].card_id == option.card.card_id
+
+
+def test_starter_upgrades_rank_below_resting():
+    """pdgeorge's rule: if Strike and Defend are all that is on offer, rest.
+
+    Not measured -- at high HP the arithmetic prefers Strike+ because the heal it
+    is compared against is mostly wasted. That is true and it is still the wrong
+    move, so the prior is encoded rather than derived.
+    """
+    from sts2_env.cards.ironclad import create_ironclad_starter_deck
+    from sts2_env.evaluation.pilots import greedy_pilot
+    from sts2_env.evaluation.rest_choice import LOW_PRIORITY_UPGRADES, rank_rest_options
+
+    deck = create_ironclad_starter_deck()
+    starters = [c for c in deck if c.card_id in LOW_PRIORITY_UPGRADES]
+    assert starters, "starter deck should contain Strikes and Defends"
+
+    ranked = rank_rest_options(
+        deck, starters, greedy_pilot, current_hp=55, floor=6, seeds=(0, 1),
+    )
+    assert ranked[0].kind == "rest"

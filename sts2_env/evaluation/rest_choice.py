@@ -44,6 +44,7 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from sts2_env.core.constants import IRONCLAD_STARTING_HP
+from sts2_env.core.enums import CardId
 from sts2_env.evaluation.battery import Pilot, Tier, score_cell
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,22 @@ REST_HEAL_FRACTION = 0.3
 Read from the same rule the simulator uses rather than hardcoded independently,
 because a second copy of a game constant is how this repo got a card reference
 that drifted from the decompile.
+"""
+
+LOW_PRIORITY_UPGRADES = frozenset(
+    c for c in CardId
+    if c.name.startswith("STRIKE_") or c.name.startswith("DEFEND_")
+)
+"""Every character's basic Strike and Defend, ranked strictly below resting.
+
+Matched by prefix rather than listed, so the Silent and Defect get the same rule
+without a second table to keep in step. Prefix, not substring: PERFECTED_STRIKE
+and POMMEL_STRIKE are real cards and upgrading them is a real decision.
+
+"Strike and Defend are the lowest priority to upgrade. If Strike and Defend are
+your only cards to upgrade, rest instead." A Strike+ is +3 damage on a card the
+deck is trying to stop drawing; the smith is better spent on a card that changes
+what the deck can do, and if there is no such card the HP is worth more.
 """
 
 DEFAULT_FIGHTS_REMAINING = 6
@@ -77,15 +94,66 @@ class RestOption:
         return f"UPGRADE {getattr(self.card, 'name', self.card)}"
 
 
-def rest_heal_value(current_hp: int, max_hp: int) -> float:
-    """HP a rest would actually restore -- capped by what is missing.
+# Measured survival curve: P(surviving 2 hallway fights then an elite) as a
+# function of starting HP fraction, 30 seeds per point, v3 pilot, 14-card deck.
+#
+#   30%  0%     40%  3%     50%  3%     60% 17%
+#   70% 27%     80% 67%     90% 73%    100% 93%
+#
+# HP is strongly non-linear and the payoff is concentrated between 50% and 80%.
+# Below half you are at 3% and eight more HP buys nothing; the steepest stretch is
+# 70% -> 80%. This is pdgeorge's "get above 50% if you can", measured -- and the
+# real cliff sits nearer 60-80% than at 50 exactly.
+_SURVIVAL_CURVE: tuple[tuple[float, float], ...] = (
+    (0.30, 0.00), (0.40, 0.03), (0.50, 0.03), (0.60, 0.17),
+    (0.70, 0.27), (0.80, 0.67), (0.90, 0.73), (1.00, 0.93),
+)
 
-    The cap is the point. At full HP a rest is worth nothing, and a rule that
-    compares against a flat 30% will happily take it anyway.
+
+def survival_at(hp_fraction: float) -> float:
+    """Interpolated survival probability at an HP fraction."""
+    hp_fraction = max(0.0, min(1.0, hp_fraction))
+    if hp_fraction <= _SURVIVAL_CURVE[0][0]:
+        return _SURVIVAL_CURVE[0][1]
+    for (x0, y0), (x1, y1) in zip(_SURVIVAL_CURVE, _SURVIVAL_CURVE[1:]):
+        if hp_fraction <= x1:
+            span = x1 - x0
+            return y0 + (y1 - y0) * ((hp_fraction - x0) / span if span else 0.0)
+    return _SURVIVAL_CURVE[-1][1]
+
+
+def rest_heal_value(current_hp: int, max_hp: int) -> float:
+    """What a rest is worth, in HP-equivalent, weighted by survival gained.
+
+    Was `min(heal, missing_hp)` -- flat HP. That priced these identically when
+    they are not remotely the same decision:
+
+        24 -> 48 hp    0% -> 17% survival    +17 points
+        40 -> 64 hp    3% -> 67% survival    +64 points
+        72 -> 80 hp   73% -> 93% survival    +20 points
+
+    Same 24 HP restored, four times the value in the middle. Flat HP also cannot
+    express that healing from 24 to 48 leaves you still likely to die, which is
+    the whole content of "make sure you are over half".
+
+    Scaled back into HP units so it stays comparable with upgrade values, which
+    are priced in HP saved per fight.
     """
     import math
 
-    return float(min(math.floor(max_hp * REST_HEAL_FRACTION), max(0, max_hp - current_hp)))
+    restored = float(min(math.floor(max_hp * REST_HEAL_FRACTION),
+                         max(0, max_hp - current_hp)))
+    if restored <= 0 or max_hp <= 0:
+        return 0.0
+
+    before = survival_at(current_hp / max_hp)
+    after = survival_at(min(1.0, (current_hp + restored) / max_hp))
+    gain = max(0.0, after - before)
+
+    # A survival point is priced against the run: losing costs everything left.
+    # Floor at a quarter of the raw heal so a rest is never valued at nothing
+    # when the curve is flat but the HP is still real.
+    return max(restored * 0.25, gain * float(max_hp))
 
 
 def _hp_cost_per_fight(
@@ -145,9 +213,8 @@ def rank_rest_options(
         _boss_win_rate(deck, pilot, floor, seeds, max_hp) if boss_next else 0.0
     )
 
-    options: list[RestOption] = [
-        RestOption(kind="rest", hp_value=rest_heal_value(current_hp, max_hp))
-    ]
+    rest_value = rest_heal_value(current_hp, max_hp)
+    options: list[RestOption] = [RestOption(kind="rest", hp_value=rest_value)]
 
     # One candidate per distinct card, not the first N in deck order.
     #
@@ -159,14 +226,19 @@ def rank_rest_options(
     #
     # Upgrading one Strike is the same decision as upgrading another, so nothing
     # is lost by collapsing them.
+    # `index` must stay a position in the caller's `upgradable`, NOT in this
+    # deduped list. Returning the deduped position was a live bug: the bridge maps
+    # a winner back with `indexes[option.index]`, so picking the third distinct
+    # card upgraded the third *offered* card -- a Defend, in a starter-ordered
+    # deck. It ranked right and upgraded something else.
     seen: set = set()
-    deduped = []
-    for card in upgradable:
+    deduped: list[tuple[int, object]] = []
+    for position, card in enumerate(upgradable):
         key = getattr(card, "card_id", card)
         if key in seen:
             continue
         seen.add(key)
-        deduped.append(card)
+        deduped.append((position, card))
 
     considered = deduped[:max_upgrades_considered]
     if len(deduped) > len(considered):
@@ -175,7 +247,7 @@ def rank_rest_options(
             len(deduped), len(considered),
         )
 
-    for index, card in enumerate(considered):
+    for index, card in considered:
         if getattr(card, "upgraded", False):
             continue
         upgraded_deck = list(deck)
@@ -193,6 +265,16 @@ def rank_rest_options(
         cost = _hp_cost_per_fight(upgraded_deck, pilot, tiers, seeds, max_hp)
         saved_per_fight = baseline - cost
         value = saved_per_fight * fights_remaining
+
+        if card.card_id in LOW_PRIORITY_UPGRADES:
+            # pdgeorge's rule, and it is a play-knowledge prior rather than a
+            # measured one: an upgraded Defend is +3 block once a fight, an
+            # upgraded Uppercut changes what the deck can beat. Measurement at
+            # high HP happily ranks Defend+ above resting because the heal it is
+            # compared against is nearly wasted -- which is true arithmetic and
+            # the wrong move. Held strictly below rest so a starter upgrade is
+            # only ever taken when there is genuinely nothing else on offer.
+            value = min(value, rest_value - 1.0)
 
         if boss_next:
             # The rest before a boss is not an ordinary rest. Upgrading the same
