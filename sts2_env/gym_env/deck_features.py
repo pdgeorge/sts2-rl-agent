@@ -176,8 +176,17 @@ def _has_keyword(card_id: Any, keywords: frozenset[str]) -> bool:
 
 
 def _is_upgraded(card: Any) -> bool:
-    """Check if a card instance is upgraded."""
-    return getattr(card, "upgraded", False)
+    """Check if a card instance is upgraded.
+
+    Handles the bridge's dict form as well as CardInstance. Without the Mapping
+    branch the upgrade features read zero for every live deck, because a dict has
+    no `upgraded` attribute -- only a key of that name.
+    """
+    if isinstance(card, Mapping):
+        return bool(card.get("upgraded") or card.get("is_upgraded"))
+    if isinstance(card, str):
+        return card.endswith("+")
+    return bool(getattr(card, "upgraded", False))
 
 
 def encode_deck_features(cards: Iterable[Any]) -> np.ndarray:

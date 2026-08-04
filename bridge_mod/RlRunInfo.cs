@@ -163,12 +163,40 @@ internal static class RlRunInfo
             // The whole deck by card id. deck_size alone meant every card reward
             // was decided blind to what was being built -- the agent could not
             // tell a deck that already held four Strikes from one that did not.
+            // Each entry carries whether the card is upgraded. It used to be a
+            // bare id string, so upgrade state never left the game at all: 60
+            // recorded runs contained zero upgraded cards, which read as "the
+            // agent never upgrades" and was really "nobody could tell".
+            //
+            // That also silently degraded every drafting decision. from_bridge
+            // rebuilds the deck from these entries to score card rewards, so the
+            // battery was always evaluating a fully UNUPGRADED copy of a deck
+            // that might be half upgraded -- and rest_choice prices upgrades
+            // against the act 1 boss, where eight of them are worth 55 points of
+            // win rate.
+            //
+            // Emitted as a dict only when upgraded, so ordinary runs keep the
+            // compact string form and old logs stay readable. Every Python
+            // consumer already accepts both.
             var deckIds = new List<object>();
             try
             {
                 foreach (var card in player.Deck.Cards)
                 {
-                    try { deckIds.Add(card.Id.Entry); }
+                    try
+                    {
+                        if (card.IsUpgraded)
+                        {
+                            var cardData = new Dictionary<string, object>();
+                            cardData["id"] = card.Id.Entry;
+                            cardData["upgraded"] = true;
+                            deckIds.Add(cardData);
+                        }
+                        else
+                        {
+                            deckIds.Add(card.Id.Entry);
+                        }
+                    }
                     catch { }
                 }
             }

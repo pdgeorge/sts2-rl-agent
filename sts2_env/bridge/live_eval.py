@@ -54,6 +54,62 @@ ACT1_REACHED_BOSS_FLOOR = ACT1_BOSS_FLOOR
 ACT3_START_FLOOR = 33
 
 
+def deck_shape(deck: Any) -> dict[str, Any]:
+    """The deck's SHAPE, recorded beside the run that played it.
+
+    Three of the five numbers from Baalorlord's core-deckbuilding article, which
+    describe what KIND of deck this is rather than which cards are in it. Stored
+    per run because a decklist alone is not enough: it has to be rebuilt into
+    card objects to mean anything, several past sessions recorded no decklist at
+    all, and a run whose cards a future patch renames becomes unreadable while
+    its shape stays perfectly comparable.
+
+    Frontload and scaling damage -- the other two -- are deliberately absent.
+    Splitting damage that way needs to know what a card does OVER TIME, which is
+    the judgement the pilot cannot currently make while it scores 29 of 86 cards
+    at zero. Faking it with a keyword list is how deck_features.py ended up with
+    20 of 45 strings matching no card in this game.
+
+    Never raises. A recorder that loses a finished run because a metric threw is
+    worse than a recorder with a missing field.
+    """
+    if not deck:
+        return {}
+    try:
+        from sts2_env.cards.factory import create_card
+        from sts2_env.core.enums import CardId
+        from sts2_env.evaluation.deck_metrics import (
+            block_density,
+            cycle_time,
+            upgrade_density,
+        )
+
+        cards = []
+        for entry in deck:
+            name = entry.get("id") or entry.get("name") if isinstance(entry, dict) else entry
+            if not isinstance(name, str):
+                continue
+            upgraded = name.endswith("+")
+            if isinstance(entry, dict):
+                upgraded = bool(entry.get("upgraded") or entry.get("is_upgraded"))
+            try:
+                cards.append(create_card(CardId[name.rstrip("+").upper()],
+                                         upgraded=upgraded))
+            except Exception:  # noqa: BLE001 -- one unreadable card is not a lost run
+                continue
+        if not cards:
+            return {}
+        return {
+            "block_density": round(block_density(cards), 3),
+            "upgrade_density": round(upgrade_density(cards), 3),
+            "cycle_time": round(cycle_time(cards), 2),
+            "shape_cards_resolved": len(cards),
+        }
+    except Exception:  # noqa: BLE001
+        logger.debug("deck shape unavailable", exc_info=True)
+        return {}
+
+
 class LiveEvalRecorder:
     """Accumulates finished runs, writes them out, and reports the summary."""
 
@@ -72,6 +128,7 @@ class LiveEvalRecorder:
         summary = dict(summary)
         summary["model"] = self.model_path
         summary["wall_clock"] = round(time.monotonic() - self.started, 1)
+        summary.update(deck_shape(summary.get("deck")))
         self.runs.append(summary)
 
         if self._fh is not None:
