@@ -342,6 +342,9 @@ past a dozen the estimate is measuring how bad the deck is, not how long the
 fight runs, and it would make every scaling card look infinitely good."""
 
 
+_REMAINING_CACHE: dict = {}
+
+
 def remaining_turns(combat) -> float:
     """How many more turns this fight probably lasts.
 
@@ -360,14 +363,38 @@ def remaining_turns(combat) -> float:
         return 1.0
     total_hp = float(sum(getattr(e, "current_hp", 0) for e in enemies))
 
-    target = enemies[0]
+    # Memoised on the state it actually depends on. Called once per candidate
+    # card per decision otherwise, and the hand does not change between them.
+    key = (id(combat), getattr(combat, "turn_count", 0), total_hp,
+           len(combat.hand or ()), int(getattr(combat, "energy", 0) or 0))
+    hit = _REMAINING_CACHE.get(key)
+    if hit is not None:
+        return hit
+
+    # Deliberately a CHEAP damage estimate, not `effective_damage`.
+    #
+    # This is a fight-length guess feeding a horizon that is then clamped to
+    # [1, 12] -- it does not need per-card precision, and asking for it was
+    # catastrophic. `effective_damage` dry-runs a clone for any attack with no
+    # base damage, so a hand holding BODY_SLAM took a full `clone_combat` per
+    # card per call. Profiling a 24-fight cell: 1,549 calls here, 499 clones,
+    # and 66% of the entire runtime inside deepcopy. A live rest-site decision
+    # took 43s against the mod's 30-second agent timeout, and the mod ended the
+    # run mid-rest.
     per_card = sorted(
-        (effective_damage(combat, c, target) for c in (combat.hand or [])),
+        (float(c.base_damage or 0) * max(
+            1, int((c.effect_vars or {}).get("repeat", 1) or 1),
+            int((c.effect_vars or {}).get("hits", 1) or 1))
+         for c in (combat.hand or [])),
         reverse=True,
     )
     energy = max(1, int(getattr(combat, "energy", 3) or 3))
     output = float(sum(per_card[:energy])) or 1.0
-    return max(1.0, min(MAX_REMAINING_TURNS, total_hp / output))
+    if len(_REMAINING_CACHE) > 512:
+        _REMAINING_CACHE.clear()
+    result = max(1.0, min(MAX_REMAINING_TURNS, total_hp / output))
+    _REMAINING_CACHE[key] = result
+    return result
 
 
 def _attacks_per_turn(combat) -> float:

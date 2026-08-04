@@ -757,3 +757,100 @@ def test_a_rarely_taken_upgrade_is_not_vetoed_on_its_winrate():
 
     assert not _upgrading_is_measured_bad(create_card(CardId.IRON_WAVE), floor=6)
     assert _upgrading_is_measured_bad(create_card(CardId.FIEND_FIRE), floor=6)
+
+
+def test_a_rest_decision_respects_a_time_budget():
+    """A live decision that overruns the mod's 30-second agent timeout does not
+    degrade -- the mod ENDS THE RUN.
+
+    That happened at 23:21:39 on a real rest site: 33 seconds to rank 8
+    upgrades, and the next message was `run_complete`. So the budget is a hard
+    stop returning the best answer found so far, not merely a faster
+    computation; a bigger deck always exists.
+
+    The elapsed time can exceed the budget by one candidate, because the check
+    happens before each rather than interrupting one in flight. That is the
+    intended shape -- the margin to 30s absorbs it.
+    """
+    import time
+
+    from sts2_env.evaluation.rest_choice import rank_rest_options
+
+    deck = _starter() + _mk(["BODY_SLAM", "ANGER", "POMMEL_STRIKE", "IRON_WAVE",
+                             "UPPERCUT", "TAUNT", "MOLTEN_FIST", "CINDER"])
+    upgradable = [c for c in deck if not c.upgraded]
+
+    started = time.monotonic()
+    ranked = rank_rest_options(
+        deck, upgradable, greedy_pilot, current_hp=45, max_hp=80,
+        floor=9, seeds=(0, 1), time_budget_s=0.5,
+    )
+    elapsed = time.monotonic() - started
+
+    assert ranked, "a budgeted decision must still return something to choose"
+    assert ranked[0].kind in ("rest", "upgrade")
+    assert elapsed < 20.0, f"budget did not bound the work: {elapsed:.1f}s"
+
+
+def test_hp_is_read_from_the_field_names_the_mod_actually_sends():
+    """The bug that made every live rest decision wrong.
+
+    RlRunInfo.cs sends `run_hp` and `run_max_hp` outside combat. `from_bridge`
+    read only "hp"/"current_hp", so `_read_int` fell through to its default of
+    ZERO -- and a rest at 0 HP is the most valuable rest there is:
+
+        rest_heal_value(0, 80)  = 48.8     <- what the live log printed
+        rest_heal_value(78, 80) =  4.0     <- what it should have printed
+
+    So resting beat every upgrade at every health level. pdgeorge caught it
+    watching her heal at 78/80. That single default is the whole of the 7% live
+    upgrade density -- not the routing, not the shortfall term, both of which
+    were built to fix a symptom of this.
+
+    Uses the mod's real field names deliberately. Every synthetic state in these
+    tests used `hp`, which is exactly why the suite stayed green.
+    """
+    from sts2_env.evaluation.from_bridge import choose_rest_option
+
+    deck = (["STRIKE_IRONCLAD"] * 5 + ["DEFEND_IRONCLAD"] * 4
+            + ["BASH", "IRON_WAVE", "UPPERCUT", "ANGER"])
+
+    from sts2_env.evaluation.pilots import value_pilot
+
+    def decide(hp, pilot):
+        return choose_rest_option(
+            {
+                "type": "rest_site",
+                "run_hp": hp, "run_max_hp": 80, "floor": 9,
+                "run_state": {"deck": [{"id": c} for c in deck]},
+                "options": [{"id": "HEAL"}, {"id": "SMITH"}],
+            },
+            pilot,
+            seeds=(0, 1),
+        )
+
+    # The reported bug, and it must hold whichever pilot is flying: a rest at
+    # 78/80 restores two HP and cannot beat an upgrade.
+    for pilot in (greedy_pilot, value_pilot):
+        assert decide(78, pilot) == 1, "at 78/80 a rest restores 2 HP"
+
+    # At 20/80 the two pilots genuinely disagree -- greedy prices IRON_WAVE's
+    # upgrade at 81 and value_pilot at 31 -- so this asserts the SHIPPED
+    # configuration rather than an opinion both would share.
+    assert decide(20, value_pilot) == 0, "at 20/80 the next fight is the question"
+
+
+def test_max_hp_is_read_from_the_mods_field_name_too():
+    """`run_max_hp`, not `max_hp`. It defaulted to 80, which was silently right
+    for a fresh Ironclad and wrong for every run that raised its maximum --
+    recorded runs reach 86 and 91."""
+    from sts2_env.evaluation.from_bridge import reward_context
+
+    context = reward_context({
+        "type": "card_reward",
+        "run_max_hp": 91,
+        "run_state": {"deck": [{"id": "STRIKE_IRONCLAD"}], "total_floor": 9},
+        "cards": [{"id": "ANGER"}],
+    })
+    assert context is not None
+    assert context.max_hp == 91

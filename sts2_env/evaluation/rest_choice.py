@@ -351,6 +351,7 @@ def rank_rest_options(
     seeds: Sequence[int] = (0, 1, 2, 3),
     max_upgrades_considered: int = 8,
     boss_next: bool = False,
+    time_budget_s: float | None = None,
 ) -> list[RestOption]:
     """Price every option in HP and return them best first.
 
@@ -409,9 +410,27 @@ def rank_rest_options(
             len(deduped), len(considered),
         )
 
+    import time as _time
+
+    started = _time.monotonic()
+    evaluated = 0
     for index, card in considered:
+        # A live decision that overruns the mod's 30-second agent timeout does
+        # not degrade -- the mod ends the RUN. That happened at 23:21:39 on a
+        # real rest site: 33 seconds to rank 8 upgrades, then `run_complete`.
+        #
+        # So the budget is a hard stop that returns the best answer found so
+        # far, rather than a faster-but-still-unbounded computation. Speed alone
+        # is not a guarantee; a bigger deck always exists.
+        if time_budget_s is not None and _time.monotonic() - started > time_budget_s:
+            logger.info(
+                "rest: time budget %.0fs spent after %d of %d upgrades; "
+                "ranking what was measured", time_budget_s, evaluated, len(considered),
+            )
+            break
         if getattr(card, "upgraded", False):
             continue
+        evaluated += 1
         upgraded_deck = list(deck)
         try:
             position = upgraded_deck.index(card)

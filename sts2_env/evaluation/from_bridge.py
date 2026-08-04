@@ -29,6 +29,19 @@ from typing import Any, Mapping, Sequence
 
 logger = logging.getLogger(__name__)
 
+LIVE_DECISION_BUDGET_S = 12.0
+"""Seconds a live measured decision may take before it returns what it has.
+
+The mod gives the agent 30 seconds and then ENDS THE RUN -- it does not fall
+back, it terminates. That is not hypothetical: a rest site on 2026-08-04 took 33
+seconds to rank 8 upgrades and the next message was `run_complete`.
+
+12 rather than 25 because the timeout is on the whole exchange, not on this
+function, and because the cost scales with deck size -- the deck that blew it
+had 18 cards and they get bigger. Halving the budget costs a few candidates on
+the largest decks and cannot cost a run.
+"""
+
 MIN_RESOLVED_FRACTION = 0.8
 """Refuse a reconstruction that lost more than a fifth of the deck.
 
@@ -161,7 +174,7 @@ def reward_context(state: Mapping[str, Any]) -> RewardContext | None:
         candidates=candidates,
         candidate_indexes=indexes,
         floor=_read_int(state, "total_floor", "floor", default=1),
-        max_hp=_read_int(state, "max_hp", default=80) or 80,
+        max_hp=_read_int(state, "run_max_hp", "max_hp", default=80) or 80,
         resolved_fraction=resolved,
         can_skip=bool(state.get("can_skip", False)),
     )
@@ -260,10 +273,21 @@ def choose_rest_option(state: Mapping[str, Any], pilot, **kwargs) -> int | None:
     if heal_index is None or smith_index is None:
         return None  # only one real option; nothing to decide
 
-    current_hp = _read_int(state, "hp", "current_hp", default=0)
-    max_hp = _read_int(state, "max_hp", default=80) or 80
+    # `run_hp` / `run_max_hp` FIRST -- those are the names RlRunInfo.cs actually
+    # sends outside combat. Reading only "hp"/"current_hp" meant every live rest
+    # decision was made as though she were on ZERO HP:
+    #
+    #     rest_heal_value(0, 80)  = 48.8      <- what the live log printed
+    #     rest_heal_value(78, 80) =  4.0      <- what it should have printed
+    #
+    # So resting beat every upgrade at any health, which is the whole of the 7%
+    # upgrade density -- not the routing, not the shortfall term. pdgeorge caught
+    # it watching her heal at 78/80.
+    current_hp = _read_int(state, "run_hp", "hp", "current_hp", default=0)
+    max_hp = _read_int(state, "run_max_hp", "max_hp", default=80) or 80
     upgradable = [c for c in deck if not getattr(c, "upgraded", False)]
 
+    kwargs.setdefault("time_budget_s", LIVE_DECISION_BUDGET_S)
     ranked = rank_rest_options(
         deck, upgradable, pilot,
         current_hp=current_hp, max_hp=max_hp,
@@ -303,7 +327,7 @@ def veto_elite_rooms(state: Mapping[str, Any], pilot, **kwargs) -> bool:
 
     rate = elite_survivability(
         deck, pilot, floor=_read_int(state, "total_floor", "floor", default=1),
-        max_hp=_read_int(state, "max_hp", default=80) or 80, **kwargs,
+        max_hp=_read_int(state, "run_max_hp", "max_hp", default=80) or 80, **kwargs,
     )
     if rate < ELITE_VETO_WIN_RATE:
         logger.info("map: elite win rate %.0f%% -- avoiding elites", rate * 100)
@@ -356,7 +380,7 @@ def choose_upgrade_indexes(
     ranked = rank_rest_options(
         deck, candidates, pilot,
         current_hp=10**6,          # rest is irrelevant here; make it worthless
-        max_hp=_read_int(state, "max_hp", default=80) or 80,
+        max_hp=_read_int(state, "run_max_hp", "max_hp", default=80) or 80,
         floor=_read_int(state, "total_floor", "floor", default=1),
         **kwargs,
     )
