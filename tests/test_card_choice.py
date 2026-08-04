@@ -540,21 +540,49 @@ def test_a_deck_inside_the_band_gets_no_push_either_way():
     assert _band_distance(block_density(deck + [create_card(CardId.TAUNT)])) == 0.0
 
 
-@pytest.mark.slow
-def test_a_clearly_better_card_still_beats_the_density_push():
+def test_the_density_push_is_bounded():
     """The property that killed the 3.5-point tolerance. A correction big enough
     to force block through is big enough to force anything through, so the push
-    has to lose to a card that is genuinely better.
+    must stay small enough for a genuinely better card to win.
 
-    BATTLE_TRANCE is +4% run winrate over 9,700 offers against TAUNT's +1% over
-    15,000, and it wins on a deck that wants block -- 1.81 to 1.65 -- because the
-    density term is ~1.5 points, not unbounded.
+    Asserted on the term itself rather than on a ranking, because a ranking
+    assertion here silently depended on untapped priors being enabled -- and it
+    broke the moment they were turned off, which is a test measuring the wrong
+    thing rather than a regression.
     """
-    ranked = rank_candidates(
-        _thin_deck(), _mk(["TAUNT", "BATTLE_TRANCE"]), greedy_pilot,
-        floor=11, seeds=(0, 1, 2, 3),
-    )
-    assert "BATTLE_TRANCE" in ranked[0].label, [r.label for r in ranked]
+    from sts2_env.evaluation.card_choice import DENSITY_POINTS, _band_distance
+    from sts2_env.evaluation.deck_metrics import block_density
+
+    deck = _thin_deck()
+    taunt = create_card(CardId.TAUNT)
+    push = (_band_distance(block_density(deck))
+            - _band_distance(block_density(deck + [taunt]))) * DENSITY_POINTS
+    assert 0 < push < 2.5, push
+
+
+def test_taking_a_card_gets_harder_as_the_deck_grows():
+    """pdgeorge: "'something' only beats 'skip' up to a point. There is a point
+    where taking garbage worsens your deck."
+
+    The gap must WIDEN with deck size. A linear cycle-time penalty would not do
+    that -- cycle time is linear in deck size, so adding one card costs a flat
+    0.2 turns however long the deck already is, and skip and card would be taxed
+    equally forever.
+    """
+    from sts2_env.evaluation.card_choice import _bloat_penalty
+
+    filler = create_card(CardId.RAMPAGE)
+    gaps = []
+    for size in (15, 20, 25, 30):
+        deck = create_ironclad_starter_deck() + _zero_block_filler(size - 10)
+        gaps.append(_bloat_penalty(deck, filler) - _bloat_penalty(deck, None))
+
+    assert gaps == sorted(gaps), gaps
+    assert gaps[0] < 0.5 < gaps[-1], gaps
+
+
+def _zero_block_filler(count: int):
+    return [create_card(CardId.RAMPAGE) for _ in range(count)]
 
 
 def test_the_density_term_is_signed_not_a_distance():

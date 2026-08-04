@@ -159,6 +159,78 @@ untapped figure was a card-level average over decks at 45% density and decks at
 10% -- a conditional quantity estimated by an unconditional statistic.
 """
 
+BLOAT_POINTS = 2.0
+CYCLE_TARGET_TURNS = 3.0
+"""Penalty for how long the deck takes to cycle, and the point it starts.
+
+pdgeorge: "'something' only beats 'skip' up to a point. There is a point where
+taking garbage worsens your deck." Nothing in the scorer said that. The battery
+runs five fights from full HP, over which one filler card costs almost nothing,
+so a marginal card beat skipping at any deck size and decks grew to 17-23 cards
+live while the guide's headline advice is to skip liberally.
+
+QUADRATIC, AND THAT IS THE POINT
+
+Cycle time is `(deck size - draw) / 5`, so it is LINEAR in deck size and the
+delta from adding one card is a flat 0.2 turns however big the deck is. A linear
+penalty therefore taxes card and skip equally and never changes the decision --
+which is the trap, because it looks like it prices bloat and does not.
+
+Squaring the overshoot makes the gap between taking and skipping widen as the
+deck grows, which is the actual claim:
+
+    deck   cycle   penalty gap vs skipping
+     15     3.0          0.1 points
+     20     4.0          0.9
+     25     5.0          1.7
+     30     6.0          2.5
+
+So an 8th card needs to be barely positive and a 20th needs to be clearly good.
+CYCLE_TARGET_TURNS = 3.0 is a 15-card deck at five cards a turn -- lean but not
+starved, and it is where Baalorlord's density figures stop being comfortable.
+"""
+
+USE_PRIORS_BY_DEFAULT = False
+"""Whether untapped's card winrates lead the ranking. OFF -- a measured null.
+
+30 paired simulated runs per arm, same run seeds, `scripts/eval_drafting.py`:
+
+    priors OFF               8.7 floors +/- 0.9    43% skip
+    priors ON, raw           7.4 floors +/- 0.7    35% skip
+    priors ON, centred       7.5 floors +/- 0.6     5% skip
+    priors ON, minus-max     7.7 floors +/- 0.7    55% skip
+
+Not significant at 2 sem, and kept off anyway: three independent integrations
+all landed on the same side, and it matches what happened live. Floors over 45
+live runs fell to 10.1 against a 13.0-13.6 baseline the day priors shipped,
+degrading as the day went on -- 11.4 in the first half, 8.8 in the second.
+
+WHY IT PLAUSIBLY CANNOT WORK AS BUILT
+
+untapped measures what a card is worth to a HUMAN. Cyra is flown by a pilot that
+scores 29 of 86 Ironclad cards at exactly zero and cannot sequence, hold, or
+build around anything. A card worth +4% to someone who can set it up is worth
+nothing to a pilot that will never play it, and the prior overrides the one
+instrument that does know that -- the battery, whatever its own faults, at least
+measures what THIS pilot can convert.
+
+That makes this a downstream symptom of PLAN_DECKBUILDING phase D0 rather than a
+tuning problem, and it should be retried after the pilot can play a full deck --
+not before.
+
+WHAT WAS LEARNED AND KEPT
+
+The minus-max shift stays in the code even though the feature is off, because
+the failure it fixes is real and subtle: untapped publishes no row for SKIPPING,
+so skip sits at 0.00 while any card with a positive delta gets a free push above
+it. Centring on the mean makes that worse, not better -- it forces the best card
+positive by construction. Anyone re-enabling this needs that already solved.
+
+The scraped table, `card_priors`, the take-rate guard on the smith veto and the
+`[humans N%]` log annotation all stay on. They cost nothing and the log line is
+how a bad pick gets noticed.
+"""
+
 BATTERY_POINTS_PER_UNIT = 5.0
 """Run-winrate points per unit of battery score. The rate at which simulation is
 allowed to argue with tens of thousands of real runs.
@@ -346,7 +418,7 @@ def rank_candidates(
     seeds: Sequence[int] = DEFAULT_SEEDS,
     max_hp: int = IRONCLAD_STARTING_HP,
     include_skip: bool = True,
-    use_priors: bool = True,
+    use_priors: bool = USE_PRIORS_BY_DEFAULT,
 ) -> list[CandidateScore]:
     """Rank the cards on offer, best first.
 
@@ -369,13 +441,13 @@ def rank_candidates(
         )
         for card in options
     ]
-    scored = _to_winrate_points(scored, floor, use_priors)
+    scored = _to_winrate_points(scored, floor, use_priors, deck)
     scored.sort(key=lambda s: s.score, reverse=True)
     return apply_composition_rules(scored, deck, floor)
 
 
 def _to_winrate_points(
-    scored: list[CandidateScore], floor: int, use_priors: bool
+    scored: list[CandidateScore], floor: int, use_priors: bool, deck: Sequence = ()
 ) -> list[CandidateScore]:
     """Rescore everything in percentage points of run win rate.
 
@@ -408,21 +480,67 @@ def _to_winrate_points(
     skips = [s.score for s in scored if s.card is None]
     reference = skips[0] if skips else sum(s.score for s in scored) / len(scored)
 
+    # None means untapped has never seen this card -- a patch's new card, or one
+    # our enum names differently. It keeps a zero prior and is ranked on the
+    # battery alone, rather than being scored as average.
+    raw = [
+        (prior_score(c.card, decision="card_reward", floor=floor) or 0.0)
+        if (use_priors and c.card is not None) else 0.0
+        for c in scored
+    ]
+
+    # Shifted so the BEST card on offer contributes exactly zero and every other
+    # card is negative. The prior can then only ever rank cards against each
+    # other; whether the best of them beats declining is left entirely to the
+    # battery, which is the only thing that knows about THIS deck.
+    #
+    # Measured over 30 paired simulated runs, and both wrong versions are worth
+    # keeping written down because the second looked like the fix for the first:
+    #
+    #     raw priors        7.4 floors   35% skip rate
+    #     centred (mean)    7.5 floors    5% skip rate    <- worse
+    #     no priors         8.7 floors   43% skip rate
+    #
+    # untapped publishes no row for skipping, so skip sits at 0.00 while any
+    # card with a positive delta gets a free push above it -- and those deltas
+    # are conditioned on players who TOOK the card, inflating them further. The
+    # prior was structurally a take-more signal, the opposite of the guide's own
+    # headline advice.
+    #
+    # Centring on the mean makes that WORSE, not better: it forces the best card
+    # positive by construction, so something always beats skip. Subtracting the
+    # max is the version that keeps untapped's ordering without ever letting it
+    # vote on whether to draft at all.
+    offered = [v for v, c in zip(raw, scored) if c.card is not None]
+    best_prior = max(offered) if offered else 0.0
+
     rescored = []
-    for candidate in scored:
-        prior = 0.0
-        if use_priors and candidate.card is not None:
-            # None means untapped has never seen this card -- a patch's new card,
-            # or one our enum names differently. It keeps a zero prior and is
-            # ranked on the battery alone, rather than being scored as average.
-            prior = prior_score(
-                candidate.card, decision="card_reward", floor=floor
-            ) or 0.0
+    for value, candidate in zip(raw, scored):
+        prior = (value - best_prior) if candidate.card is not None else 0.0
         adjustment = (candidate.score - reference) * BATTERY_POINTS_PER_UNIT
         rescored.append(
-            dataclasses.replace(candidate, score=prior + adjustment, prior=prior)
+            dataclasses.replace(
+                candidate,
+                score=prior + adjustment - _bloat_penalty(deck, candidate.card),
+                prior=prior,
+            )
         )
     return rescored
+
+
+def _bloat_penalty(deck: Sequence, card) -> float:
+    """What this deck costs itself by being long, in run-winrate points.
+
+    Charged to skipping too, at the deck's current length -- the penalty is not
+    a fee for taking a card, it is the standing cost of the deck you would have.
+    What decides the pick is the DIFFERENCE, and squaring the overshoot is what
+    makes that difference grow with deck size instead of staying flat.
+    """
+    from sts2_env.evaluation.deck_metrics import cycle_time
+
+    full = list(deck) + ([card] if card is not None else [])
+    overshoot = max(0.0, cycle_time(full) - CYCLE_TARGET_TURNS)
+    return BLOAT_POINTS * overshoot * overshoot
 
 
 def best_index(ranked: Sequence[CandidateScore], candidates: Sequence) -> int | None:
