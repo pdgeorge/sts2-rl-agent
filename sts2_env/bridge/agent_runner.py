@@ -276,6 +276,7 @@ def run_agent(
     stuck_dump_path: str = "output/stuck_states.jsonl",
     measured_drafting: bool = False,
     draft_pilot=None,
+    pilot_combat: bool = False,
     allow_layout_mismatch: bool = False,
 ) -> None:
     """Main agent loop.
@@ -610,12 +611,16 @@ def run_agent(
                         client.end_turn()
                         continue
 
-                    action, _states = combat_policy.predict(
-                        obs,
-                        action_masks=mask,
-                        deterministic=deterministic,
-                    )
-                    action_int = int(action)
+                    action_int = None
+                    if pilot_combat:
+                        action_int = _pilot_combat_action(state, mask)
+                    if action_int is None:
+                        action, _states = combat_policy.predict(
+                            obs,
+                            action_masks=mask,
+                            deterministic=deterministic,
+                        )
+                        action_int = int(action)
 
                     decoded = combat_adapter.decode_action(action_int, state)
 
@@ -797,6 +802,92 @@ def _phase_for_state(state: dict[str, Any]) -> str:
         MSG_TYPE_PONG: MSG_TYPE_PONG,
         MSG_TYPE_ERROR: MSG_TYPE_ERROR,
     }.get(msg_type, state.get("phase", Phase.UNKNOWN))
+
+
+def _pilot_combat_action(state: dict[str, Any], mask) -> int | None:
+    """Choose a combat action with `value_pilot`, or None to fall back to the model.
+
+    WHY THIS EXISTS
+
+    The trained model measures level with a greedy heuristic -- 33% against 36%
+    on act 1 elites after 40M steps. The D0 pilot is not level with greedy:
+    measured over 180 act-1 boss fights on the same scaling deck, greedy wins 3%
+    and value_pilot wins 96%, because greedy cannot play a Power at all.
+
+    So the policy that just proved itself was only picking cards, while the model
+    kept playing the fights. This lets the pilot fly them.
+
+    HOW
+
+    `rebuild_combat` from the parity tooling reconstructs a simulator CombatState
+    from the bridge state -- enemies, powers, hand, energy, block. Reused rather
+    than reimplemented: a second copy of that logic drifting from the first is
+    the bug class that has cost this project the most runs.
+
+    Returns None whenever the rebuild fails or the pilot's choice is not legal in
+    the live mask, so an unmodelled monster or card degrades to the model rather
+    than to a crash.
+    """
+    try:
+        from sts2_env.evaluation.pilots import value_pilot
+        from sts2_env.parity.trace_delta import rebuild_combat
+
+        combat = rebuild_combat(state)
+        if combat is None:
+            logger.debug("pilot-combat: state not rebuildable; using the model")
+            return None
+
+        # The two action spaces do NOT agree, and passing the index straight
+        # through was silently wrong: the simulator encodes (hand 4, target 0) as
+        # 31 while the bridge encodes the same play as 5. Translate through the
+        # (hand_index, target_index) pair both sides do agree on.
+        from sts2_env.core.constants import (
+            ACTION_END_TURN,
+            MAX_ENEMIES,
+            MAX_HAND_SIZE,
+        )
+        from sts2_env.gym_env.action_space import action_to_card_and_target
+
+        SIM_END_TURN = ACTION_END_TURN
+
+        sim_action = int(value_pilot(combat))
+        if sim_action == SIM_END_TURN:
+            live = ACTION_END_TURN
+        else:
+            hand_index, target_index = action_to_card_and_target(sim_action)
+            if hand_index is None:
+                return None
+
+            # Both forms, targeted first. The bridge omits targeted actions
+            # entirely when there is only one enemy -- the game auto-targets --
+            # so a single-enemy fight offers ONLY untargeted plays and a
+            # faithful (card, target) translation is never legal. Checking the
+            # untargeted form second is what makes this work on the hallway
+            # fights that are most of the run.
+            candidates = []
+            if target_index is not None:
+                candidates.append(
+                    1 + MAX_HAND_SIZE + hand_index * MAX_ENEMIES + target_index
+                )
+            candidates.append(hand_index + 1)
+
+            live = next(
+                (c for c in candidates if 0 <= c < len(mask) and mask[c]), None
+            )
+            if live is None:
+                logger.debug(
+                    "pilot-combat: sim action %d (card %s, target %s) has no legal "
+                    "live encoding; using the model",
+                    sim_action, hand_index, target_index,
+                )
+                return None
+
+        if live < 0 or live >= len(mask) or not mask[live]:
+            return None
+        return live
+    except Exception:  # noqa: BLE001 -- never take the run down over a pilot
+        logger.exception("pilot-combat failed; using the model")
+        return None
 
 
 def _pick_map_node(state: dict[str, Any], avoid_elites: bool = False) -> int:
@@ -1291,6 +1382,16 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "--pilot-combat", action="store_true",
+        help="Play fights with the D0 evaluation pilot instead of the trained "
+             "model. The model measures level with a greedy heuristic (33%% vs "
+             "36%% on act 1 elites after 40M steps); the pilot beats the act 1 "
+             "boss 96%% of the time on a scaling deck where greedy manages 3%%, "
+             "because greedy cannot play a Power at all. Falls back to the model "
+             "on any state the simulator cannot rebuild.",
+    )
+
+    parser.add_argument(
         "--allow-layout-mismatch", action="store_true",
         help="Run a model trained against a different observation layout. It will "
              "read at least one column as something other than what it learned, so "
@@ -1318,6 +1419,7 @@ def main() -> None:
         allow_random_fallback=args.allow_random_fallback,
         combat_policy_path=args.combat_policy,
         measured_drafting=args.measured_drafting,
+        pilot_combat=args.pilot_combat,
         allow_layout_mismatch=args.allow_layout_mismatch,
     )
 
