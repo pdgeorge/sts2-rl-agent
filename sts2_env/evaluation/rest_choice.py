@@ -74,8 +74,35 @@ what the deck can do, and if there is no such card the HP is worth more.
 """
 
 DEFAULT_FIGHTS_REMAINING = 6
-"""Rough count of fights left in an act from a typical rest site. Used only when
-the caller cannot supply a better estimate."""
+"""Fallback when the caller cannot supply a floor. Prefer `fights_remaining_at`."""
+
+TOTAL_FLOORS = 48
+FIGHT_FRACTION = 0.55
+"""A run is ~48 floors and a little over half of them are fights.
+
+WHY THIS REPLACES A FLAT 6
+
+A flat 6 meant "the rest of this act", and it was never passed from the bridge --
+every live rest decision used it. An upgrade is PERMANENT: taken on floor 8 it
+pays out for every fight left in the RUN, not just the act. Valuing it over six
+fights while a rest is valued over one made upgrades look about a third as good
+as they are.
+
+That is self-fulfilling, which is the part worth stating plainly. The model
+expects to die inside the act, so it prices upgrades for a short run, so it
+under-upgrades, so it dies inside the act. Measured over seven live runs the
+agent reached a 7% upgrade density against Baalorlord's 33-50% for winning runs,
+and the three runs with ZERO upgrades averaged floor 7.3 against 12.3 for the
+four that had any.
+
+Playing for the run we want rather than the run we expect is the standard
+roguelike answer, and here it is also the only one that escapes the loop.
+"""
+
+
+def fights_remaining_at(floor: int) -> int:
+    """Fights left in the RUN from this floor, not in the act."""
+    return max(1, round((TOTAL_FLOORS - max(0, floor)) * FIGHT_FRACTION))
 
 
 @dataclass(frozen=True)
@@ -108,6 +135,43 @@ _SURVIVAL_CURVE: tuple[tuple[float, float], ...] = (
     (0.30, 0.00), (0.40, 0.03), (0.50, 0.03), (0.60, 0.17),
     (0.70, 0.27), (0.80, 0.67), (0.90, 0.73), (1.00, 0.93),
 )
+
+
+# Measured survival curve: P(winning THE NEXT hallway fight) by starting HP.
+# 40 seeds per encounter, greedy pilot, on the real 20-card deck from the run
+# that exposed the need for it.
+#
+#   10%  6%    20% 24%    30% 67%    40% 86%    49% 91%    69% 92%   100% 92%
+#
+# The curve above (`_SURVIVAL_CURVE`) asks about three fights, and at the bottom
+# it is flat because three fights are hopeless from 9 hp AND from 18 hp. That
+# flatness priced "almost certainly dead" the same as "certainly dead", and the
+# agent upgraded PERFECTED_STRIKE at 9/91 hp with a fight next -- rest was worth
+# 6.8 against the upgrade's 18.0. A greed call, straight out of the arithmetic.
+#
+# One fight is the question that actually matters at low HP, and it is enormous
+# there: healing 9 -> 36 moves survival from 6% to 86%. It saturates by ~50%,
+# which is exactly where the three-fight curve takes over.
+_NEXT_FIGHT_CURVE: tuple[tuple[float, float], ...] = (
+    (0.10, 0.06), (0.20, 0.24), (0.30, 0.67), (0.40, 0.86),
+    (0.49, 0.91), (0.69, 0.92), (1.00, 0.92),
+)
+
+
+def _interpolate(curve: tuple[tuple[float, float], ...], x: float) -> float:
+    x = max(0.0, min(1.0, x))
+    if x <= curve[0][0]:
+        return curve[0][1]
+    for (x0, y0), (x1, y1) in zip(curve, curve[1:]):
+        if x <= x1:
+            span = x1 - x0
+            return y0 + (y1 - y0) * ((x - x0) / span if span else 0.0)
+    return curve[-1][1]
+
+
+def survive_next_fight(hp_fraction: float) -> float:
+    """P(winning the next hallway fight) at this HP fraction."""
+    return _interpolate(_NEXT_FIGHT_CURVE, hp_fraction)
 
 
 def survival_at(hp_fraction: float) -> float:
@@ -146,14 +210,25 @@ def rest_heal_value(current_hp: int, max_hp: int) -> float:
     if restored <= 0 or max_hp <= 0:
         return 0.0
 
-    before = survival_at(current_hp / max_hp)
-    after = survival_at(min(1.0, (current_hp + restored) / max_hp))
-    gain = max(0.0, after - before)
+    frac_before = current_hp / max_hp
+    frac_after = min(1.0, (current_hp + restored) / max_hp)
 
-    # A survival point is priced against the run: losing costs everything left.
-    # Floor at a quarter of the raw heal so a rest is never valued at nothing
-    # when the curve is flat but the HP is still real.
-    return max(restored * 0.25, gain * float(max_hp))
+    # Two horizons, and whichever is more binding wins.
+    #
+    # IMMEDIATE: will I survive the next fight. Dominates at low HP and is huge
+    # there -- 9 -> 36 hp is 6% -> 86%. Priced against the whole remaining run,
+    # because dying now costs all of it.
+    immediate = max(0.0, survive_next_fight(frac_after)
+                    - survive_next_fight(frac_before)) * float(max_hp)
+
+    # HORIZON: will I survive the next few fights. Dominates once the immediate
+    # question is settled -- the one-fight curve is flat above ~50% while this
+    # one is still climbing steeply.
+    horizon = max(0.0, survival_at(frac_after) - survival_at(frac_before)) * float(max_hp)
+
+    # Floor at a quarter of the raw heal so a rest is never worth nothing while
+    # the HP is still real.
+    return max(restored * 0.25, immediate, horizon)
 
 
 POOR_UPGRADE_SAMPLE = 800
@@ -248,7 +323,7 @@ def rank_rest_options(
     current_hp: int,
     max_hp: int = IRONCLAD_STARTING_HP,
     floor: int = 1,
-    fights_remaining: int = DEFAULT_FIGHTS_REMAINING,
+    fights_remaining: int | None = None,
     seeds: Sequence[int] = (0, 1, 2, 3),
     max_upgrades_considered: int = 8,
     boss_next: bool = False,
@@ -262,6 +337,8 @@ def rank_rest_options(
     """
     from sts2_env.evaluation.card_choice import tiers_for_floor
 
+    if fights_remaining is None:
+        fights_remaining = fights_remaining_at(floor)
     tiers = tiers_for_floor(floor)
     baseline = _hp_cost_per_fight(deck, pilot, tiers, seeds, max_hp)
     boss_baseline = (
@@ -319,7 +396,22 @@ def rank_rest_options(
 
         cost = _hp_cost_per_fight(upgraded_deck, pilot, tiers, seeds, max_hp)
         saved_per_fight = baseline - cost
-        value = saved_per_fight * fights_remaining
+        # An upgrade only pays if you live to use it.
+        #
+        # That is the term this was missing, and it is what makes an upgrade
+        # comparable to a rest without pretending they are the same kind of
+        # thing. A rest is banked immediately; an upgrade is a claim on fights
+        # you have not survived yet, so it is discounted by the odds of getting
+        # there. At 9/91 hp those odds are 6%, which is why upgrading there is a
+        # greed call however good the card is.
+        #
+        # Converting the upgrade's TOTAL future saving through the survival curve
+        # was tried first and is wrong in a way worth recording: 3 hp/fight over
+        # 19 fights became "+57 hp right now", which read as 6% -> 92% survival
+        # and put the upgrade back on top at 9 hp. You do not get all 19 fights
+        # of value in the next fight.
+        value = (saved_per_fight * fights_remaining
+                 * survive_next_fight(current_hp / max_hp if max_hp else 0.0))
 
         if card.card_id in LOW_PRIORITY_UPGRADES or _upgrading_is_measured_bad(card, floor):
             # pdgeorge's rule, and it is a play-knowledge prior rather than a

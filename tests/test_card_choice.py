@@ -269,22 +269,48 @@ def test_rest_value_is_capped_by_missing_hp():
     assert rest_heal_value(78, 80) < 6.0       # only 2 hp is missing to restore
 
 
-def test_rest_value_is_worth_most_crossing_the_danger_zone():
-    """Measured: survival is ~3% at half HP and ~67% at 80%, so the same 24 hp
-    restored is worth several times more landing in that band than below it.
+def test_a_rest_at_critical_hp_beats_any_upgrade():
+    """pdgeorge, watching it upgrade PERFECTED_STRIKE at 9/91 hp with a fight
+    next: "a greed call more than anything".
 
-    Pinned because flat `min(heal, missing_hp)` priced all three identically, and
-    that is the pricing that let a rest at 30% look as good as a rest at 50%
-    when one leaves you dead and the other does not.
+    It was arithmetic, not judgement. `rest_heal_value` priced HP off a curve
+    measuring P(surviving THREE fights), which is flat near zero at the bottom --
+    three fights are hopeless from 9 hp and from 18 hp alike -- so it valued
+    "almost certainly dead" the same as "certainly dead" and rated the heal at
+    6.8 against the upgrade's 18.0.
+
+    At 9 hp the question is the NEXT fight, where the same heal is 6% -> 86%.
+    """
+    from sts2_env.evaluation.rest_choice import rest_heal_value, survive_next_fight
+
+    assert survive_next_fight(9 / 91) < 0.15      # dead to almost anything
+    assert survive_next_fight(36 / 91) > 0.80     # not
+
+    critical = rest_heal_value(9, 91)
+    assert critical > 60, critical                # dwarfs any plausible upgrade
+    assert critical > rest_heal_value(80, 91) * 3
+
+
+def test_rest_value_is_not_monotonic_in_hp():
+    """It peaks near 50%, and asserting otherwise would encode a heuristic.
+
+    A rest from half health crosses the largest jump in the three-fight curve,
+    which is pdgeorge's "get above 50% if you can" falling out of the
+    measurement:
+
+        25%  36.6      50%  51.2  <- peak     75%  36.8      95%   8.0
+
+    What must hold is the two ends: a rest when you are about to die outranks
+    one when you are nearly full, and a nearly-wasted heal is worth little.
     """
     from sts2_env.evaluation.rest_choice import rest_heal_value
 
-    deep = rest_heal_value(20, 80)      # 25% -> 55%, still likely dead
-    band = rest_heal_value(40, 80)      # 50% -> 80%, the steep stretch
-    topped = rest_heal_value(72, 80)    # 90% -> 100%, mostly wasted
+    critical = rest_heal_value(20, 80)   # 25% -> 55%, about to die
+    topped = rest_heal_value(76, 80)     # 95% -> 100%, mostly wasted
 
-    assert band > 2 * deep
-    assert band > 2 * topped
+    assert critical > 3 * topped
+    assert topped < 10
+    assert rest_heal_value(80, 80) == 0.0
 
 
 def test_upgrade_value_scales_with_fights_remaining():
@@ -299,27 +325,39 @@ def test_upgrade_value_scales_with_fights_remaining():
 
 
 @pytest.mark.slow
-def test_a_strong_upgrade_beats_a_heal_even_when_hurt():
+def test_a_strong_upgrade_beats_a_heal_once_you_will_survive_to_use_it():
     """The result that justifies the whole module.
 
-    At 20/80 HP the old rule heals, unconditionally. But upgrading Iron Wave is
-    worth ~8 HP a fight over six fights (~50 HP) against a 24 HP heal, so healing
-    is the wrong call -- and a threshold rule cannot see it, because it never
-    looks at what the upgrade is worth.
+    THIS TEST REVERSED AT 20/80, and the reversal is the point.
 
-    Measured stably across seed counts: +54.0 / +45.2 / +50.8 against a flat
-    +24.0, so this is arithmetic rather than noise.
+    It used to assert that at 20/80 HP upgrading Iron Wave beats healing: ~8 HP a
+    fight over six fights, about 50 HP, against a flat 24 HP heal. That was the
+    result the module docstring called its justification.
+
+    It ignored whether you live to collect the 50. At 20/80 the measured chance
+    of winning the next hallway fight is 46% -- a coin flip on the whole run --
+    so half that value never arrives. An upgrade is a claim on fights you have
+    not survived yet, and is now discounted by the odds of getting there.
+
+    The original claim holds wherever it was reasonable:
+
+        20/80 (25%)  survive 46%   REST +37       IRON_WAVE +26
+        32/80 (40%)  survive 86%   IRON_WAVE +48  REST +19
+        68/80 (85%)  survive 92%   IRON_WAVE +52  REST +18
     """
     from sts2_env.evaluation.rest_choice import rank_rest_options
 
     deck = _starter() + [create_card(CardId.IRON_WAVE)]
-    ranked = rank_rest_options(
-        deck, [deck[-1]], greedy_pilot, current_hp=20, max_hp=80,
-        floor=6, fights_remaining=6, seeds=(0, 1, 2),
-    )
-    assert ranked[0].kind == "upgrade"
-    rest = next(o for o in ranked if o.kind == "rest")
-    assert ranked[0].hp_value > rest.hp_value
+
+    def top(hp):
+        return rank_rest_options(
+            deck, [deck[-1]], greedy_pilot, current_hp=hp, max_hp=80,
+            floor=6, fights_remaining=6, seeds=(0, 1, 2),
+        )[0].kind
+
+    assert top(20) == "rest", "a coin flip from death is not the time to upgrade"
+    assert top(32) == "upgrade", "healthy enough to collect it"
+    assert top(68) == "upgrade", "a heal here is mostly wasted"
 
 
 @pytest.mark.slow

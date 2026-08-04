@@ -38,7 +38,8 @@ from collections import Counter
 
 
 def play_one(seed: int, *, use_priors: bool, use_density: bool,
-             seeds_per_decision: tuple[int, ...], max_steps: int = 4000) -> dict:
+             seeds_per_decision: tuple[int, ...], use_rest: bool = True,
+             max_steps: int = 4000) -> dict:
     """Drive one full run, using the measured drafter at every card reward."""
     from sts2_env.cards.factory import create_card
     from sts2_env.core.enums import CardId
@@ -46,6 +47,7 @@ def play_one(seed: int, *, use_priors: bool, use_density: bool,
     from sts2_env.evaluation.card_choice import best_index, rank_candidates
     from sts2_env.evaluation.deck_metrics import block_density
     from sts2_env.evaluation.pilots import greedy_pilot
+    from sts2_env.evaluation.rest_choice import rank_rest_options
     from sts2_env.gym_env.action_space import action_to_card_and_target, get_action_mask
     from sts2_env.run.run_manager import RunManager
 
@@ -59,7 +61,7 @@ def play_one(seed: int, *, use_priors: bool, use_density: bool,
     if not use_density:
         card_choice.DENSITY_POINTS = 0.0
 
-    drafted = skipped = 0
+    drafted = skipped = rests = smiths = 0
     try:
         for _ in range(max_steps):
             if manager.is_over:
@@ -132,25 +134,56 @@ def play_one(seed: int, *, use_priors: bool, use_density: bool,
                         )
                     continue
 
-            # Everything else -- map, shop, event, rest, treasure -- is chosen at
+            # Rest sites, decided by rank_rest_options -- the same call the live
+            # agent makes. Random choice here made the whole rest/upgrade model
+            # invisible to this harness, which is how a change that drove live
+            # upgrade density to 7% could be measured as "no difference".
+            if use_rest and manager.phase == RunManager.PHASE_REST_SITE:
+                rest = next((a for a in actions if a.get("option_id") == "HEAL"), None)
+                smith = next((a for a in actions if a.get("option_id") == "SMITH"), None)
+                if rest is not None and smith is not None:
+                    deck = list(manager.run_state.player.deck)
+                    player = manager.run_state.player
+                    ranked = rank_rest_options(
+                        deck, [c for c in deck if not getattr(c, "upgraded", False)],
+                        greedy_pilot,
+                        current_hp=int(getattr(player, "current_hp", 1)),
+                        max_hp=int(getattr(player, "max_hp", 80)),
+                        floor=manager.run_state.total_floor,
+                        seeds=seeds_per_decision,
+                    )
+                    if ranked and ranked[0].kind == "upgrade":
+                        smiths += 1
+                        manager.take_action(smith)
+                    else:
+                        rests += 1
+                        manager.take_action(rest)
+                    continue
+
+            # Everything else -- map, shop, event, treasure -- is chosen at
             # random. Deliberately: this script is an A/B on DRAFTING, and a
             # heuristic here would be another untested thing shared by both arms.
             manager.take_action(rng.choice(actions))
     except Exception as error:  # noqa: BLE001
         return {"floor": manager.run_state.total_floor, "error": repr(error)[:120],
                 "deck_size": len(manager.run_state.player.deck), "drafted": drafted,
-                "skipped": skipped, "block_density": 0.0}
+                "skipped": skipped, "block_density": 0.0, "upgrade_density": 0.0,
+                "rests": rests, "smiths": smiths}
     finally:
         card_choice.DENSITY_POINTS = saved_density
 
     deck = list(manager.run_state.player.deck)
+    from sts2_env.evaluation.deck_metrics import upgrade_density
     return {
         "floor": manager.run_state.total_floor,
         "won": manager.player_won,
         "deck_size": len(deck),
         "block_density": block_density(deck),
+        "upgrade_density": upgrade_density(deck),
         "drafted": drafted,
         "skipped": skipped,
+        "rests": rests,
+        "smiths": smiths,
     }
 
 
@@ -170,6 +203,11 @@ def summarise(label: str, rows: list[dict]) -> dict:
           f"block density {statistics.mean(density) if density else 0:.0%}")
     print(f"  drafting {picks} taken, {skips} skipped "
           f"({skips / max(1, picks + skips):.0%} skip rate)")
+    r = sum(x.get("rests", 0) for x in rows); sm = sum(x.get("smiths", 0) for x in rows)
+    up = [x.get("upgrade_density", 0.0) for x in rows]
+    print(f"  rest     {r} rested, {sm} smithed "
+          f"({sm / max(1, r + sm):.0%} smith rate)   "
+          f"upgrade density {statistics.mean(up) if up else 0:.0%}")
     if errors:
         print(f"  ERRORS   {len(errors)}/{len(rows)}: {errors[0]['error']}")
     buckets = Counter(min(f // 5 * 5, 30) for f in floors)
