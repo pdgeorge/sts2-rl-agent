@@ -46,7 +46,7 @@ def play_one(seed: int, *, use_priors: bool, use_density: bool,
     from sts2_env.evaluation import card_choice
     from sts2_env.evaluation.card_choice import best_index, rank_candidates
     from sts2_env.evaluation.deck_metrics import block_density
-    from sts2_env.evaluation.pilots import greedy_pilot
+    from sts2_env.evaluation.pilots import value_pilot as greedy_pilot
     from sts2_env.evaluation.rest_choice import rank_rest_options
     from sts2_env.gym_env.action_space import action_to_card_and_target, get_action_mask
     from sts2_env.bridge.agent_runner import (

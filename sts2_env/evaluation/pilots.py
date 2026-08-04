@@ -186,6 +186,68 @@ def _dry_run_damage(combat, card, target) -> float:
         return 0.0
 
 
+_TURNS_CACHE: dict = {}
+
+
+def turns_saved(combat) -> float:
+    """Turns of enemy output a kill actually prevents. TURNS_AHEAD is the cap.
+
+    `TURNS_AHEAD` was a flat 6 -- every kill credited with preventing six turns
+    of damage, including on the last turn of a fight that is already won. That is
+    what kept DEMON_FORM scoring 60 against a Strike's 40 with one turn left and
+    the enemy on 5 HP: a scaling card cannot pay out over turns that will not
+    happen.
+
+    Memoised per (combat, turn, total enemy HP) because `remaining_turns` walks
+    the hand through `effective_damage`, which dry-runs a clone for cards like
+    BODY_SLAM. Recomputing that once per candidate card made a decision
+    quadratic in hand size.
+    """
+    key = (id(combat), getattr(combat, "turn_count", 0),
+           sum(getattr(e, "current_hp", 0) for e in (combat.enemies or [])))
+    hit = _TURNS_CACHE.get(key)
+    if hit is None:
+        if len(_TURNS_CACHE) > 512:
+            _TURNS_CACHE.clear()
+        hit = _TURNS_CACHE[key] = min(TURNS_AHEAD, remaining_turns(combat))
+    return hit
+
+
+def _enemy_threat(combat, enemy) -> float:
+    """The damage per turn this enemy is worth killing to stop.
+
+    NOT the same question as `_enemy_output`, and conflating them was a real bug.
+    Output is what is coming THIS turn, which is the right input for a blocking
+    decision. Threat is what killing them prevents over the rest of the fight.
+
+    They diverge exactly when it matters most. The act 1 elite BYGONE_EFFIGY
+    opens asleep, so its current output is 0 -- and every damage value in the
+    pilot collapsed to zero with it, on the fight the whole run turns on. Its
+    move set contains a 15-damage attack, which is what it is actually worth
+    killing to stop.
+
+    `ai.states` holds the full move set, so this reads the peak rather than
+    guessing from max HP.
+    """
+    ai = getattr(combat, "enemy_ais", {}).get(getattr(enemy, "combat_id", None))
+    if ai is None:
+        return _enemy_output(combat, enemy)
+
+    player = getattr(combat, "player", None)
+    peak = 0.0
+    states = getattr(ai, "states", None)
+    for state in (states.values() if isinstance(states, dict) else (states or ())):
+        move = getattr(state, "move", None) or state
+        total = 0.0
+        for intent in (getattr(move, "intents", None) or ()):
+            try:
+                total += intent.effective_total(enemy, player, combat)
+            except Exception:  # noqa: BLE001 -- one unreadable move is not fatal
+                continue
+        peak = max(peak, total)
+    return max(peak, _enemy_output(combat, enemy))
+
+
 def _damage_value(combat, card, target) -> float:
     """HP saved by dealing this card's damage to this enemy.
 
@@ -201,7 +263,7 @@ def _damage_value(combat, card, target) -> float:
 
     remaining = float(max(1, getattr(target, "current_hp", 1)))
     fraction_killed = min(1.0, damage / remaining)
-    return fraction_killed * _enemy_output(combat, target) * TURNS_AHEAD
+    return fraction_killed * _enemy_threat(combat, target) * turns_saved(combat)
 
 
 def _block_value(combat, card, already_pledged: float) -> float:
@@ -238,13 +300,13 @@ def _debuff_value(combat, card, target) -> float:
 
     weak = float(variables.get("weak", 0) or 0)
     if weak and target is not None:
-        value += _enemy_output(combat, target) * 0.25 * min(weak, 2.0)
+        value += _enemy_threat(combat, target) * 0.25 * min(weak, 2.0)
 
     vulnerable = float(variables.get("vulnerable", 0) or 0)
     if vulnerable and target is not None:
         # Faster kill on this enemy => that much of its output never lands.
         value += (
-            _enemy_output(combat, target)
+            _enemy_threat(combat, target)
             * VULNERABLE_MULTIPLIER
             * min(vulnerable, 3.0) / 3.0
         )
@@ -271,6 +333,213 @@ def _hp_cost(card) -> float:
     """
     variables = getattr(card, "effect_vars", None) or {}
     return float(variables.get("hp_loss", 0) or 0)
+
+
+MAX_REMAINING_TURNS = 12.0
+"""Ceiling on the fight-length estimate. A 200 HP boss against a starter deck
+divides out to 30+ turns, and nothing in this game pays out over 30 turns --
+past a dozen the estimate is measuring how bad the deck is, not how long the
+fight runs, and it would make every scaling card look infinitely good."""
+
+
+def remaining_turns(combat) -> float:
+    """How many more turns this fight probably lasts.
+
+    The number every scaling card needs and the pilot did not have. `TURNS_AHEAD`
+    was the same idea frozen as a constant; this is the state-dependent version,
+    and it is what lets a Power be worth taking on turn 1 and worthless on the
+    last turn of a short fight.
+
+    Estimated as total enemy HP over what we remove per turn, with our output
+    taken from the best few cards in hand -- roughly what one turn of energy
+    buys. Crude, and it only has to separate "long fight" from "nearly over".
+    """
+    enemies = [e for e in getattr(combat, "enemies", []) or []
+               if getattr(e, "is_alive", False)]
+    if not enemies:
+        return 1.0
+    total_hp = float(sum(getattr(e, "current_hp", 0) for e in enemies))
+
+    target = enemies[0]
+    per_card = sorted(
+        (effective_damage(combat, c, target) for c in (combat.hand or [])),
+        reverse=True,
+    )
+    energy = max(1, int(getattr(combat, "energy", 3) or 3))
+    output = float(sum(per_card[:energy])) or 1.0
+    return max(1.0, min(MAX_REMAINING_TURNS, total_hp / output))
+
+
+def _attacks_per_turn(combat) -> float:
+    """Roughly how many attacks we land a turn. Strength scales per attack, so a
+    deck of one big hit values it differently from a deck of many small ones."""
+    hand = combat.hand or []
+    attacks = sum(1 for c in hand if (c.base_damage or 0) > 0)
+    energy = max(1, int(getattr(combat, "energy", 3) or 3))
+    return float(max(1, min(attacks, energy)))
+
+
+def _power_value(combat, card, target) -> float:
+    """What a Power or scaling skill is worth, in the same HP currency.
+
+    28 of 86 Ironclad cards score zero on damage, block, debuff and draw -- every
+    Power among them -- so the pilot could never choose to play one. It is the
+    ceiling on every measurement this repo produces, not only on drafting.
+
+    Priced off the fight's remaining length, which is the whole point: Demon Form
+    on turn 1 of a boss is enormous and on the last turn of a hallway fight is
+    nothing, and no fixed number can say both.
+    """
+    variables = getattr(card, "effect_vars", None) or {}
+    if not variables or target is None:
+        return 0.0
+
+    # A Power pays from the turn AFTER it is played -- deploying it costs this
+    # turn's energy, and Demon Form at 3 cost leaves nothing behind it. So the
+    # payout horizon is one turn shorter than the fight, which is what takes it
+    # to exactly zero on the last turn instead of merely small.
+    turns = max(0.0, remaining_turns(combat) - 1.0)
+    if turns <= 0.0:
+        return 0.0
+    value = 0.0
+
+    strength = float(variables.get("strength", 0) or 0)
+    if strength:
+        # Extra damage over the rest of the fight, converted the same way a
+        # direct hit is, so the units match the rest of the pilot.
+        extra = strength * _attacks_per_turn(combat) * turns
+        remaining = float(max(1, getattr(target, "current_hp", 1)))
+        value += min(1.0, extra / remaining) * _enemy_threat(combat, target) * turns_saved(combat)
+
+    # Block every turn, capped by what is actually coming each turn.
+    per_turn_block = float(variables.get("plating", 0) or 0)
+    for key in ("juggernaut_power", "crimson_mantle_power", "inferno_power"):
+        per_turn_block += float(variables.get(key, 0) or 0) * 0.5
+    if per_turn_block:
+        from sts2_env.monsters.intents import incoming_damage
+
+        incoming = float(incoming_damage(combat))
+        value += min(per_turn_block, max(incoming, per_turn_block)) * turns * 0.5
+
+    # Energy is worth whatever a card costs to play, and cards are worth roughly
+    # what the best one in hand is worth.
+    energy = float(variables.get("energy", 0) or 0)
+    if energy:
+        best = max((effective_damage(combat, c, target) for c in (combat.hand or [])),
+                   default=0.0)
+        remaining = float(max(1, getattr(target, "current_hp", 1)))
+        value += min(1.0, (energy * best * turns) / remaining) \
+            * _enemy_threat(combat, target) * turns_saved(combat)
+
+    return value
+
+
+POWER_STACK_VALUE = 1.2
+"""HP-equivalent per stack of a player power, per turn it will be active.
+
+A blunt instrument, and deliberately so. It prices powers this file has no
+specific model for -- BARRICADE, DARK_EMBRACE, CORRUPTION -- which would
+otherwise score exactly zero and never be played at all. Wrong-but-positive beats
+invisible: a card the pilot can never choose is one the battery scores as dead
+weight, and 21 of 86 Ironclad cards were in that state.
+"""
+
+
+_STATIC_KEYS = ("strength", "energy", "plating", "vulnerable", "weak", "hp_loss",
+                "juggernaut_power", "crimson_mantle_power", "inferno_power")
+_NEEDS_DRY_RUN: dict = {}
+
+
+def _needs_dry_run(card) -> bool:
+    """Can this card ever be priced without playing it?
+
+    Keyed on card_id and cached, because the answer is a property of the CARD and
+    not of the situation. Getting that wrong cost 30x: the fallback originally
+    fired whenever a card scored zero, which includes a Defend on a turn nothing
+    is incoming -- so the common cards took a clone every decision and the
+    battery went from 0.59s to 17.6s for 36 fights.
+    """
+    key = getattr(card, "card_id", card)
+    cached = _NEEDS_DRY_RUN.get(key)
+    if cached is None:
+        variables = getattr(card, "effect_vars", None) or {}
+        cached = _NEEDS_DRY_RUN[key] = not (
+            (card.base_damage or 0) or (card.base_block or 0)
+            or any(variables.get(k) for k in _STATIC_KEYS)
+            or any(variables.get(k) for k in DRAW_KEYS)
+        )
+    return cached
+
+
+def _dry_run_value(combat, card, target) -> float:
+    """Play the card on a clone and price whatever changed.
+
+    The generic fallback for cards whose entire effect lives in the function --
+    empty `effect_vars`, or an ambiguous key like `power`, which means
+    block-per-exhaust on FEEL_NO_PAIN and something else on CORRUPTION. There is
+    no table that prices those; there is only playing them and looking.
+
+    Deliberately last: it costs a `clone_combat` (~0.6ms) and only runs for cards
+    the cheap terms already scored at zero.
+    """
+    from sts2_env.cards.registry import _CARD_EFFECTS
+    from sts2_env.monsters.intents import incoming_damage
+    from sts2_env.search.cloning import clone_combat
+
+    effect = _CARD_EFFECTS.get(card.card_id)
+    if effect is None:
+        return 0.0
+    index = next((i for i, c in enumerate(combat.hand) if c is card), None)
+    if index is None:
+        return 0.0
+
+    try:
+        clone = clone_combat(combat)
+        if index >= len(clone.hand):
+            return 0.0
+        clone_card = clone.hand[index]
+        clone_target = next(
+            (e for e in clone.enemies
+             if getattr(e, "combat_id", None) == getattr(target, "combat_id", None)),
+            None,
+        ) if target is not None else None
+
+        def stacks(state):
+            player = getattr(state, "player", None)
+            powers = getattr(player, "powers", None) or {}
+            return sum(getattr(v, "amount", 0) or 0 for v in powers.values())
+
+        before = (float(getattr(clone.player, "block", 0) or 0),
+                  float(getattr(clone, "energy", 0) or 0),
+                  len(clone.hand), stacks(clone),
+                  [getattr(e, "current_hp", 0) for e in clone.enemies])
+
+        effect(clone_card, clone, clone_target)
+
+        after = (float(getattr(clone.player, "block", 0) or 0),
+                 float(getattr(clone, "energy", 0) or 0),
+                 len(clone.hand), stacks(clone),
+                 [getattr(e, "current_hp", 0) for e in clone.enemies])
+    except Exception:  # noqa: BLE001 -- a pilot must never take the fight down
+        return 0.0
+
+    turns = max(0.0, remaining_turns(combat) - 1.0)
+    incoming = float(incoming_damage(combat))
+
+    block_gained = max(0.0, after[0] - before[0])
+    energy_gained = max(0.0, after[1] - before[1])
+    drawn = max(0, after[2] - before[2] - 1)      # -1: the card itself left hand
+    new_stacks = max(0.0, after[3] - before[3])
+    damage = float(sum(max(0, b - a) for b, a in zip(before[4], after[4])))
+
+    value = min(block_gained, max(incoming, block_gained))
+    value += energy_gained * 2.0
+    value += drawn * 1.5
+    value += new_stacks * POWER_STACK_VALUE * turns
+    if damage > 0 and target is not None:
+        remaining = float(max(1, getattr(target, "current_hp", 1)))
+        value += min(1.0, damage / remaining) * _enemy_threat(combat, target) * turns_saved(combat)
+    return value
 
 
 def _draw_value(card) -> float:
@@ -322,8 +591,12 @@ def value_pilot(combat) -> int:
             + _block_value(combat, card, pledged)
             + _debuff_value(combat, card, target)
             + _draw_value(card)
+            + _power_value(combat, card, target)
             - _hp_cost(card)
         )
+        # Only for cards that can never be priced statically -- see _needs_dry_run.
+        if value <= 0.0 and _needs_dry_run(card):
+            value = _dry_run_value(combat, card, target) - _hp_cost(card)
         if value > best_value:
             best_value, best_action = value, int(action)
 
