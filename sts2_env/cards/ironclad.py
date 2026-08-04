@@ -885,12 +885,26 @@ def make_dismantle(upgraded: bool = False) -> CardInstance:
 # --- Dominate ---
 @register_effect(CardId.DOMINATE)
 def dominate(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
+    """Apply Vulnerable, THEN gain Strength equal to the target's total Vulnerable.
+
+    Dominate.cs:
+        PowerCmd.Apply<VulnerablePower>(target, DynamicVars["VulnerablePower"])
+        int num = target.GetPower<VulnerablePower>()?.Amount ?? 0
+        PowerCmd.Apply<StrengthPower>(Owner, num)
+
+    Order is the whole card. The simulator applied no Vulnerable at all and read
+    only what was already there, so on a clean target it did NOTHING -- where the
+    game applies 1 (2 upgraded) and hands back that much Strength.
+    """
     assert target is not None
-    # Gain strength per vulnerable on target
+    owner = _owner(card, combat)
+    applied = card.effect_vars.get("vulnerable", 1)
+    if applied:
+        combat.apply_power_to(target, PowerId.VULNERABLE, applied)
     strength_per = card.effect_vars.get("strength_per_vulnerable", 1)
     vuln = target.get_power_amount(PowerId.VULNERABLE)
     if vuln > 0:
-        combat.apply_power_to(_owner(card, combat), PowerId.STRENGTH, strength_per * vuln)
+        combat.apply_power_to(owner, PowerId.STRENGTH, strength_per * vuln)
 
 
 def make_dominate(upgraded: bool = False) -> CardInstance:
@@ -911,9 +925,22 @@ def make_dominate(upgraded: bool = False) -> CardInstance:
 # --- Drum of Battle ---
 @register_effect(CardId.DRUM_OF_BATTLE_CARD)
 def drum_of_battle(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
-    draw = card.effect_vars.get("cards", 2)
-    _draw_cards(combat, draw)
-    combat.apply_power_to(_owner(card, combat), PowerId.DRUM_OF_BATTLE, card.effect_vars.get("drum_of_battle_power", 1))
+    """Draw cards, then gain energy.
+
+    DrumOfBattle.cs draws in OnPlay and pays the energy from AfterCardExhausted
+    when the card exhausts ITSELF. The card carries Exhaust, so playing it always
+    leads straight to that -- paying at the end of OnPlay is identical for every
+    play, and differs only when something else exhausts it from hand.
+
+    That difference is declared in derived_values.MODELLING_OVERRIDES rather than
+    left implicit, and the proper fix is recorded there: fire_after_card_exhausted
+    currently reaches powers and relics but not cards.
+
+    The simulator previously applied a DRUM_OF_BATTLE power and never gave the
+    energy, which is not a card in this game.
+    """
+    _draw_cards(combat, card.effect_vars.get("cards", 2))
+    combat.energy += card.effect_vars.get("energy", 2)
 
 
 def make_drum_of_battle(upgraded: bool = False) -> CardInstance:
@@ -1357,12 +1384,25 @@ def make_second_wind(upgraded: bool = False) -> CardInstance:
 # --- Spite ---
 @register_effect(CardId.SPITE)
 def spite(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
+    """Deal damage; if you lost HP this turn, hit `repeat` times instead of once.
+
+    Spite.cs:
+        int hitCount = ((!LostHpThisTurn(Owner.Creature)) ? 1 : DynamicVars.Repeat.IntValue);
+        DamageCmd.Attack(Damage).WithHitCount(hitCount)
+
+    The simulator used to DRAW A CARD on that condition instead of hitting again,
+    which made it a different card entirely -- 5 damage where the game deals 10,
+    or 15 upgraded. The trigger was right and the payload was wrong.
+    """
     assert target is not None
     owner = _owner(card, combat)
-    _deal_damage_to_target(card, combat, target)
-    draw = card.effect_vars.get("cards", 1)
+    hits = 1
     if combat.has_unblocked_damage_received_this_turn(owner, side=CombatSide.PLAYER):
-        _draw_cards(combat, draw, owner)
+        hits = max(1, card.effect_vars.get("repeat", 2))
+    for _ in range(hits):
+        if not target.is_alive:
+            break
+        _deal_damage_to_target(card, combat, target)
 
 
 def make_spite(upgraded: bool = False) -> CardInstance:

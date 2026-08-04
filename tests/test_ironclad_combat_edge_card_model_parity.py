@@ -896,28 +896,35 @@ class TestIroncladCombatEdgeCardModelParity:
         assert stop in combat.hand
         assert combat.draw_pile == [remaining]
 
-    def test_spite_draws_only_after_owner_took_unblocked_damage_this_turn(self):
+    def test_spite_hits_again_after_owner_took_unblocked_damage_this_turn(self):
+        """Spite.cs:
+
+            int hitCount = (!LostHpThisTurn(Owner.Creature)) ? 1 : DynamicVars.Repeat.IntValue
+
+        This test previously asserted that Spite DREW A CARD on that condition,
+        which is not what the card does -- the trigger was right and the payload
+        was wrong, so the simulator dealt 5 where the game deals 10. Kept as the
+        clearest example of a stale test hiding a real bug: it passed for months.
+        """
         combat = _make_combat()
         enemy = combat.enemies[0]
-        missed_draw = make_defend_ironclad()
+        enemy.block = 0
         combat.hand = [make_spite()]
-        combat.draw_pile = [missed_draw]
         combat.energy = 0
+        before = enemy.current_hp
 
         assert combat.play_card(0, 0)
-        assert combat.hand == []
-        assert combat.draw_pile == [missed_draw]
+        assert before - enemy.current_hp == 5, "undamaged owner hits once"
 
-        damaged_combat = _make_combat()
-        enemy = damaged_combat.enemies[0]
-        drawn = make_defend_ironclad()
-        damaged_combat.hand = [make_bloodletting(), make_spite()]
-        damaged_combat.draw_pile = [drawn]
-        damaged_combat.energy = 1
-
-        assert damaged_combat.play_card(0)
-        assert damaged_combat.play_card(0, 0)
-        assert damaged_combat.hand == [drawn]
+        damaged = _make_combat()
+        enemy = damaged.enemies[0]
+        enemy.block = 0
+        damaged.hand = [make_bloodletting(), make_spite()]
+        damaged.energy = 1
+        assert damaged.play_card(0)              # Bloodletting: lose HP
+        before = enemy.current_hp
+        assert damaged.play_card(0, 0)
+        assert before - enemy.current_hp == 10, "damaged owner hits twice"
 
     def test_expect_a_fight_gains_energy_for_attacks_in_hand_not_skills(self):
         combat = _make_combat()

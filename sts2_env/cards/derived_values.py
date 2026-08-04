@@ -42,10 +42,21 @@ class ModellingOverride:
     """A card the simulator represents differently from the game, on purpose."""
 
     reason: str
-    fields: frozenset[str]
     # When the difference becomes visible in play. An override with no answer here
     # is probably drift wearing a disguise.
     observable_when: str
+    # Scalar fields (cost, base_damage, ...) NOT taken from the decompile.
+    fields: frozenset[str] = frozenset()
+    # Decompiled dynamic vars deliberately absent from effect_vars. Without this,
+    # a var the game has and the factory lacks is indistinguishable from someone
+    # simply not knowing about it -- which is how SPITE ran for months missing
+    # `repeat` and hitting once instead of twice.
+    omitted_vars: frozenset[str] = frozenset()
+    # A difference in the EFFECT FUNCTION rather than in the data -- ordering,
+    # timing, which hook fires. Needed because the data can match the decompile
+    # perfectly while the behaviour does not, and that is the harder kind to see:
+    # nothing in effect_vars is missing, so no data check can catch it.
+    behaviour: str = ""
 
 
 MODELLING_OVERRIDES: dict[CardId, ModellingOverride] = {
@@ -53,9 +64,25 @@ MODELLING_OVERRIDES: dict[CardId, ModellingOverride] = {
         reason=("the game deals Repeat(4) hits of Damage(2); the simulator deals "
                 "one hit of 8"),
         fields=frozenset({"base_damage"}),
+        omitted_vars=frozenset({"repeat"}),
         observable_when=("thorns, per-hit block, and anything counting hits -- one "
                          "hit of 8 into a thorns enemy takes a quarter of the "
-                         "retaliation it should"),
+                         "retaliation it should. `repeat` is omitted deliberately: "
+                         "any consumer that multiplies damage by it -- the pilot's "
+                         "effective_damage does -- would read 8 x 4 = 32."),
+    ),
+    CardId.DRUM_OF_BATTLE_CARD: ModellingOverride(
+        reason=("the game gives its Energy from AfterCardExhausted when the card "
+                "exhausts itself; the simulator gives it at the end of OnPlay"),
+        behaviour=("energy is paid at the end of OnPlay instead of from the "
+                   "self-exhaust hook"),
+        observable_when=("the card is exhausted WITHOUT being played -- by another "
+                         "card's exhaust effect, or a relic. The game pays the "
+                         "energy then and the simulator does not. Identical "
+                         "whenever the card is played normally, which is why this "
+                         "is a modelling choice and not a bug. Fix properly by "
+                         "extending fire_after_card_exhausted to reach cards; it "
+                         "currently only reaches powers and relics."),
     ),
 }
 
@@ -131,6 +158,85 @@ def apply_derived_values(card) -> None:
     # just correcting a number. Correcting what is there is the safe half, and it
     # is the half that drifts.
     if "effect_vars" not in skip:
+        omitted = override.omitted_vars if override else frozenset()
         for key, value in dynamic_vars.items():
-            if key in card.effect_vars and key not in skip:
-                card.effect_vars[key] = value
+            if key in skip or key in omitted:
+                continue
+            # `damage` and `block` already live in base_damage / base_block, so
+            # adding them here would put a second copy of the same number beside
+            # the first -- and for CONFLAGRATION a CONTRADICTORY one, since its
+            # override deliberately carries base_damage 8 against the game's
+            # Damage(2). Still updated if a factory declared them itself.
+            if key in ("damage", "block") and key not in card.effect_vars:
+                continue
+            # ADD as well as update. This used to be `if key in card.effect_vars`,
+            # so a var the game has and the factory omitted was silently dropped
+            # -- no add, no warning, and the card just quietly did less than the
+            # real one. SPITE lost `repeat` that way and hit once instead of
+            # twice; DOMINATE lost `vulnerable` and applied none at all.
+            card.effect_vars[key] = value
+
+
+def declared_difference(card_id: CardId) -> ModellingOverride | None:
+    """The declared reason this card differs from the game, if it does.
+
+    The single place anything -- tests, docs, audits -- should ask. An
+    undeclared difference is a bug by definition; that is the whole contract.
+    """
+    return MODELLING_OVERRIDES.get(card_id)
+
+
+def expected_dynamic_vars(card_id: CardId, upgraded: bool) -> dict:
+    """What the simulator SHOULD carry: the game's vars, minus declared omissions.
+
+    Parity tests compare against this rather than against the raw decompile, so a
+    deliberate difference passes and an accidental one fails. Without it the only
+    ways to get a green suite are to fix the card or to weaken the test, and the
+    second is always easier.
+    """
+    _, dynamic_vars = _reference(card_id, upgraded)
+    override = MODELLING_OVERRIDES.get(card_id)
+    if override is None:
+        return dict(dynamic_vars or {})
+
+    # A scalar field and its dynamic var are the same quantity under two names:
+    # `base_damage` is carried as the `damage` var, `base_block` as `block`. An
+    # override declaring `base_damage` therefore has to exclude `damage` too, or
+    # CONFLAGRATION -- declared as one hit of 8 against the game's Damage(2) --
+    # still fails the very test the declaration exists to satisfy.
+    field_to_var = {"base_damage": "damage", "base_block": "block"}
+    excluded = set(override.omitted_vars) | set(override.fields)
+    excluded |= {field_to_var[f] for f in override.fields if f in field_to_var}
+    return {
+        key: value for key, value in (dynamic_vars or {}).items()
+        if key not in excluded
+    }
+
+
+def undeclared_differences() -> dict[CardId, dict]:
+    """Every card carrying fewer dynamic vars than the game, without saying why.
+
+    Returns ``{card_id: {var: game_value}}``. Empty is the only acceptable state;
+    `tests/test_modelling_differences.py` asserts exactly that.
+    """
+    from sts2_env.cards.factory import create_card
+
+    from sts2_env.cards.reference_static_metadata import (
+        reference_dynamic_vars_by_card_id,
+    )
+
+    found: dict[CardId, dict] = {}
+    for card_id in reference_dynamic_vars_by_card_id():
+        try:
+            card = create_card(card_id)
+        except Exception:  # noqa: BLE001 -- a card that will not build is a
+            continue       # different failure, reported by its own tests
+        expected = expected_dynamic_vars(card_id, upgraded=False)
+        missing = {
+            key: value for key, value in expected.items()
+            # damage and block live in base_damage / base_block by design.
+            if key not in ("damage", "block") and key not in (card.effect_vars or {})
+        }
+        if missing:
+            found[card_id] = missing
+    return found

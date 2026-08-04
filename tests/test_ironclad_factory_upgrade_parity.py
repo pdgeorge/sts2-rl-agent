@@ -109,10 +109,23 @@ def test_ironclad_factory_upgrade_core_metadata_matches_reference(card_id: CardI
 
 @pytest.mark.parametrize("card_id", IRONCLAD_FACTORY_UPGRADE_CARD_IDS, ids=_ironclad_card_id)
 def test_ironclad_factory_upgrade_dynamic_values_match_reference(card_id: CardId):
+    """Compared against the game MINUS declared modelling differences.
+
+    `expected_dynamic_vars` rather than the raw reference, so a difference that
+    `MODELLING_OVERRIDES` explains passes and one that nothing explains fails.
+    Without that split the only ways to a green suite are to fix the card or to
+    weaken the test, and weakening is always easier -- which is how a deliberate
+    difference and a forgotten one became indistinguishable in the first place.
+    """
+    from sts2_env.cards.derived_values import expected_dynamic_vars
+
     actual = create_card(card_id, upgraded=True)
     expected = create_reference_card(card_id, upgraded=True, allow_generation=True)
+    declared = expected_dynamic_vars(card_id, upgraded=True)
 
     for key, expected_value in expected.effect_vars.items():
+        if key not in declared:
+            continue          # deliberately omitted; see docs/MODELLING_DIFFERENCES.md
         actual_value = actual.effect_vars.get(key)
         if key in {"damage", "calc_base"} and actual_value is None:
             assert actual.base_damage == expected_value
