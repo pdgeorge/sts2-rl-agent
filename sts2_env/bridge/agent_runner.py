@@ -613,7 +613,28 @@ def run_agent(
 
                     action_int = None
                     if pilot_combat:
-                        action_int = _pilot_combat_action(state, mask)
+                        # The model keeps the potion decisions.
+                        #
+                        # value_pilot cannot see potions at all: `rebuild_combat`
+                        # does not restore them, so the rebuilt state offers none,
+                        # and the pilot prices only hand cards regardless. Flying
+                        # combat with it therefore stopped potions being used --
+                        # observed live, and it is a real loss, because the model
+                        # did learn to use them.
+                        #
+                        # Asking the model first and taking its answer ONLY when
+                        # it wants a potion keeps that behaviour intact while the
+                        # pilot still picks every card. One extra predict per
+                        # decision, which is cheap next to a battery call.
+                        model_action, _states = combat_policy.predict(
+                            obs, action_masks=mask, deterministic=deterministic,
+                        )
+                        if _is_potion_action(int(model_action)):
+                            action_int = int(model_action)
+                            if verbose:
+                                logger.info("POTION: model chose action %d", action_int)
+                        else:
+                            action_int = _pilot_combat_action(state, mask)
                     if action_int is None:
                         action, _states = combat_policy.predict(
                             obs,
@@ -802,6 +823,17 @@ def _phase_for_state(state: dict[str, Any]) -> str:
         MSG_TYPE_PONG: MSG_TYPE_PONG,
         MSG_TYPE_ERROR: MSG_TYPE_ERROR,
     }.get(msg_type, state.get("phase", Phase.UNKNOWN))
+
+
+def _is_potion_action(action: int) -> bool:
+    """Is this live action index a potion use rather than a card play?
+
+    Potions are the one thing the trained model does that the pilot cannot --
+    see the note at the call site.
+    """
+    from sts2_env.core.constants import ACTION_SPACE_SIZE, POTION_ACTION_START
+
+    return POTION_ACTION_START <= action < ACTION_SPACE_SIZE
 
 
 def _pilot_combat_action(state: dict[str, Any], mask) -> int | None:
