@@ -65,10 +65,30 @@ itself per turn and tolerates less block -- so `block_density_penalty` is shaped
 as a soft band rather than a hard rule."""
 
 UPGRADE_DENSITY_TARGET = 0.33
+UPGRADE_DENSITY_MIN = 0.33
 """Baalorlord puts 33-50% upgraded as reasonable for winning high-difficulty
-runs. Recorded as the low end, because this agent is nowhere near it: the
-measured jump from upgrading eight cards was the act 1 boss going from 13.9% to
-69.4% win rate, which is what being far below the band looks like."""
+runs. Recorded as the low end, because this agent is nowhere near it.
+
+Measured live, seven runs with shape recorded: mean upgrade density 7%. The
+three runs with ZERO upgrades averaged floor 7.3 against 12.3 for the four that
+had any. And the strongest single measurement in this project is the act 1 boss
+going from 13.9% to 69.4% on eight upgrades.
+
+Unlike block density there is NO UPPER WALL. A flooded block deck draws hands
+that cannot kill anything, which is a real failure with a real cost; there is no
+such thing as too many upgraded cards. So this is a floor, not a band, and
+`upgrade_density_shortfall` is one-sided by design.
+"""
+
+
+def upgrade_density_shortfall(deck: Sequence) -> float:
+    """How far below the healthy upgrade floor this deck sits. 0.0 at or above.
+
+    One-sided on purpose -- see UPGRADE_DENSITY_MIN. Returned as a positive
+    magnitude so callers read it as "how much is missing" rather than having to
+    remember a sign convention.
+    """
+    return max(0.0, UPGRADE_DENSITY_MIN - upgrade_density(deck))
 
 
 def _is_block(card) -> bool:

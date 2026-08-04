@@ -135,3 +135,35 @@ def test_empty_deck_does_not_divide_by_zero():
     assert cycle_time([]) == 0.0
     assert p_no_block([]) == 0.0
     assert p_flooded([]) == 0.0
+
+
+def test_the_upgrade_floor_is_one_sided():
+    """Unlike block, there is no such thing as too many upgraded cards.
+
+    A flooded block deck draws hands that cannot kill anything -- a real failure
+    with a real cost, which is why block gets a band. Upgrades have no upper
+    wall, so this is a floor and the shortfall never goes negative.
+    """
+    from sts2_env.evaluation.deck_metrics import (
+        UPGRADE_DENSITY_MIN,
+        upgrade_density_shortfall,
+    )
+
+    none_upgraded = create_ironclad_starter_deck()
+    assert upgrade_density_shortfall(none_upgraded) == UPGRADE_DENSITY_MIN
+
+    all_upgraded = [create_card(c.card_id, upgraded=True) for c in none_upgraded]
+    assert upgrade_density_shortfall(all_upgraded) == 0.0
+
+
+def test_a_deck_level_shortfall_is_what_a_per_card_price_cannot_see():
+    """rest_choice prices upgrades ONE AT A TIME, so a uniformly under-upgraded
+    deck never presents a single urgent-looking upgrade -- which is how the agent
+    reached the act 1 boss at 10% upgraded while eight upgrades were measured
+    worth 55 points of boss win rate."""
+    from sts2_env.evaluation.deck_metrics import upgrade_density_shortfall
+
+    deck = create_ironclad_starter_deck()
+    partly = [create_card(c.card_id, upgraded=(i < 2)) for i, c in enumerate(deck)]
+
+    assert upgrade_density_shortfall(deck) > upgrade_density_shortfall(partly) > 0

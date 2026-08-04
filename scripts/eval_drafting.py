@@ -49,6 +49,11 @@ def play_one(seed: int, *, use_priors: bool, use_density: bool,
     from sts2_env.evaluation.pilots import greedy_pilot
     from sts2_env.evaluation.rest_choice import rank_rest_options
     from sts2_env.gym_env.action_space import action_to_card_and_target, get_action_mask
+    from sts2_env.bridge.agent_runner import (
+        REST_HP_RATIO_THRESHOLD,
+        ROOM_PRIORITY_HEALTHY,
+        ROOM_PRIORITY_LOW_HP,
+    )
     from sts2_env.run.run_manager import RunManager
 
     manager = RunManager(seed=seed)
@@ -160,9 +165,36 @@ def play_one(seed: int, *, use_priors: bool, use_density: bool,
                         manager.take_action(rest)
                     continue
 
-            # Everything else -- map, shop, event, treasure -- is chosen at
-            # random. Deliberately: this script is an A/B on DRAFTING, and a
-            # heuristic here would be another untested thing shared by both arms.
+            # Map routing uses the LIVE agent's priority order, not chance.
+            #
+            # Random routing made this harness unrepresentative in exactly the
+            # way that hid three separate changes. It died around floor 7.6 with
+            # 12-card decks against the live agent's 11.6 and ~17, so it never
+            # reached the deck sizes the bloat term acts on, the densities the
+            # block band acts on, or more than 16 rest sites across 25 runs. All
+            # three measured "no difference" because the states they act on were
+            # off the end of the run.
+            moves = [a for a in actions if a.get("action") == "move"]
+            if moves:
+                player = manager.run_state.player
+                hp_ratio = (float(getattr(player, "current_hp", 0))
+                            / max(1.0, float(getattr(player, "max_hp", 1))))
+                priority = (ROOM_PRIORITY_LOW_HP if hp_ratio < REST_HP_RATIO_THRESHOLD
+                            else ROOM_PRIORITY_HEALTHY)
+                chosen = None
+                for room in priority:
+                    for move in moves:
+                        if str(move.get("point_type", "")).lower().replace("_", "") == room:
+                            chosen = move
+                            break
+                    if chosen is not None:
+                        break
+                manager.take_action(chosen or moves[0])
+                continue
+
+            # Shops, events and treasure stay random: this is an A/B on drafting
+            # and rest, and a heuristic there would be one more untested thing
+            # shared by both arms.
             manager.take_action(rng.choice(actions))
     except Exception as error:  # noqa: BLE001
         return {"floor": manager.run_state.total_floor, "error": repr(error)[:120],
