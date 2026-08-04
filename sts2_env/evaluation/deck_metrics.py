@@ -64,6 +64,28 @@ from. Not every deck wants the same number -- a high-draw deck sees more of
 itself per turn and tolerates less block -- so `block_density_penalty` is shaped
 as a soft band rather than a hard rule."""
 
+MEANINGFUL_UPGRADES_TARGET = 4
+"""Upgraded NON-STARTER cards needed to beat the act 1 boss. Measured.
+
+30 seeds, 14-card deck, greedy pilot, act 1 boss -- the same number of upgrades
+placed differently:
+
+    upgrades   on Strikes/Defends   on the drafted cards
+        2             11%                  30%
+        4             19%                  78%
+        5             27%                  79%
+
+Four upgrades on drafted cards is a 78% boss win rate against 19% for four on
+starters. A 59-point difference from WHICH cards, not how many -- and the knee is
+at four, so the fifth buys nothing.
+
+This is pdgeorge's rule ("Strike and Defend are the lowest priority to upgrade")
+measured, and it is why the target is a COUNT of meaningful upgrades rather than
+a density. Density gets this wrong in both directions: it calls a 20-card deck
+with four upgrades deficient at 20% when that deck wins the boss 78% of the time,
+and it counts an upgraded Strike as progress when it is worth almost nothing.
+"""
+
 UPGRADE_DENSITY_TARGET = 0.33
 UPGRADE_DENSITY_MIN = 0.33
 """Baalorlord puts 33-50% upgraded as reasonable for winning high-difficulty
@@ -81,13 +103,38 @@ such thing as too many upgraded cards. So this is a floor, not a band, and
 """
 
 
-def upgrade_density_shortfall(deck: Sequence) -> float:
-    """How far below the healthy upgrade floor this deck sits. 0.0 at or above.
+def _is_starter(card) -> bool:
+    """A basic Strike or Defend, for any character. Prefix-matched, so
+    PERFECTED_STRIKE and POMMEL_STRIKE are correctly NOT starters."""
+    name = getattr(getattr(card, "card_id", card), "name", "") or ""
+    return name.startswith("STRIKE_") or name.startswith("DEFEND_")
 
-    One-sided on purpose -- see UPGRADE_DENSITY_MIN. Returned as a positive
-    magnitude so callers read it as "how much is missing" rather than having to
-    remember a sign convention.
+
+def meaningful_upgrades(deck: Sequence) -> int:
+    """Upgraded cards that are not basic Strikes or Defends.
+
+    The quantity the act 1 boss actually responds to. See
+    MEANINGFUL_UPGRADES_TARGET: four of these is 78% against the boss, while four
+    upgraded starters is 19%.
     """
+    return sum(1 for c in deck
+               if getattr(c, "upgraded", False) and not _is_starter(c))
+
+
+def upgrade_shortfall(deck: Sequence) -> float:
+    """Fraction of the way short of a boss-ready deck, 0.0 when there or beyond.
+
+    One-sided on purpose: unlike block, where a flooded hand cannot kill
+    anything, there is no such thing as too many upgraded cards.
+    """
+    if MEANINGFUL_UPGRADES_TARGET <= 0:
+        return 0.0
+    missing = MEANINGFUL_UPGRADES_TARGET - meaningful_upgrades(deck)
+    return max(0.0, missing / MEANINGFUL_UPGRADES_TARGET)
+
+
+def upgrade_density_shortfall(deck: Sequence) -> float:
+    """Deprecated: density is the wrong quantity. Use `upgrade_shortfall`."""
     return max(0.0, UPGRADE_DENSITY_MIN - upgrade_density(deck))
 
 

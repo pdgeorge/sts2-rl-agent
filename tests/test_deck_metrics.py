@@ -7,6 +7,8 @@ them: no pilot, no seeds, nothing that can drift.
 
 from __future__ import annotations
 
+import pytest
+
 from math import comb
 
 from sts2_env.cards.factory import create_card
@@ -137,33 +139,54 @@ def test_empty_deck_does_not_divide_by_zero():
     assert p_flooded([]) == 0.0
 
 
-def test_the_upgrade_floor_is_one_sided():
-    """Unlike block, there is no such thing as too many upgraded cards.
+def test_upgraded_starters_do_not_count_toward_being_boss_ready():
+    """The measurement this whole metric exists for. 30 seeds, act 1 boss:
 
-    A flooded block deck draws hands that cannot kill anything -- a real failure
-    with a real cost, which is why block gets a band. Upgrades have no upper
-    wall, so this is a floor and the shortfall never goes negative.
+        4 upgrades on drafted cards   78% win
+        4 upgrades on Strikes/Defends 19% win
+
+    Same count, 59 points apart. So the target is a COUNT of upgrades on cards
+    that matter, not a density -- density counts an upgraded Strike as progress
+    when it is worth almost nothing, and calls a 20-card deck with four real
+    upgrades deficient when it wins the boss 78% of the time.
     """
-    from sts2_env.evaluation.deck_metrics import (
-        UPGRADE_DENSITY_MIN,
-        upgrade_density_shortfall,
+    from sts2_env.evaluation.deck_metrics import meaningful_upgrades, upgrade_shortfall
+
+    starter = create_ironclad_starter_deck()
+    all_upgraded = [create_card(c.card_id, upgraded=True) for c in starter]
+
+    # BASH is in the starter deck and is NOT a basic Strike or Defend -- it is a
+    # real card and upgrading it is a real decision, so it counts. The nine
+    # Strikes and Defends contribute nothing.
+    assert meaningful_upgrades(all_upgraded) == 1
+    assert sum(1 for c in starter if c.card_id.name.startswith(("STRIKE_", "DEFEND_"))) == 9
+
+    strikes_only = [create_card(c.card_id,
+                                upgraded=c.card_id.name.startswith(("STRIKE_", "DEFEND_")))
+                    for c in starter]
+    assert meaningful_upgrades(strikes_only) == 0
+    assert upgrade_shortfall(strikes_only) == 1.0, (
+        "upgrading every Strike and Defend leaves the deck no closer to the boss"
     )
 
-    none_upgraded = create_ironclad_starter_deck()
-    assert upgrade_density_shortfall(none_upgraded) == UPGRADE_DENSITY_MIN
 
-    all_upgraded = [create_card(c.card_id, upgraded=True) for c in none_upgraded]
-    assert upgrade_density_shortfall(all_upgraded) == 0.0
+def test_the_shortfall_closes_on_real_upgrades_and_is_one_sided():
+    """Unlike block, there is no such thing as too many upgraded cards -- a
+    flooded block deck draws hands that cannot kill anything, and no such failure
+    exists here. So it is a floor, and it never goes negative."""
+    from sts2_env.evaluation.deck_metrics import (
+        MEANINGFUL_UPGRADES_TARGET,
+        upgrade_shortfall,
+    )
 
+    drafted = _mk(["IRON_WAVE", "UPPERCUT", "ANGER", "TAUNT", "BLUDGEON"])
+    base = create_ironclad_starter_deck()
 
-def test_a_deck_level_shortfall_is_what_a_per_card_price_cannot_see():
-    """rest_choice prices upgrades ONE AT A TIME, so a uniformly under-upgraded
-    deck never presents a single urgent-looking upgrade -- which is how the agent
-    reached the act 1 boss at 10% upgraded while eight upgrades were measured
-    worth 55 points of boss win rate."""
-    from sts2_env.evaluation.deck_metrics import upgrade_density_shortfall
-
-    deck = create_ironclad_starter_deck()
-    partly = [create_card(c.card_id, upgraded=(i < 2)) for i, c in enumerate(deck)]
-
-    assert upgrade_density_shortfall(deck) > upgrade_density_shortfall(partly) > 0
+    assert upgrade_shortfall(base + drafted) == 1.0
+    half = base + [create_card(c.card_id, upgraded=(i < 2))
+                   for i, c in enumerate(drafted)]
+    assert upgrade_shortfall(half) == pytest.approx(
+        (MEANINGFUL_UPGRADES_TARGET - 2) / MEANINGFUL_UPGRADES_TARGET
+    )
+    full = base + [create_card(c.card_id, upgraded=True) for c in drafted]
+    assert upgrade_shortfall(full) == 0.0

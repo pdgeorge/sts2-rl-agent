@@ -86,7 +86,46 @@ Today's null result on untapped priors is the clearest evidence of the cost: rea
 
 **Gate.** Handed a deck with `DEMON_FORM` or `INFLAME`, the pilot plays it on turn 1-2 of a long fight and declines it on the last turn of a short one. Blind-card count under 10.
 
-### 2. Combat is the binding constraint, not drafting
+### 2. Combat is NOT the binding constraint. The DECK is.
+
+**This section was wrong and the correction is the most useful thing measured so
+far.** It read the 36% act 1 elite win rate as a combat problem. It is a deck
+problem, and the same pilot proves it -- same enemies, same seeds, only the four
+drafted cards differ:
+
+```
+starter + TAUNT, TAUNT, IRON_WAVE, ARMAMENTS    36% elite win, 29.5hp per normal
+starter + IRON_WAVE, UPPERCUT, ANGER, TAUNT     98% elite win, 16.5hp per normal
+```
+
+A 62-point swing from four card choices, larger than any other effect in this
+project. And the boss responds to upgrades the same way -- 30 seeds, act 1 boss,
+SAME number of upgrades placed differently:
+
+```
+upgrades   on Strikes/Defends   on the drafted cards
+    2             11%                  30%
+    4             19%                  78%
+    5             27%                  79%
+```
+
+**Four upgrades on drafted cards is a 78% act 1 boss win rate.** Four is
+reachable from the rest sites act 1 actually offers, and the knee is at four --
+the fifth buys nothing. That is pdgeorge's "Strike and Defend are the lowest
+priority to upgrade", measured, and worth 59 points.
+
+So the ceiling with the CURRENT pilot and CURRENT simulator is act 1 cleared
+comfortably: 98% elites and 78% boss. The live agent reaches that boss in 24% of
+runs and beats it in 2%, carrying 7% upgrade density. **The agent is nowhere near
+its own ceiling**, which is a very different problem from a low ceiling.
+
+Two honest caveats. That "good draft" was chosen in hindsight -- it proves a
+reachable deck clears act 1, not that the drafter can find it. And part of the
+36% is pilot artifact: Taunt and Armaments are near-dead to greedy, so a deck
+holding three of them is punished once for real and once by the evaluator's
+blindness. untapped rates Taunt at +1%, not -60%.
+
+### 2b. What the old section 2 said, kept because the reasoning was reasonable
 
 ```
 act 1 elite win rate    greedy heuristic  36%    trained v3 model  33%

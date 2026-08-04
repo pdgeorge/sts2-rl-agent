@@ -100,19 +100,27 @@ roguelike answer, and here it is also the only one that escapes the loop.
 """
 
 
-UPGRADE_SHORTFALL_POINTS = 60.0
-"""HP-equivalent value of closing the whole upgrade-density gap.
+UPGRADE_SHORTFALL_POINTS = 20.0
+"""HP-equivalent value of closing the whole gap to a boss-ready deck.
 
-A deck at 0% upgraded against the 33% floor carries a shortfall of 0.33, so this
-adds up to ~20 points to every upgrade option -- enough to beat a mid-range rest,
-not enough to beat one at critical HP, where the survival discount takes it to
-almost nothing anyway.
+Calibrated against both ends, not chosen freely.
 
-The number is a judgement call, not a measurement, and it is the first thing to
-change if the agent starts smithing when it should be healing. What is NOT a
-judgement call is that the term has to exist: rest_choice prices upgrades one at
-a time, so a deck that is uniformly under-upgraded never presents a single
-urgent-looking upgrade -- which is exactly how it reaches the act 1 boss at 10%.
+At 60 it overturned the low-HP rest fix from an hour earlier -- a fully-short
+deck at 20/80 hp got +28 of push and smithed at 25% health, where P(surviving
+the next fight) is 46%. At 30 it still won there by 2 points, which is inside
+this model's precision and on the wrong side of it. At 20:
+
+    20/80 (46% survive)   REST +37   IRON_WAVE +31     rests
+    32/80 (86% survive)   IRON_WAVE +58   REST +19     smiths
+    68/80 (92% survive)   IRON_WAVE +79   REST +18     smiths
+
+Banking a permanent upgrade you have a 46% chance of living to use is worse than
+the heal that takes those odds to 92%.
+
+The constant is a judgement call; the term's existence is not. rest_choice
+prices upgrades one at a time, so a deck four real upgrades short of boss-ready
+never presents a single urgent-looking upgrade -- see the 78%-vs-19% table in
+deck_metrics.MEANINGFUL_UPGRADES_TARGET.
 """
 
 
@@ -353,11 +361,14 @@ def rank_rest_options(
     """
     from sts2_env.evaluation.card_choice import tiers_for_floor
 
-    from sts2_env.evaluation.deck_metrics import upgrade_density_shortfall
+    from sts2_env.evaluation.deck_metrics import (
+        MEANINGFUL_UPGRADES_TARGET,
+        upgrade_shortfall,
+    )
 
     if fights_remaining is None:
         fights_remaining = fights_remaining_at(floor)
-    shortfall = upgrade_density_shortfall(deck)
+    shortfall = upgrade_shortfall(deck)
     tiers = tiers_for_floor(floor)
     baseline = _hp_cost_per_fight(deck, pilot, tiers, seeds, max_hp)
     boss_baseline = (
@@ -436,16 +447,25 @@ def rank_rest_options(
         # regardless of what any single upgrade measures at.
         #
         # rest_choice prices upgrades ONE AT A TIME and has no notion of the deck
-        # as a whole being under-upgraded -- which is the state the agent is in
-        # every time it dies. Seven live runs averaged 7% upgrade density against
-        # Baalorlord's 33-50% for winning runs, and the strongest measurement in
-        # the project is the act 1 boss going from 13.9% to 69.4% on eight
-        # upgrades. Individually none of those eight would have looked urgent.
+        # as a whole being short of boss-ready -- which is the state the agent
+        # dies in. Measured against the act 1 boss, 30 seeds:
+        #
+        #     4 upgrades on drafted cards   78% win
+        #     4 upgrades on Strikes/Defends 19% win
+        #     0 upgrades                     7% win
+        #
+        # Individually none of those four looks urgent, which is exactly why a
+        # per-card price never finds them.
         #
         # Discounted by the same survival term, because a deck-level shortfall is
         # still a claim on fights you have not survived. At 9 hp it contributes
         # almost nothing, which is what stops this undoing the greed fix.
-        value += shortfall * UPGRADE_SHORTFALL_POINTS * alive
+        # Scaled by the fights left as well as the odds of reaching them. An
+        # upgrade with no fights remaining is worth nothing however short of
+        # boss-ready the deck is, and without this the shortfall term paid out
+        # on the last floor of the run.
+        horizon = min(1.0, fights_remaining / float(MEANINGFUL_UPGRADES_TARGET))
+        value += shortfall * UPGRADE_SHORTFALL_POINTS * alive * horizon
 
         if card.card_id in LOW_PRIORITY_UPGRADES or _upgrading_is_measured_bad(card, floor):
             # pdgeorge's rule, and it is a play-knowledge prior rather than a
