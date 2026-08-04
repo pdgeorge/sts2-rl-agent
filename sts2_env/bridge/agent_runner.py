@@ -104,6 +104,20 @@ BOSS_RELIC_PICK_ACTION = "pick_relic"
 
 
 
+NOISY_STATE_TYPES = frozenset({"combat_action"})
+"""State types logged at DEBUG rather than INFO.
+
+`combat_action` arrives once per card played and once per settle tick, so a
+single fight produces dozens of identical "Received: type=combat_action" /
+"Waiting for game state..." pairs. At INFO they bury the lines that are actually
+worth reading -- the draft ranking, the block-density warning, the deck summary
+and the rest-site pricing -- which is the whole reason for running verbose.
+
+Deliberately a denylist rather than an allowlist of interesting types: a new
+message type from a future mod build should be visible by default, not silently
+swallowed because nobody added it here.
+"""
+
 STUCK_REPEAT_LIMIT = 25
 """Identical (state, action) pairs in a row before we call it stuck.
 
@@ -350,9 +364,17 @@ def run_agent(
         try:
             while True:
                 try:
-                    logger.info("Waiting for game state...")
+                    logger.debug("Waiting for game state...")
                     state = client.receive_state()
-                    logger.info("Received: type=%s", state.get("type", "?"))
+                    received = state.get("type", "?")
+                    # `combat_action` arrives once per card played and once per
+                    # settle tick, so at INFO it buries the four lines anyone
+                    # actually reads -- draft, composition, deck, rest. The
+                    # decisions stay at INFO; the heartbeat drops to DEBUG.
+                    logger.log(
+                        logging.DEBUG if received in NOISY_STATE_TYPES else logging.INFO,
+                        "Received: type=%s", received,
+                    )
                 except TimeoutError:
                     logger.warning("Timeout waiting for state. Sending ping...")
                     if client.ping():
