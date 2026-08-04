@@ -196,13 +196,22 @@ def choose_card_index(state: Mapping[str, Any], pilot, **kwargs) -> int | None:
     # fact: diagnosing a draft needs the card names, the scores, and the margin,
     # because a 0.002 margin means the measurement did not actually separate them
     # and the pick is arbitrary.
-    logger.info(
-        "draft: %s",
-        "  ".join(
-            f"{'SKIP' if s.card is None else s.label}={s.score:+.2f}"
-            for s in ranked
-        ),
-    )
+    # Every pick carries how often real players took the same card, because a
+    # score alone cannot tell you the drafter has wandered somewhere no human
+    # goes. Free -- the scraped table already holds it -- and it catches a whole
+    # class of silent regression within one evening of live play.
+    from sts2_env.evaluation.card_priors import card_stats
+    from sts2_env.evaluation.deck_metrics import describe as describe_deck
+
+    def _annotate(s) -> str:
+        if s.card is None:
+            return f"SKIP={s.score:+.2f}"
+        stats = card_stats(s.card, decision="card_reward", floor=context.floor)
+        taken = f" [humans {stats['taken_pct']}%]" if stats and "taken_pct" in stats else ""
+        return f"{s.label}={s.score:+.2f}{taken}"
+
+    logger.info("draft: %s", "  ".join(_annotate(s) for s in ranked))
+    logger.info("deck:  %s", describe_deck(context.deck))
     if len(ranked) >= 2:
         gap = ranked[0].score - ranked[1].score
         if gap < 0.15:

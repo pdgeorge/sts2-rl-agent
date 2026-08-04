@@ -92,6 +92,100 @@ def _enemy_output(combat, enemy) -> float:
     return float(total)
 
 
+def effective_damage(combat, card, target) -> float:
+    """What this card would ACTUALLY hit this target for, right now.
+
+    `base_damage` is not that number, in two separate ways, and both were live:
+
+    Wrong by modifier. A Strike at 3 Strength into a Vulnerable target does not
+    deal 6. Routing through the engine's own `calculate_damage` picks up
+    Strength, Vulnerable, Weak and every power hook without this file needing to
+    know any of them exist -- which is the only version of this that survives a
+    patch. Five Ironclad cards were also carrying a frozen `base_damage` beside a
+    real `calc_base` (PERFECTED_STRIKE reads 6 no matter how many Strikes are
+    held); those are now computed rather than read.
+
+    Wrong by absence. Three attacks compute their damage inside their effect
+    function and carry `base_damage = 0` -- BODY_SLAM is `owner.block`, and no
+    amount of `calculate_damage` recovers it, because there is no base to modify.
+    The plan document claimed otherwise; it was wrong. For those the card is
+    played on a *clone* and the enemy's HP drop is measured, which needs no list
+    of which cards are special and so cannot rot when a patch adds a fourth.
+
+    The dry run is only reached for an attack with no base damage, so it costs
+    nothing on the ~97% of cards that have one.
+    """
+    from sts2_env.core.damage import calculate_damage
+    from sts2_env.core.enums import CardType, ValueProp
+
+    if target is None:
+        return 0.0
+
+    variables = getattr(card, "effect_vars", None) or {}
+    # Multi-hit. SWORD_BOOMERANG is `repeat: 3` at 3 damage and deals 9;
+    # DISMANTLE is `hits: 2` at 8 and deals 16. Reading base_damage alone
+    # undervalues every multi-hit card by its own hit count -- and multi-hit is
+    # precisely what Strength scales best, so the error compounds exactly where
+    # the card is strongest.
+    # Both keys mean TOTAL hits, not extra ones -- sword_boomerang does
+    # `for _ in range(effect_vars["repeat"])`, so repeat:3 is three hits and not
+    # four. Checked in the source rather than assumed; the off-by-one version of
+    # this overvalued every multi-hit card by a full hit.
+    hits = max(1, int(variables.get("repeat", 1) or 1), int(variables.get("hits", 1) or 1))
+
+    base = card.base_damage or 0
+    if base > 0:
+        player = getattr(combat, "player", None)
+        try:
+            dealt = float(calculate_damage(base, player, target, ValueProp.MOVE, combat))
+        except Exception:  # noqa: BLE001 -- a pilot must never take the fight down
+            dealt = float(base)
+        # Both paths must report HP REMOVED, not damage thrown. The dry run
+        # measures an HP delta and so already nets off the enemy's block; this
+        # path has to subtract it explicitly or the two disagree by exactly the
+        # enemy's block, and a 14-damage hit into 13 block would be valued at 14
+        # when it is worth 1.
+        return max(0.0, dealt * hits - float(getattr(target, "block", 0) or 0))
+
+    if card.card_type != CardType.ATTACK:
+        return 0.0
+    return _dry_run_damage(combat, card, target)
+
+
+def _dry_run_damage(combat, card, target) -> float:
+    """Play the card on a clone and see what it did. Last resort, measured.
+
+    `clone_combat` rather than `deepcopy`: a plain deepcopy leaves the copy's
+    monsters acting on the ORIGINAL's creatures, which would corrupt the live
+    fight this is supposed to be reasoning about.
+    """
+    from sts2_env.cards.registry import _CARD_EFFECTS
+    from sts2_env.search.cloning import clone_combat
+
+    effect = _CARD_EFFECTS.get(card.card_id)
+    if effect is None:
+        return 0.0
+
+    try:
+        clone = clone_combat(combat)
+        index = next(
+            (i for i, c in enumerate(combat.hand) if c is card), None
+        )
+        clone_card = clone.hand[index] if index is not None and index < len(clone.hand) else None
+        clone_target = next(
+            (e for e in clone.enemies
+             if getattr(e, "combat_id", None) == getattr(target, "combat_id", None)),
+            None,
+        )
+        if clone_card is None or clone_target is None:
+            return 0.0
+        before = clone_target.current_hp
+        effect(clone_card, clone, clone_target)
+        return float(max(0, before - clone_target.current_hp))
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
 def _damage_value(combat, card, target) -> float:
     """HP saved by dealing this card's damage to this enemy.
 
@@ -101,7 +195,7 @@ def _damage_value(combat, card, target) -> float:
     does -- treats those as the same play, and it is the reason chip damage on a
     boss outranks a kill on the thing actually hurting you.
     """
-    damage = float(card.base_damage or 0)
+    damage = effective_damage(combat, card, target)
     if damage <= 0 or target is None:
         return 0.0
 
@@ -157,6 +251,28 @@ def _debuff_value(combat, card, target) -> float:
     return value
 
 
+DRAW_KEYS = ("cards", "draw")
+"""Where a card records how much it draws. `cards` is the real one.
+
+This term read `draw` alone from the day it was written, and NO CARD IN THE GAME
+carries a `draw` key -- it is `cards` (BATTLE_TRANCE {'cards': 3}, OFFERING
+{'cards': 3, 'energy': 2}). So `_draw_value` returned 0.0 for every card, always,
+and nine Ironclad cards were invisible to it. `draw` is kept as a fallback in
+case a patch introduces it, since checking two keys costs nothing.
+"""
+
+
+def _hp_cost(card) -> float:
+    """HP the card spends on itself. A real cost the pilot was not paying.
+
+    OFFERING is 6 HP, BLOOD_WALL 2, HEMOKINESIS 2, BREAKTHROUGH 1. Priced 1:1
+    against the HP the card saves, since both sides are the same currency -- and
+    against a weak enemy a 6 HP payment can easily exceed what the card prevents.
+    """
+    variables = getattr(card, "effect_vars", None) or {}
+    return float(variables.get("hp_loss", 0) or 0)
+
+
 def _draw_value(card) -> float:
     """Cards drawn are options, valued modestly and flatly.
 
@@ -165,7 +281,8 @@ def _draw_value(card) -> float:
     meant to fix, in the other direction.
     """
     variables = getattr(card, "effect_vars", None) or {}
-    return float(variables.get("draw", 0) or 0) * 1.5
+    drawn = next((variables[k] for k in DRAW_KEYS if variables.get(k)), 0)
+    return float(drawn or 0) * 1.5
 
 
 def value_pilot(combat) -> int:
@@ -205,6 +322,7 @@ def value_pilot(combat) -> int:
             + _block_value(combat, card, pledged)
             + _debuff_value(combat, card, target)
             + _draw_value(card)
+            - _hp_cost(card)
         )
         if value > best_value:
             best_value, best_action = value, int(action)
