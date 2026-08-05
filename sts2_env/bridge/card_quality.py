@@ -37,23 +37,6 @@ logger = logging.getLogger(__name__)
 # ways nobody could see.
 CARD_RATINGS: dict[str, float] = {}
 
-# Cards whose effect is gated on a living Osty, the Necrobinder's pet. Nobody
-# else can ever have one, so for anyone else these are dead cards -- and one of
-# them (BONE_SHARDS) hung a live Ironclad run on 2026-08-05.
-#
-# Derived from the simulator rather than typed out, by finding every registered
-# effect in cards/necrobinder.py that touches the Osty. Regenerate the same way
-# if the card set changes; the list is here rather than computed at import so a
-# card reward never pays to introspect source code.
-OSTY_DEPENDENT_CARDS = frozenset({
-    CardId.AFTERLIFE, CardId.BODYGUARD, CardId.BONE_SHARDS, CardId.CLEANSE,
-    CardId.DIRGE, CardId.FETCH, CardId.FLATTEN, CardId.HIGH_FIVE,
-    CardId.LEGION_OF_BONE, CardId.NECRO_MASTERY_CARD, CardId.POKE,
-    CardId.PROTECTOR, CardId.PULL_AGGRO, CardId.RATTLE, CardId.REANIMATE,
-    CardId.RIGHT_HAND_HAND, CardId.SACRIFICE, CardId.SIC_EM, CardId.SNAP,
-    CardId.SPUR, CardId.SQUEEZE, CardId.UNLEASH,
-})
-
 # Never worth adding, whatever else the numbers say.
 _REFUSE_TYPES = frozenset({CardType.CURSE, CardType.STATUS})
 _REFUSE_RARITIES = frozenset({CardRarity.CURSE, CardRarity.STATUS, CardRarity.BASIC})
@@ -108,24 +91,6 @@ def infer_character(deck: list[Any]) -> str | None:
         if name.startswith(("STRIKE_", "DEFEND_")):
             return name.split("_", 1)[1]
     return None
-
-
-def needs_a_mechanic_we_do_not_have(card_id: CardId, character: str | None) -> bool:
-    """A card that cannot function for this character, whoever offers it.
-
-    Live on 2026-08-05 an Ironclad was offered and took BONE_SHARDS, a
-    Necrobinder card whose whole effect is gated on a living Osty. An Ironclad
-    never has one, so it is a dead card -- and the run hung with it stuck in hand
-    and end-turn greyed out.
-
-    NOT "a card from another character's pool". That rule was tried first and the
-    live data refuses it: BLIGHT_STRIKE is in the Necrobinder pool alone, and the
-    game offered it to an Ironclad which then played it perfectly happily. Cross
-    pool offers are normal; a missing *mechanic* is what actually breaks.
-    """
-    if character is None or character.upper() == "NECROBINDER":
-        return False
-    return card_id in OSTY_DEPENDENT_CARDS
 
 
 def deck_shape(deck: list[Any]) -> dict[str, float]:
@@ -184,9 +149,6 @@ def score_card(card: Any, deck: list[Any] | None = None) -> float:
         return 0.0
 
     if meta.card_type in _REFUSE_TYPES or meta.rarity in _REFUSE_RARITIES:
-        return -10.0
-
-    if needs_a_mechanic_we_do_not_have(card_id, infer_character(deck or [])):
         return -10.0
 
     shape = deck_shape(deck or [])

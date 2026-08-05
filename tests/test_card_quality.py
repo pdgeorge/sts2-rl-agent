@@ -141,46 +141,18 @@ def test_no_cards_on_offer_does_not_raise() -> None:
     assert _pick_card_reward_index(_reward([], can_skip=True)) is None
 
 
-# -- another character's cards -----------------------------------------------
 
-def test_a_necrobinder_card_is_refused_by_an_ironclad() -> None:
-    """Live on 2026-08-05 an Ironclad took BONE_SHARDS, a Necrobinder OstyAttack.
-    It needs a living Osty, an Ironclad never has one, and the run hung with the
-    card stuck in hand and end-turn greyed out."""
-    assert score_card(_card("BONE_SHARDS"), STARTER) < 0
+# -- cards from other characters' pools --------------------------------------
 
+def test_another_pools_card_is_treated_like_any_other() -> None:
+    """Taking cards from other characters is part of the game -- there are relics
+    that pull them in and events that hand them over. BLIGHT_STRIKE lives in the
+    Necrobinder pool alone and the live game offered it to an Ironclad, which
+    played it happily.
 
-def test_the_offer_that_hung_the_run_now_goes_elsewhere() -> None:
-    state = _reward(["BONE_SHARDS", "POMMEL_STRIKE"])
-    assert _pick_card_reward_index(state) == 1
-
-
-def test_your_own_character_cards_are_fine() -> None:
-    assert score_card(_card("INFLAME"), STARTER) > 0
-    assert score_card(_card("WHIRLWIND"), STARTER) > 0
-
-
-def test_a_cross_pool_card_that_works_fine_is_not_refused() -> None:
-    """BLIGHT_STRIKE is in the Necrobinder pool alone, and the live game offered
-    it to an Ironclad which played it happily. Refusing every card from another
-    pool would have thrown it away -- the rule is a missing mechanic, not a pool."""
+    A refusal rule was written here after an Ironclad run hung holding
+    BONE_SHARDS, and removed again: the hang is a mod fault, and declining
+    legitimate rewards to work around it costs real cards on every other floor.
+    """
     assert score_card(_card("BLIGHT_STRIKE"), STARTER) > 0
-
-
-def test_a_necrobinder_may_still_take_its_own_osty_cards() -> None:
-    silent_deck = ["STRIKE_NECROBINDER"] * 5 + ["DEFEND_NECROBINDER"] * 4
-    assert score_card(_card("BONE_SHARDS"), silent_deck) > 0
-
-
-def test_the_character_is_read_off_the_deck() -> None:
-    from sts2_env.bridge.card_quality import infer_character
-
-    assert infer_character(STARTER) == "IRONCLAD"
-    assert infer_character(["STRIKE_SILENT", "DEFEND_SILENT"]) == "SILENT"
-    assert infer_character(["BASH", "INFLAME"]) is None
-
-
-def test_an_unknown_character_refuses_nothing() -> None:
-    """Better to consider a card than to refuse every card because the deck did
-    not say who is playing."""
-    assert score_card(_card("BONE_SHARDS"), ["BASH"]) >= 0
+    assert score_card(_card("BONE_SHARDS"), STARTER) > 0

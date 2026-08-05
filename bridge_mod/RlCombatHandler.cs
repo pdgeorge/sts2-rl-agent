@@ -157,7 +157,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
             // If we ran out of cards to play without ending turn, end it
             if (IsPlayPhase(player) && CombatManager.Instance.IsInProgress && !turnEnded)
             {
-                PlayerCmd.EndTurn(player, canBackOut: false);
+                await EndTurnAndWaitAsync(player, ct);
             }
         }
 
@@ -228,8 +228,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
                 case "end_turn":
                 {
                     Logger.Log("[RlCombat] Agent chose to end turn");
-                    PlayerCmd.EndTurn(player, canBackOut: false);
-                    return true;
+                    return await EndTurnAndWaitAsync(player, ct);
                 }
 
                 case "potion":
@@ -279,8 +278,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
         else
         {
             Logger.Log("[RlCombat] Random fallback: no playable cards, ending turn");
-            PlayerCmd.EndTurn(player, canBackOut: false);
-            return true;
+            return await EndTurnAndWaitAsync(player, ct);
         }
     }
 
@@ -359,6 +357,66 @@ public class RlCombatHandler : IRoomHandler, IHandler
         if (hittable.Count == 0)
             return null;
         return random.NextItem(hittable);
+    }
+
+    /// <summary>
+    /// End the turn and confirm it actually ended. Returns false if it did not.
+    /// </summary>
+    /// <remarks>
+    /// Every other action here awaits its effect; this one used to call
+    /// PlayerCmd.EndTurn and return true immediately, so a turn the game REFUSED
+    /// to end was indistinguishable from one that ended. The loop then asked the
+    /// agent again, got the same answer from a deterministic policy, and spun.
+    ///
+    /// Seen live on 2026-08-05: six end_turns at 6.8 second intervals with the
+    /// round, hand and HP identical each time, and the run abandoned there. The
+    /// hand is logged on failure because which card the game is stuck on is the
+    /// one thing the Python side cannot see.
+    /// </remarks>
+    private static async Task<bool> EndTurnAndWaitAsync(
+        Player player, CancellationToken ct)
+    {
+        PlayerCmd.EndTurn(player, canBackOut: false);
+
+        int waitMs = 0;
+        while (waitMs < 3000)
+        {
+            if (!IsPlayPhase(player) || !CombatManager.Instance.IsInProgress)
+                return true;
+            await Task.Delay(50, ct);
+            waitMs += 50;
+        }
+
+        Logger.Log("[RlCombat] END TURN REFUSED: still in the play phase after "
+                   + "3s. The game is waiting on something this mod does not "
+                   + "handle -- a modal, or an unresolved card. Hand: "
+                   + DescribeHand(player));
+        return false;
+    }
+
+    /// <summary>
+    /// The hand as ids with their playability, for the end-turn-refused log.
+    /// </summary>
+    private static string DescribeHand(Player player)
+    {
+        try
+        {
+            var parts = new List<string>();
+            foreach (CardModel card in PileType.Hand.GetPile(player).Cards)
+            {
+                UnplayableReason reason;
+                AbstractModel preventer;
+                bool canPlay = card.CanPlay(out reason, out preventer);
+                parts.Add(canPlay
+                    ? card.Id.Entry
+                    : $"{card.Id.Entry}(unplayable:{reason})");
+            }
+            return string.Join(", ", parts);
+        }
+        catch (Exception ex)
+        {
+            return $"<could not read hand: {ex.Message}>";
+        }
     }
 
     private static async Task PlayCardAndWaitAsync(
