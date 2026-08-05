@@ -28,6 +28,7 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.MonsterMoves.Intents;
 using MegaCrit.Sts2.Core.Random;
@@ -580,6 +581,53 @@ public class RlCombatHandler : IRoomHandler, IHandler
                 ["floor"] = runState?.TotalFloor ?? 0,
                 ["act"] = (runState?.CurrentActIndex ?? 0) + 1,
             };
+
+            // Encounter identity and the seed that reproduced the enemies.
+            //
+            // The Python `CombatSituation.from_bridge_state` raises ValueError
+            // if `encounter` is absent, because without it the SearchAgent
+            // cannot clone a fight that matches the one on screen -- the
+            // enemies would come back with different HP rolls, the wrong
+            // intents, the wrong setup powers.
+            //
+            // The seed is the same hash-based value EncounterModel uses at
+            // runtime (EncounterModel.cs:263): (runSeed + totalFloor) + hash
+            // of the encounter class name. The Python `from_bridge_state`
+            // stores it as encounter_seed and passes it through to
+            // `Rng(encounter_seed)` in `to_combat()`, which the simulator's
+            // RNG parity work keeps bit-identical with the C# stream.
+            //
+            // `combat_seed` (for shuffling the deck and monster AI rolls)
+            // currently uses the same value, since the C# game plays both
+            // through `RunState.Rng`-derived streams. If parity testing
+            // reveals the deck shuffle uses a separate stream, the user can
+            // split the field later; the Python side will accept whatever
+            // mod patch sends.
+            try
+            {
+                string encounterName = combatState?.Encounter?.Id?.Entry;
+                if (!string.IsNullOrEmpty(encounterName))
+                {
+                    state["encounter"] = encounterName;
+                    if (combatState.RunState != null)
+                    {
+                        long runSeed = (long)combatState.RunState.Rng.Seed;
+                        long totalFloor = (long)combatState.RunState.TotalFloor;
+                        ulong nameHash = StringHelper.GetDeterministicHashCode(encounterName);
+                        // Same arithmetic EncounterModel.cs uses; cast through
+                        // long for JSON, since System.Text.Json's handling of
+                        // ulong is version-dependent. Python's int handles it
+                        // faithfully either way.
+                        ulong seed = (ulong)(runSeed + totalFloor) + nameHash;
+                        state["encounter_seed"] = (long)seed;
+                        state["combat_seed"] = (long)seed;
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Logger.Log($"[RlCombat] encounter/seed unreadable: {ex.GetType().Name}: {ex.Message}");
+            }
 
             return RlRunInfo.Serialize(state);
         }

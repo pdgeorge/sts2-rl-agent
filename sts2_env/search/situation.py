@@ -89,16 +89,53 @@ def encounter_registry() -> dict[str, Callable[..., None]]:
     return registry
 
 
+def _setup_name_for_encounter_id(encounter_id: str) -> str:
+    """Normalise any of the names a bridge may send for an encounter into the
+    `setup_X` form `encounter_registry` keys on.
+
+    The mod sends `EncounterModel.Id.Entry` (PascalCase class name like
+    "NibbitsWeak"). The Python registry keys on the setup-function name
+    ("setup_nibbits_weak"). Round-tripping requires a normaliser rather
+    than a one-shot renaming convention, because both representations
+    exist on the wire and a fixture might carry either depending on which
+    path wrote it.
+    """
+    name = str(encounter_id)
+    if name.startswith("setup_"):
+        return name.lower()
+    # Strip a `setup_`-prefixed substring at the end (e.g. "TheKin setup_the_kin"
+    # never happens, but stay safe). Pass through anything that already looks
+    # like a setup name unchanged after lowercasing.
+    # PascalCase -> snake_case: insert _ before each uppercase that follows a
+    # lowercase, and before each uppercase run that ends in lowercase. Mirrors
+    # the regex in RESEARCH.md's `class_name_to_id`.
+    import re
+
+    s = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", name)
+    s = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", "_", s)
+    return "setup_" + s.lower()
+
+
 def resolve_encounter(name: str) -> Callable[..., None]:
+    """Look up an encounter setup function by any of its common names.
+
+    Accepts the Python `setup_X` form (the registry key, what
+    `from_run_manager` writes), the C# `EncounterModel.Id.Entry` PascalCase
+    form (what RlRunInfo sends over the wire), and the UPPER_SNAKE form
+    some intermediate fixtures have used. All three resolve to the same
+    function.
+    """
     registry = encounter_registry()
-    setup = registry.get(name)
-    if setup is None:
-        raise KeyError(
-            f"No encounter setup named {name!r}. A fixture written against an "
-            f"older build can name an encounter this one has renamed or removed; "
-            f"regenerate the fixture rather than editing it by hand."
-        )
-    return setup
+    if name in registry:
+        return registry[name]
+    normalised = _setup_name_for_encounter_id(name)
+    if normalised in registry:
+        return registry[normalised]
+    raise KeyError(
+        f"No encounter setup named {name!r}. A fixture written against an "
+        f"older build can name an encounter this one has renamed or removed; "
+        f"regenerate the fixture rather than editing it by hand."
+    )
 
 
 # ---------------------------------------------------------------------------

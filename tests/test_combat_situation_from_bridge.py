@@ -187,6 +187,44 @@ def test_missing_combat_seed_falls_back_to_encounter_seed() -> None:
     assert situation.combat_seed == 999
 
 
+# -- encounter names from the C# mod (PascalCase) resolve to setup_X ---------
+
+def test_pascalcase_encounter_id_resolves_to_setup_function() -> None:
+    """The C# mod sends `EncounterModel.Id.Entry` (PascalCase like "NibbitsWeak").
+
+    The Python registry keys on `setup_nibbits_weak`. `resolve_encounter`
+    normalises both forms (and UPPER_SNAKE) to the same function, so the
+    live bridge and the simulator's own snapshots can use either form.
+    """
+    from sts2_env.search.situation import resolve_encounter
+
+    fn = resolve_encounter("NibbitsWeak")
+    assert fn.__name__ == "setup_nibbits_weak"
+
+    # The same function resolves whether we send PascalCase or setup_X
+    # (the form from_run_manager uses).
+    assert resolve_encounter("setup_nibbits_weak") is fn
+
+
+def test_a_bridge_state_with_pascalcase_encounter_id_rebuilds_the_fight() -> None:
+    """End-to-end: bridge sends PascalCase encounter, situation resolves it."""
+    situation = CombatSituation.from_bridge_state(
+        _bridge_state(encounter="NibbitsWeak")
+    )
+    combat = situation.to_combat()
+    alive = [e for e in combat.enemies if e.is_alive]
+    assert len(alive) >= 1
+    assert all(e.monster_id == "NIBBIT" for e in alive)
+
+
+def test_pascalcase_boss_encounter_id_also_resolves() -> None:
+    """Smoke against the boss encounter naming convention."""
+    from sts2_env.search.situation import resolve_encounter
+
+    fn = resolve_encounter("VantomBoss")
+    assert fn.__name__ == "setup_vantom_boss"
+
+
 # -- the same seed produces the same fight, twice -----------------------------
 
 def test_two_rebuilds_of_one_situation_agree_on_enemy_hp() -> None:

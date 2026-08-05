@@ -325,3 +325,47 @@ python scripts/train_meta_policy.py \
 ```
 
 The eval-reward curve on `v1..v7` was flat across all evaluations (per `docs/MODELS.md:223`). The first eval after this fix that *isn't* flat is the signal Phase 4 worked.
+
+## PR #6 changelog — Phase 1.1: C# mod patch sending encounter + seeds + deck upgrade
+
+Landed on `glm52`. C# changes to the bridge mod. **Not compiled or tested against the live game on this branch** — the user needs to compile and validate. Pure-python changes alongside it (encounter name normalisation) are tested in `tests/test_combat_situation_from_bridge.py`.
+
+**C# changes:**
+
+- `bridge_mod/RlRunInfo.cs:163-189` — deck entries are now `{"id": str, "upgraded": bool}` dicts instead of bare strings. The Ironclad starter's Bash+ now reports as `upgraded: true`, where before it lost the flag and the SearchAgent's clone would have featured a 2-turn Vulnerable instead of 3. Bare strings still work as a fallback in `from_bridge_state` for tests and any mod not rebuilt against this change.
+
+- `bridge_mod/RlCombatHandler.cs:567-586` — `SerializeCombatState` now attaches three fields to every `combat_action` state:
+  - `encounter` — `combatState.Encounter.Id.Entry` (PascalCase class name like `"NibbitsWeak"`).
+  - `encounter_seed` — derived from `(runSeed + totalFloor) + StringHelper.GetDeterministicHashCode(encounterName)`, the same formula `EncounterModel.GenerateMonstersWithSlots` uses at `EncounterModel.cs:263`. The Python `Rng(seed)` from `to_combat()` then produces the same monster HP rolls the live game saw.
+  - `combat_seed` — currently set to the same value as `encounter_seed`. The C# game's combat-level RNG (deck shuffle, monster AI) is also derived from `RunState.Rng`, so the same hash should suffice; if parity testing later shows the shuffle uses a separate stream, split the field and patch the mod again. `from_bridge_state` accepts whatever it is sent.
+
+- `bridge_mod/RlCombatHandler.cs:30` — added `using MegaCrit.Sts2.Core.Helpers;` for `StringHelper.GetDeterministicHashCode`.
+
+**Python-side changes:**
+
+- `sts2_env/search/situation.py` — `resolve_encounter` now accepts the C# mod's PascalCase encounter form (`"NibbitsWeak"`) in addition to the Python `setup_X` form. New helper `_setup_name_for_encounter_id` normalises PascalCase → `setup_X_snake_case_lower`, UPPER_SNAKE also handled. Existing tests that pass `setup_X` names still resolve; tests that pass PascalCase also resolve.
+
+- `tests/test_combat_situation_from_bridge.py` — 3 new tests for the name normalisation: PascalCase resolves to the same function as setup_X, end-to-end rebuild from a PascalCase `encounter` field succeeds, and the boss encounter `VantomBoss` resolves to `setup_vantom_boss`.
+
+**What's NOT verified on this branch:**
+
+- The C# does not compile on this machine (no dotnet / Godot SDK setup; per `docs/PARITY_GAPS.md:249`, dotnet was not on PATH as of 2026-05-22). The patches compile in the head, against the `decompiled/` reference, but the user must build the mod and validate against a live session.
+- Seed parity is asserted structurally (same formula as `EncounterModel.cs:263`) but not bit-verified against the live game. A `scripts/check_card_parity.py`-style audit for monster HP would close this gap and is a candidate Phase 1.1.1 task.
+- The `(long)seed` cast for JSON may overflow to negative for very large `ulong` seeds; Python's `int()` accepts negative values faithfully, but if the simulator's `Rng.__init__` masks negative to positive, the stream diverges. Verify by reading `sts2_env/core/rng.py` before live iteration.
+
+**To validate when the user wakes up:**
+
+```bash
+# In the sts2-rl-agent checkout:
+dotnet build bridge_mod/STS2BridgeMod.csproj
+# Start STS2 with the new mod; capture one combat_action JSON line:
+.venv/bin/python -m sts2_env.bridge.live_eval \
+    --model-path output/combat_v3_overnight/final_model.zip \
+    --log output/live_eval_pr6_test.jsonl \
+    --journal output/live_journal_pr6_test.jsonl \
+    --runs 1 --verbose
+# Check the journal for combat_start fields:
+grep combat_start output/live_journal_pr6_test.jsonl | head -1
+# It should now report encounter, encounter_seed, combat_seed, and
+# deck entries as dicts.
+```
