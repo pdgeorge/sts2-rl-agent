@@ -112,6 +112,12 @@ class RunJournal:
                                  self._path)
                 self._fh = None
 
+        # Stamped once per process. The journal is appended across sessions and
+        # the run counter restarts at 1 each time, so a file can hold runs
+        # 1,2,3,1,2,3 -- and anything grouping by run number silently merges runs
+        # that have nothing to do with each other. Seen in the first live session
+        # to use this file.
+        self.session = time.strftime("%Y%m%dT%H%M%S")
         self.run_index = 0
         self._state: dict[str, Any] = {}
         self._reset_run_state()
@@ -143,6 +149,7 @@ class RunJournal:
             return
         record = {
             "t": round(time.time(), 3),
+            "session": self.session,
             "run": self.run_index,
             "event": event,
             "floor": self._floor,

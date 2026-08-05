@@ -38,10 +38,16 @@ def load(path: str | Path) -> list[dict[str, Any]]:
     return events
 
 
-def _by_run(events: list[dict]) -> dict[int, list[dict]]:
-    runs: dict[int, list[dict]] = defaultdict(list)
+def _by_run(events: list[dict]) -> dict[tuple, list[dict]]:
+    """Keyed by (session, run), never by run alone.
+
+    The journal is appended across sessions and the run counter restarts at 1
+    each time, so one file can hold runs 1,2,3,1,2,3. Grouping on the number
+    alone merges unrelated runs and reports fewer, longer ones.
+    """
+    runs: dict[tuple, list[dict]] = defaultdict(list)
     for event in events:
-        runs[event.get("run", 0)].append(event)
+        runs[(event.get("session", ""), event.get("run", 0))].append(event)
     return runs
 
 
@@ -70,8 +76,18 @@ def report(events: list[dict]) -> str:
         rooms = Counter(str(e.get("room_type", "?")) for e in ends)
         for room, count in rooms.most_common():
             lines.append(f"    {room:<12} {count:>3}  {_pct(count, len(ends))}")
-        cleared = sum(1 for f in floors if f >= 17)
-        lines.append(f"  cleared act 1 (floor >= 17): {cleared}/{len(ends)}  "
+        # Reaching act 2, never a floor. The live act 1 boss room IS floor 17, so
+        # "floor >= 17" counted every boss death as a clear and reported 20% for
+        # a session that never beat the boss once. See live_eval._cleared_act_1.
+        reached_boss = sum(1 for e in ends
+                           if str(e.get("room_type", "")).upper() == "BOSS"
+                           or (e.get("floor") or 0) >= 17)
+        cleared = sum(1 for e in ends
+                      if (isinstance(e.get("act"), int) and e["act"] >= 2)
+                      or (not isinstance(e.get("act"), int) and (e.get("floor") or 0) > 17))
+        lines.append(f"  reached the act 1 boss:   {reached_boss}/{len(ends)}  "
+                     f"{_pct(reached_boss, len(ends))}")
+        lines.append(f"  CLEARED act 1 (act >= 2): {cleared}/{len(ends)}  "
                      f"{_pct(cleared, len(ends))}")
         lines.append("")
 

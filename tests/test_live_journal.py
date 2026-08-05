@@ -314,3 +314,32 @@ def test_shop_purchases_are_distinguishable_from_each_other(journal, tmp_path) -
     choice = [e for e in _events(journal, tmp_path) if e["event"] == "choice"][0]
     assert choice["chosen"] == "NUNCHAKU"
     assert choice["offered"] == ["Leave shop", "CINDER", "NUNCHAKU"]
+
+
+def test_every_record_carries_the_session(journal, tmp_path) -> None:
+    """Run numbers restart at 1 per session and the file is appended across them,
+    so a file can hold runs 1,2,3,1,2,3. Without a session stamp, anything
+    grouping by run number merges runs that have nothing to do with each other --
+    which is what happened to the first session logged with this file."""
+    journal.observe(_combat_state())
+    journal.record_run_end({"floor": 9})
+    events = _events(journal, tmp_path)
+    assert all("session" in e for e in events)
+    assert len({e["session"] for e in events}) == 1
+
+
+def test_two_sessions_writing_one_file_stay_distinguishable(tmp_path) -> None:
+    path = tmp_path / "shared.jsonl"
+    first = RunJournal(path, model="m")
+    first.start_run(1)
+    first.observe(_combat_state())
+    first.close()
+
+    second = RunJournal(path, model="m")
+    second.session = "different"          # a later process, counter back to 1
+    second.start_run(1)
+    second.observe(_combat_state())
+    second.close()
+
+    events = _read(path)
+    assert len({(e["session"], e["run"]) for e in events}) == 2
