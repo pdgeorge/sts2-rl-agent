@@ -305,3 +305,56 @@ def test_routing_avoids_elites_when_hurt() -> None:
         ],
     }
     assert _pick_map_node(state) == 1
+
+
+# -- a screen the game cannot act on -----------------------------------------
+
+def test_a_frozen_screen_looks_frozen() -> None:
+    """The signature of the hang: same screen, round, HP and hand, message after
+    message, while the agent re-sends an action the game cannot perform."""
+    from sts2_env.bridge.agent_runner import _state_fingerprint
+
+    stuck = {
+        "type": "combat_action", "floor": 5, "round": 2, "run_hp": 69,
+        "player": {"energy": 0},
+        "hand": [{"id": "BONE_SHARDS"}, {"id": "BASH"}],
+        "enemies": [{"hp": 27}],
+    }
+    assert _state_fingerprint(stuck) == _state_fingerprint(dict(stuck))
+
+
+def test_a_turn_advancing_is_not_frozen() -> None:
+    from sts2_env.bridge.agent_runner import _state_fingerprint
+
+    before = {"type": "combat_action", "floor": 5, "round": 2, "run_hp": 69,
+              "player": {"energy": 0}, "hand": [], "enemies": []}
+    after = dict(before, round=3)
+    assert _state_fingerprint(before) != _state_fingerprint(after)
+
+
+def test_taking_damage_is_not_frozen() -> None:
+    from sts2_env.bridge.agent_runner import _state_fingerprint
+
+    before = {"type": "combat_action", "round": 2, "run_hp": 69,
+              "player": {"energy": 1}, "hand": [], "enemies": []}
+    assert _state_fingerprint(before) != _state_fingerprint(dict(before, run_hp=55))
+
+
+def test_the_stuck_state_is_written_out_for_diagnosis(tmp_path) -> None:
+    """The journal records decisions, not the states behind them -- enough to see
+    the loop, not enough to say which card caused it."""
+    import json
+
+    from sts2_env.bridge.agent_runner import _record_stuck_state
+
+    path = tmp_path / "stuck.jsonl"
+    _record_stuck_state(str(path), {"type": "combat_action", "hand": [{"id": "BONE_SHARDS"}]}, 12)
+    written = json.loads(path.read_text().strip())
+    assert written["repeats"] == 12
+    assert written["state"]["hand"][0]["id"] == "BONE_SHARDS"
+
+
+def test_writing_the_stuck_state_never_raises() -> None:
+    from sts2_env.bridge.agent_runner import _record_stuck_state
+
+    _record_stuck_state("/nonexistent\0path/x.jsonl", {"type": "x"}, 1)

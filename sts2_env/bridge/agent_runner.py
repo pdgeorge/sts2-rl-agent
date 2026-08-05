@@ -95,6 +95,13 @@ CARD_BUNDLE_PICK_ACTION = "pick_card_bundle"
 CRYSTAL_SPHERE_CELL_ACTION = "divine_cell"
 REST_HEAL_OPTION_ID = "heal"
 REST_SMITH_OPTION_ID = "smith"
+STUCK_WARN_AFTER = 4
+STUCK_ABANDON_AFTER = 12
+"""How many identical states before the runner says something, and before it
+stops. A screen the game cannot act on re-presents itself unchanged, and a
+deterministic policy answers it the same way every time -- no exception, no
+timeout, just a session that quietly stops making progress."""
+
 TREASURE_COLLECT_ACTION = "collect"
 BOSS_RELIC_PICK_ACTION = "pick_relic"
 
@@ -245,6 +252,9 @@ def run_agent(
         # screen that re-presents itself and charges more each time (Hot Baths)
         # is not paid over and over.
         events_seen: dict[str, int] = {}
+        last_fingerprint: tuple | None = None
+        identical_states = 0
+        stuck_log = "output/stuck_states.jsonl"
         journal = RunJournal(journal_path, model=model_path)
         journal.start_run(1)
         # Wrapped once, so every action the runner sends is recorded on the way
@@ -303,6 +313,46 @@ def run_agent(
                             "reward is decided blind. Rebuild the mod.")
 
                 journal.observe(state)
+
+                # A screen the game cannot act on presents itself again, the
+                # policy is deterministic, and the same action goes back forever.
+                # Seen live on 2026-08-05: end_turn sent six times at round 2 with
+                # the hand, HP and round frozen, because a Necrobinder OstyAttack
+                # sat unplayable in an Ironclad hand and end-turn was greyed out.
+                # No exception, no timeout -- just a session that stops.
+                fingerprint = _state_fingerprint(state)
+                if fingerprint is not None and fingerprint == last_fingerprint:
+                    identical_states += 1
+                else:
+                    identical_states = 0
+                    last_fingerprint = fingerprint
+
+                if identical_states == STUCK_WARN_AFTER:
+                    logger.error(
+                        "The game has not moved for %d states. The screen is "
+                        "probably waiting on something the agent cannot send. "
+                        "Dumping it to %s.",
+                        identical_states, stuck_log,
+                    )
+                    _record_stuck_state(stuck_log, state, identical_states)
+
+                if identical_states >= STUCK_ABANDON_AFTER:
+                    # There is no abandon command: the mod abandons from the main
+                    # menu, and this side cannot reach it. So the honest response
+                    # is to stop cleanly rather than spin -- live_eval then prints
+                    # its summary and every finished run is kept, instead of the
+                    # session hanging until someone notices.
+                    logger.error(
+                        "Still stuck after %d identical states. There is no "
+                        "abandon command on this side, so stopping here; the "
+                        "runs already finished are kept and summarised. The "
+                        "screen is in %s.",
+                        identical_states, stuck_log,
+                    )
+                    journal.write("stuck", states=identical_states,
+                                  screen=state.get("type"),
+                                  ended_session=True)
+                    break
 
                 # Counted here rather than never: this was initialised, reset and
                 # reported without ever being incremented, so every live record
@@ -694,6 +744,46 @@ def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
         )
 
     return _read_index(best_card, best_index)
+
+
+def _state_fingerprint(state: dict[str, Any]) -> tuple | None:
+    """What would have to change for the game to have moved on.
+
+    Deliberately coarse: the screen, the floor, the round, the HP and the hand.
+    Anything finer (a request id, a timestamp) differs on every message and would
+    make a frozen screen look like progress.
+    """
+    if not isinstance(state, dict):
+        return None
+    player = state.get("player") or {}
+    return (
+        str(state.get("type", "")),
+        state.get("floor"),
+        state.get("round"),
+        state.get("run_hp"),
+        player.get("energy"),
+        tuple(str(c.get("id")) for c in (state.get("hand") or []) if isinstance(c, dict)),
+        tuple(str(e.get("hp")) for e in (state.get("enemies") or []) if isinstance(e, dict)),
+    )
+
+
+def _record_stuck_state(path: str, state: dict[str, Any], repeats: int) -> None:
+    """Write the whole screen out, once, so the next one is diagnosable.
+
+    The journal records decisions, not the states behind them, which was enough
+    to see the loop and not enough to say which card caused it.
+    """
+    import json as _json
+
+    try:
+        from pathlib import Path as _Path
+
+        _Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(_json.dumps({"repeats": repeats, "state": state},
+                                 default=str) + "\n")
+    except Exception:
+        logger.debug("Could not write the stuck state", exc_info=True)
 
 
 def _card_label(card: Any) -> str:
