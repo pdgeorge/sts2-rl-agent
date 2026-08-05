@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import re
 import sys
 import time
 from collections.abc import Callable
@@ -239,6 +240,10 @@ def run_agent(
         _relic_warning_done = False
         cyra = CyraPublisher(enabled=tell_cyra)
         milestones = MilestoneWatcher()
+        # How many times each event screen has been answered this run, so a
+        # screen that re-presents itself and charges more each time (Hot Baths)
+        # is not paid over and over.
+        events_seen: dict[str, int] = {}
         journal = RunJournal(journal_path, model=model_path)
         journal.start_run(1)
         # Wrapped once, so every action the runner sends is recorded on the way
@@ -352,6 +357,7 @@ def run_agent(
                     progress = {}
                     milestones.reset()
                     journal.start_run(run_index + 1)
+                    events_seen.clear()
                     run_started = time.monotonic()
                     continue
                 if phase == MSG_TYPE_ERROR:
@@ -478,7 +484,7 @@ def run_agent(
                     choice = (
                         _pick_crystal_sphere_option(state)
                         if msg_type == BridgeStateType.CRYSTAL_SPHERE
-                        else _pick_event_option(state)
+                        else _pick_event_option(state, events_seen)
                     )
                     if verbose:
                         logger.info("EVENT: choosing option %d", choice)
@@ -587,15 +593,61 @@ def _pick_map_node(state: dict[str, Any]) -> int:
     return _read_index(nodes[0], DEFAULT_CHOICE_INDEX)
 
 
+def _card_name(card: Any) -> str:
+    """The card's id, however this screen happens to carry it."""
+    if isinstance(card, dict):
+        for key in ("id", "card_id", "name", "label"):
+            value = card.get(key)
+            if value:
+                return str(value)
+        return ""
+    return str(card or "")
+
+
+def _is_basic_card(card: Any) -> bool:
+    """A starter Strike or Defend, for any character.
+
+    The prefix is exactly the ten basics across all five characters and catches
+    nothing else -- PERFECTED_STRIKE and BLIGHT_STRIKE do not start with STRIKE_.
+    Written as a prefix rather than two Ironclad names so it keeps working the
+    day this plays somebody else.
+    """
+    return _card_name(card).upper().startswith(("STRIKE_", "DEFEND_"))
+
+
+def _is_upgraded(card: Any) -> bool:
+    if isinstance(card, dict) and card.get("upgraded"):
+        return True
+    return _card_name(card).endswith("+")
+
+
+def _worth_upgrading(card: Any) -> bool:
+    return not _is_basic_card(card) and not _is_upgraded(card)
+
+
 def _pick_card_select_indexes(state: dict[str, Any]) -> list[int]:
-    """Choose required card indexes for upgrade/transform/select screens."""
+    """Choose required card indexes for upgrade/transform/select screens.
+
+    Basics go last. This used to take the first cards in the list, and a deck is
+    listed Strike, Strike, Strike... so every upgrade at a rest site went into a
+    basic Strike -- the least valuable upgrade available and one that does
+    nothing for a deck's actual problems.
+    """
     cards = list(state.get("cards", []))
     min_select = max(int(state.get("min_select", 1)), 0)
     max_select = max(int(state.get("max_select", min_select)), 0)
     if not cards or max_select == 0 or min_select == 0:
         return []
     count = min(min_select, max_select, len(cards))
-    return [_read_index(card, fallback) for fallback, card in enumerate(cards[:count])]
+
+    # Stable ordering: real cards first, then basics, each keeping deck order so
+    # the choice stays reproducible.
+    ranked = sorted(
+        range(len(cards)),
+        key=lambda i: (not _worth_upgrading(cards[i]), i),
+    )
+    chosen = ranked[:count]
+    return [_read_index(cards[i], i) for i in chosen]
 
 
 def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
@@ -644,9 +696,17 @@ def _pick_rest_option(state: dict[str, Any]) -> int:
     if not options:
         return DEFAULT_CHOICE_INDEX
     hp_ratio = _read_hp_ratio(state)
+
+    # Smithing is only worth a rest if there is something worth smithing. A deck
+    # of nothing but basics has no upgrade that changes a fight, so the HP is
+    # worth more -- which is the whole reason to be at a rest site.
+    deck = state.get("deck") or []
+    has_real_upgrade = any(_worth_upgrading(card) for card in deck) if deck else True
+
     preferred = (
         REST_HEAL_OPTION_ID
-        if hp_ratio is not None and hp_ratio < REST_HP_RATIO_THRESHOLD
+        if (hp_ratio is not None and hp_ratio < REST_HP_RATIO_THRESHOLD)
+        or not has_real_upgrade
         else REST_SMITH_OPTION_ID
     )
     option = _first_matching_option(options, option_ids=(preferred,))
@@ -670,37 +730,144 @@ def _pick_shop_option(state: dict[str, Any]) -> int:
     return _read_index(option, DEFAULT_CHOICE_INDEX)
 
 
-def _pick_event_option(state: dict[str, Any]) -> int:
-    """Choose an event option, avoiding HP-costing choices when low on health."""
+_MARKUP = re.compile(r"\[/?[a-zA-Z]+\]")
+_LOSE_HP = re.compile(r"lose\s+(\d+)\s+(max\s+)?hp", re.IGNORECASE)
+_HEAL_HP = re.compile(r"heal\s+(\d+)\s+hp", re.IGNORECASE)
+_SET_MAX_HP = re.compile(r"max\s+hp\s+(?:becomes|is set to|to)\s+(\d+)", re.IGNORECASE)
+
+# Never walk out of an event below this much of your maximum. An event is worth
+# HP, but no event reward is worth arriving at the next elite unable to survive
+# its opening turn -- which is how these runs actually end.
+EVENT_HP_FLOOR_RATIO = 0.5
+EVENT_HP_FLOOR_ABSOLUTE = 25
+
+# Hot Baths re-presents the same screen and charges more each time. Taking the
+# paid option twice is a decision; taking it seven times is a loop, and it is
+# what killed run 1 (68 -> 41 HP and still going).
+EVENT_MAX_REPEATS = 1
+
+_EXIT_WORDS = ("leave", "skip", "ignore", "walk", "refuse", "decline", "depart",
+               "exit", "nothing", "abstain", "proceed", "continue")
+
+
+def _plain(text: Any) -> str:
+    """Option text with the game's colour markup stripped."""
+    return _MARKUP.sub("", str(text or ""))
+
+
+def _event_option_text(option: dict[str, Any]) -> str:
+    """Everything readable about an option.
+
+    `id` is always the literal string `event_choice`, and `description` is
+    sometimes empty, so a heuristic reading either alone sees nothing. The human
+    text is in `label`, and the numbers are in `description`.
+    """
+    return _plain(
+        f"{option.get('label', '')} "
+        f"{option.get('description', '')} "
+        f"{option.get('text', '')}"
+    )
+
+
+def _event_hp_cost(option: dict[str, Any]) -> tuple[int, int, int | None]:
+    """(hp lost, max hp lost, max hp set to) as far as the text admits."""
+    text = _event_option_text(option)
+    hp_lost = max_hp_lost = 0
+    for amount, is_max in _LOSE_HP.findall(text):
+        if is_max:
+            max_hp_lost += int(amount)
+        else:
+            hp_lost += int(amount)
+    for amount in _HEAL_HP.findall(text):
+        hp_lost -= int(amount)
+    set_to = _SET_MAX_HP.search(text)
+    return hp_lost, max_hp_lost, int(set_to.group(1)) if set_to else None
+
+
+def _event_option_is_exit(option: dict[str, Any]) -> bool:
+    text = _event_option_text(option).lower()
+    return any(word in text for word in _EXIT_WORDS)
+
+
+def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None) -> int:
+    """Choose an event option, refusing the ones that end the run.
+
+    The previous version could not work on this mod's payload. It matched
+    keywords against `id` (always the literal `event_choice`) and `description`
+    (often empty) while the readable text sits in `label`, so nothing ever
+    matched. It also only looked at all below 50% HP, and its avoidance path
+    `continue`d past a harmful option and then returned `options[0]` -- the
+    option it had just rejected.
+
+    Two guards now, deliberately independent, because each covers what the other
+    cannot. The parsed cost catches "Lose 6 HP" wherever the text says so; the
+    repeat guard catches Hot Baths, whose labels are `Linger` and `Exit Baths`
+    and contain no warning at all.
+    """
     options = _enabled_options(state)
     if not options:
         return DEFAULT_CHOICE_INDEX
 
-    hp_ratio = _read_hp_ratio(state)
-    is_low_hp = hp_ratio is not None and hp_ratio < 0.5
+    hp = state.get("run_hp")
+    max_hp = state.get("run_max_hp")
+    event_id = str(state.get("event_id") or "")
+    if not event_id:
+        for option in options:
+            if option.get("event_id"):
+                event_id = str(option["event_id"])
+                break
 
-    # Keywords that suggest an option costs HP
-    harmful_keywords = ("damage", "hurt", "lose", "sacrifice", "pain", "blood",
-                        "health", "hp", "injure", "wound", "curse")
-    # Keywords that suggest an option is safe to skip
-    safe_keywords = ("leave", "skip", "ignore", "walk", "refuse", "decline",
-                     "depart", "exit", "nothing")
+    floor = None
+    if isinstance(hp, int) and isinstance(max_hp, int) and max_hp > 0:
+        floor = max(EVENT_HP_FLOOR_ABSOLUTE, int(max_hp * EVENT_HP_FLOOR_RATIO))
+
+    repeats = (seen or {}).get(event_id, 0)
+
+    safe: list[tuple[int, dict]] = []
+    unsafe: list[tuple[int, int, dict]] = []       # (cost, index, option)
 
     for i, option in enumerate(options):
-        opt_id = _canonical_text(option.get("id", ""))
-        opt_text = _canonical_text(option.get("text", option.get("description", "")))
-        combined = opt_id + opt_text
+        hp_lost, max_hp_lost, max_hp_set = _event_hp_cost(option)
+        index = _read_index(option, i)
 
-        # When low HP, skip options that look harmful
-        if is_low_hp and any(kw in combined for kw in harmful_keywords):
-            continue
+        lethal = False
+        # An option that dictates a new maximum, or strips most of it, is a death
+        # sentence with extra steps: the run continues and cannot survive a fight.
+        if max_hp_set is not None and isinstance(max_hp, int) and max_hp_set < max_hp * 0.5:
+            lethal = True
+        if isinstance(max_hp, int) and max_hp_lost >= max_hp * 0.25:
+            lethal = True
+        if floor is not None and isinstance(hp, int) and hp_lost > 0 and hp - hp_lost < floor:
+            lethal = True
+        # Nothing in the text said it costs anything, but this screen has already
+        # been paid for once. Hot Baths looks exactly like this.
+        if hp_lost <= 0 and repeats > EVENT_MAX_REPEATS and not _event_option_is_exit(option):
+            lethal = True
 
-        # Prefer safe exit options when low HP
-        if is_low_hp and any(kw in combined for kw in safe_keywords):
-            return _read_index(option, i)
+        if lethal:
+            unsafe.append((hp_lost, index, option))
+        else:
+            safe.append((index, option))
 
-    # Default: first remaining option
-    return _read_index(options[0], DEFAULT_CHOICE_INDEX)
+    if seen is not None and event_id:
+        seen[event_id] = repeats + 1
+
+    if safe:
+        # Prefer leaving once the screen has been taken before; otherwise the
+        # first option that is not going to kill us.
+        if repeats > EVENT_MAX_REPEATS:
+            for index, option in safe:
+                if _event_option_is_exit(option):
+                    return index
+        return safe[0][0]
+
+    # Everything on offer is dangerous. Take the cheapest rather than the first,
+    # and never fall back to an option that was explicitly rejected.
+    logger.warning(
+        "Every option in event %s looks harmful at %s HP; taking the cheapest.",
+        event_id or "?", hp,
+    )
+    return min(unsafe)[1]
 
 
 def _pick_crystal_sphere_option(state: dict[str, Any]) -> int:
@@ -795,7 +962,19 @@ def _read_hp_pair(container: dict[str, Any]) -> tuple[int | None, int | None]:
     if isinstance(hp_value, str) and "/" in hp_value:
         hp_text, max_hp_text = hp_value.split("/", 1)
         return _optional_int(hp_text), _optional_int(max_hp_text)
-    return _optional_int(hp_value), _optional_int(container.get("max_hp"))
+
+    # `run_hp` as well as `hp`, because outside combat there is no player block
+    # and only the run-level pair is sent. Without this, _read_hp_ratio returned
+    # None at every rest site, shop, event and map screen -- so the low-HP branch
+    # of the rest and routing heuristics could not fire at all, and the agent
+    # smithed at 20 HP and walked into elites as though it were healthy.
+    hp = _optional_int(hp_value)
+    max_hp = _optional_int(container.get("max_hp"))
+    if hp is None:
+        hp = _optional_int(container.get("run_hp"))
+    if max_hp is None:
+        max_hp = _optional_int(container.get("run_max_hp"))
+    return hp, max_hp
 
 
 def _read_index(option: dict[str, Any], fallback: int) -> int:
