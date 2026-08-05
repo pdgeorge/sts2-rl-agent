@@ -275,33 +275,97 @@ def score(
     return summary
 
 
+def _verdict(difference: float, standard_error: float) -> str:
+    if standard_error <= 0:
+        return "no spread to judge against"
+    z = difference / standard_error
+    if abs(z) > 2:
+        return "clear" if z > 0 else "clearly worse"
+    if abs(z) > 1:
+        return "suggestive, not conclusive"
+    return "inside the noise"
+
+
+def paired_stats(a: Summary, b: Summary) -> dict[str, Any] | None:
+    """Fight-by-fight differences, for two agents on the same fixture.
+
+    Both agents face identical situations, so pairing on the situation removes
+    the variance that comes from the fixture itself -- one draw containing three
+    bosses and another containing none. The unpaired comparison charges that
+    spread against the difference between the agents and hides real effects
+    behind it.
+
+    Returns None when the two runs are not on the same situations, because a
+    paired number computed across different fights would be worse than no number.
+    """
+    by_id_a = {r.situation_id: r for r in a.results}
+    by_id_b = {r.situation_id: r for r in b.results}
+    shared = sorted(set(by_id_a) & set(by_id_b))
+    if not shared or len(shared) != len(by_id_a) or len(shared) != len(by_id_b):
+        return None
+
+    win_diffs = [float(by_id_b[i].won) - float(by_id_a[i].won) for i in shared]
+    hp_diffs = [float(by_id_b[i].hp_lost_cost - by_id_a[i].hp_lost_cost) for i in shared]
+
+    def mean_and_se(values: list[float]) -> tuple[float, float]:
+        n = len(values)
+        mean = statistics.mean(values)
+        if n < 2:
+            return mean, 0.0
+        return mean, statistics.stdev(values) / (n ** 0.5)
+
+    win_mean, win_se = mean_and_se(win_diffs)
+    hp_mean, hp_se = mean_and_se(hp_diffs)
+
+    return {
+        "n": len(shared),
+        "win_rate_delta": win_mean,
+        "win_rate_delta_se": win_se,
+        "win_verdict": _verdict(win_mean, win_se),
+        "hp_lost_delta": hp_mean,
+        "hp_lost_delta_se": hp_se,
+        # Less HP lost is better, so the sign flips before judging.
+        "hp_verdict": _verdict(-hp_mean, hp_se),
+        "only_b_won": sum(1 for i in shared if by_id_b[i].won and not by_id_a[i].won),
+        "only_a_won": sum(1 for i in shared if by_id_a[i].won and not by_id_b[i].won),
+    }
+
+
 def compare(a: Summary, b: Summary) -> str:
     """Two agents on the same fixture, with the uncertainty stated.
 
-    The gate this exists for is not "is the number bigger" -- 200 fights has a
-    standard error around 3 points, so a two-point win rate difference is
-    nothing. It is "is it bigger by more than the measurement is worth".
+    The question is never "is the number bigger" -- 200 fights carries a standard
+    error around 3 points, so a two-point difference is nothing. It is "is it
+    bigger by more than the measurement is worth".
     """
     d_win = b.win_rate - a.win_rate
     se = (a.win_rate_se ** 2 + b.win_rate_se ** 2) ** 0.5
     d_hp = b.hp_lost_overall - a.hp_lost_overall
 
-    verdict = "inside the noise"
-    if se > 0 and abs(d_win) > 2 * se:
-        verdict = "clear" if d_win > 0 else "clearly worse"
-    elif se > 0 and abs(d_win) > se:
-        verdict = "suggestive, not conclusive"
-
-    return "\n".join([
+    lines = [
         "",
         "=" * 66,
         f"{a.agent}",
         f"  vs {b.agent}",
         "",
         f"  win rate     {a.win_rate:6.1%}  ->  {b.win_rate:6.1%}   "
-        f"{d_win:+.1%}  ({d_win / se if se else 0:+.1f} se)   {verdict}",
+        f"{d_win:+.1%}  ({d_win / se if se else 0:+.1f} se)   {_verdict(d_win, se)}",
         f"  hp lost      {a.hp_lost_overall:6.1f}  ->  {b.hp_lost_overall:6.1f}   {d_hp:+.1f}",
         f"  turns        {a.mean_turns:6.1f}  ->  {b.mean_turns:6.1f}",
-        "=" * 66,
-        "",
-    ])
+    ]
+
+    paired = paired_stats(a, b)
+    if paired is not None:
+        lines += [
+            "",
+            f"  paired over the same {paired['n']} fights:",
+            f"    win rate   {paired['win_rate_delta']:+.1%} "
+            f"+/- {paired['win_rate_delta_se']:.1%}   {paired['win_verdict']}",
+            f"    hp lost    {paired['hp_lost_delta']:+.1f} "
+            f"+/- {paired['hp_lost_delta_se']:.1f}   {paired['hp_verdict']}",
+            f"    won only by the challenger: {paired['only_b_won']}, "
+            f"only by the baseline: {paired['only_a_won']}",
+        ]
+
+    lines += ["=" * 66, ""]
+    return "\n".join(lines)

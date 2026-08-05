@@ -6,8 +6,10 @@ RandomBranchState, and ConditionalBranchState.
 
 from __future__ import annotations
 
+import copy
+import types
 from itertools import takewhile
-from typing import Callable, TYPE_CHECKING
+from typing import Any, Callable, TYPE_CHECKING
 
 from sts2_env.core.enums import MoveRepeatType
 from sts2_env.monsters.intents import Intent
@@ -17,7 +19,72 @@ if TYPE_CHECKING:
     from sts2_env.core.rng import Rng
 
 
-class MonsterState:
+# ---------------------------------------------------------------------------
+# Copying states that hold closures
+# ---------------------------------------------------------------------------
+#
+# Every monster is built as a factory that closes over its own Creature:
+#
+#     def create_nibbit(rng, ...):
+#         creature = Creature(...)
+#         def butt(combat):
+#             _deal_damage_to_player(combat, creature, 6)   # <-- captured
+#
+# `copy.deepcopy` treats a function as atomic and returns the same object, and
+# it has no way to rewrite a closure cell. So a deep-copied combat used to end up
+# with monsters whose moves still acted on the *original* creature: rollouts
+# buffed and damaged the real fight instead of the copy (a Nibbit reached 140
+# block from search alone), while the copy's own monsters did nothing, so the
+# search systematically believed incoming damage was far lower than it was.
+#
+# Nothing raised. The searcher simply planned against a fiction.
+#
+# Rebuilding the function with memo-copied cells fixes it at the root: the memo
+# already holds the copied Creature, so the rebound closure picks up the copy and
+# every monster acts on the fight it belongs to.
+
+def _copy_callable(fn: Any, memo: dict) -> Any:
+    """A copy of `fn` whose closure points at the copied objects."""
+    if not isinstance(fn, types.FunctionType) or not fn.__closure__:
+        return fn
+    cells = tuple(
+        types.CellType(copy.deepcopy(cell.cell_contents, memo))
+        for cell in fn.__closure__
+    )
+    copied = types.FunctionType(
+        fn.__code__, fn.__globals__, fn.__name__, fn.__defaults__, cells,
+    )
+    copied.__kwdefaults__ = fn.__kwdefaults__
+    copied.__dict__.update(fn.__dict__)
+    return copied
+
+
+def _copy_value(value: Any, memo: dict) -> Any:
+    """Deep-copy, looking inside containers for callables to rebind."""
+    if isinstance(value, types.FunctionType):
+        return _copy_callable(value, memo)
+    if isinstance(value, list):
+        return [_copy_value(v, memo) for v in value]
+    if isinstance(value, tuple):
+        return tuple(_copy_value(v, memo) for v in value)
+    if isinstance(value, dict):
+        return {k: _copy_value(v, memo) for k, v in value.items()}
+    return copy.deepcopy(value, memo)
+
+
+class _ClosureAwareCopy:
+    """Mixin: deep-copy this object, rebinding any closures it holds."""
+
+    def __deepcopy__(self, memo: dict):
+        cls = self.__class__
+        copied = cls.__new__(cls)
+        memo[id(self)] = copied
+        for key, value in self.__dict__.items():
+            copied.__dict__[key] = _copy_value(value, memo)
+        return copied
+
+
+class MonsterState(_ClosureAwareCopy):
     """Base class for all state machine states."""
 
     def __init__(self, state_id: str):
@@ -102,6 +169,17 @@ class WeightedBranch:
         self.max_times = max_times
         self.base_weight = weight
         self.cooldown = cooldown
+
+    def __deepcopy__(self, memo: dict) -> WeightedBranch:
+        # Its own, rather than the mixin's: __slots__ means there is no __dict__
+        # to walk. `base_weight` may be a callable closing over the creature, so
+        # it needs the same rebinding as a move's effect.
+        cls = self.__class__
+        copied = cls.__new__(cls)
+        memo[id(self)] = copied
+        for slot in cls.__slots__:
+            setattr(copied, slot, _copy_value(getattr(self, slot), memo))
+        return copied
 
     def get_weight(self, state_log: list[str]) -> float:
         """Calculate effective weight given the state history."""

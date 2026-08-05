@@ -46,6 +46,52 @@ starter-deck numbers measuring a different thing.
 
 ---
 
+## turn search v1 — 2026-08-05 — the Phase 1 gate, passed
+
+`sts2_env/search/`, scored with `scripts/score_combat_benchmark.py --search`.
+
+No training. Every turn, clone the fight, play every legal ordering of the cards
+in hand, end the turn on each copy, let the enemies actually act, and keep the
+line that came out best. 20,000 nodes or 3 s a turn, whichever comes first.
+
+Against `combat_v3_overnight` on the same 200 fights:
+
+```
+                    model     search
+win rate            74.0%      79.5%
+hp lost overall      24.5       17.3
+hp lost | won        17.4        8.7
+turns                10.7       13.4
+
+MONSTER             85.5%      90.6%
+ELITE               42.3%      53.8%
+BOSS                 6.7%       6.7%
+```
+
+**Paired over the same fights**, which is the test that matters -- both agents
+face identical situations, so pairing removes the fixture's own variance:
+
+```
+win rate   +5.5% +/- 2.4%   clear
+hp lost     -7.2 +/- 0.9    clear
+won only by search 17, only by the model 6
+```
+
+A 29% reduction in HP lost per fight is the result, more than the win rate. Over
+sixteen floors that is the difference between arriving at the boss healthy and
+arriving at it dead, which is how act 1 runs actually end.
+
+**Bosses did not move: 6.7% for both, one win in fifteen.** The search horizon is
+one turn plus the enemies' reply, and a boss is a multi-turn problem -- there is
+no line inside a single turn that answers it. Honest limit of v1, and the next
+thing to work on.
+
+Two bugs were found by building this, both of which made every earlier number
+worse than it needed to be. They are recorded below rather than here, because
+they were never properties of a model.
+
+---
+
 ## Everything trained before 2026-08-05 learned a game with one relic in it
 
 Not a model row. It applies to every row below, so it goes above them.

@@ -22,9 +22,13 @@ from sts2_env.search.situation import load_situations
 DEFAULT_BENCHMARK = "tests/fixtures/act1_combat_benchmark.json"
 
 
-def _agent(spec: str | None, *, stochastic: bool, seed: int):
+def _agent(spec: str | None, *, stochastic: bool, seed: int, time_budget: float = 3.0):
     if spec is None or spec == "random":
         return RandomAgent(seed=seed)
+    if spec == "search":
+        from sts2_env.search.turn_search import SearchAgent
+
+        return SearchAgent(time_budget=time_budget)
     return ModelAgent(spec, deterministic=not stochastic)
 
 
@@ -33,7 +37,13 @@ def main() -> None:
         description="Score a combat agent on real act 1 situations.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--model", default=None, help="Combat model .zip to score")
+    parser.add_argument("--model", default=None,
+                        help="What to score: a combat model .zip, or 'search' "
+                             "for the turn searcher, or 'random'")
+    parser.add_argument("--search", action="store_true",
+                        help="Shorthand for --model search")
+    parser.add_argument("--time-budget", type=float, default=3.0,
+                        help="Seconds per turn the searcher may spend")
     parser.add_argument("--random", action="store_true",
                         help="Score the random baseline instead")
     parser.add_argument("--against", "--baseline", dest="against", default=None,
@@ -53,8 +63,10 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
+    if args.search:
+        args.model = "search"
     if args.model is None and not args.random:
-        parser.error("give --model, or --random for the baseline")
+        parser.error("give --model, --search, or --random for the baseline")
 
     situations = load_situations(args.benchmark)
     if args.limit:
@@ -62,12 +74,14 @@ def main() -> None:
     print(f"{len(situations)} situations from {args.benchmark}")
 
     first = _agent(None if args.random else args.model,
-                   stochastic=args.stochastic, seed=args.seed)
+                   stochastic=args.stochastic, seed=args.seed,
+                   time_budget=args.time_budget)
     summary = score(situations, first, max_turns=args.max_turns)
     print(summary.report())
 
     if args.against:
-        baseline_agent = _agent(args.against, stochastic=args.stochastic, seed=args.seed + 1)
+        baseline_agent = _agent(args.against, stochastic=args.stochastic,
+                                seed=args.seed + 1, time_budget=args.time_budget)
         baseline = score(situations, baseline_agent, max_turns=args.max_turns)
         print(baseline.report())
         # baseline first: `compare` reads "a -> b", and the thing being judged is
