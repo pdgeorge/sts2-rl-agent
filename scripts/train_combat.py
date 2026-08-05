@@ -53,11 +53,12 @@ def train(args):
 
     from sts2_env.core.game_build import check_decompile_matches_installed, write_fingerprint
     from sts2_env.gym_env.combat_env import STS2CombatEnv
+    from sts2_env.search.situation import load_situations
 
     # Card values are read from a decompile on disk. If that is not the installed
     # build, this run trains on the previous patch and says nothing about it --
-    # the logs, the reward curve and the saved model all look exactly right. Worth
-    # refusing over, because the cost of a wrong run is the whole run.
+    # the logs, the reward curve and the saved model all look exactly right.
+    # Worth refusing over, because the cost of a wrong run is the whole run.
     matches, reason = check_decompile_matches_installed()
     if not matches:
         print("Refusing to train: the decompile in use is not the installed game build.\n")
@@ -68,6 +69,21 @@ def train(args):
         print("\n  --allow-stale-decompile given; continuing anyway.")
     else:
         print(f"Game build: {reason}")
+
+    # A situation set, if asked for, replaces the starter-deck-vs-random-
+    # encounter defaults with fights harvested from real runs: a 16-card
+    # deck at 40 HP holding three relics, against the encounter the map
+    # actually rolled. The previous-model plateau (combat_v3_overnight, 40M
+    # steps with a flat eval curve) was a starter-deck model asked to play
+    # fights it had never seen.
+    situation_pool = None
+    if args.situation_set:
+        situation_pool = load_situations(args.situation_set)
+        print(f"Training on {len(situation_pool)} real situations from "
+              f"{args.situation_set}")
+        if args.resume_from:
+            print("  --resume-from: fine-tuning from a model that learned on "
+                  "the starter-deck distribution; this re-fits it to the real one.")
 
     print(f"Training MaskablePPO on STS2 combat")
     print(f"  n_envs:          {args.n_envs}")
@@ -91,7 +107,7 @@ def train(args):
 
     def make_masked_env(seed: int):
         def _init():
-            env = STS2CombatEnv()
+            env = STS2CombatEnv(situation_pool=situation_pool)
             # The seed used to be accepted and then dropped on the floor, so every
             # env -- including the evaluation one, nominally seeded 9999 -- came up
             # unseeded and no run could be reproduced or compared to another.
@@ -239,6 +255,14 @@ def main():
                         help="Episodes per evaluation (default: 20)")
     parser.add_argument("--resume-from", type=str, default=None,
                         help="Fine-tune from an existing model .zip instead of starting over")
+    parser.add_argument("--situation-set", type=str, default=None,
+                        help="Path to a fixture of real combat situations (JSON, "
+                             "as produced by scripts/harvest_combat_benchmark.py). "
+                             "When set, training samples fights from the file "
+                             "instead of the Ironclad starter deck against random "
+                             "act 1 encounters -- a 16-card deck at 40 HP, against "
+                             "the encounter the map actually rolled. Breaks the "
+                             "starter-deck plateau; see docs/GLM_ROADMAP_50P_ACT1.md.")
     parser.add_argument("--seed", type=int, default=0,
                         help="Seed for envs, network init and sampling (default: 0)")
     parser.add_argument("--allow-stale-decompile", action="store_true",

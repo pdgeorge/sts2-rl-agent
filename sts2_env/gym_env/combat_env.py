@@ -29,6 +29,25 @@ class STS2CombatEnv(gymnasium.Env):
 
     Observation: flat float32 vector encoding player state, hand, piles, enemies.
     Action: fixed discrete combat action space including cards, end turn, and potions.
+
+    Two ways to seed a fight:
+
+    1. Starter-deck-vs-random-encounter (the default, what every model so far
+       has trained on). `reset` builds an Ironclad starter deck at full HP and
+       picks an act 1 encounter at random.
+    2. Real situations (`situation_pool`). Pass a list of `CombatSituation`
+       objects -- typically loaded from a fixture harvested by
+       `scripts/harvest_combat_benchmark.py` -- and `reset` picks one at
+       random and calls `to_combat()`. The deck, HP, relics, potions, room
+       type and encounter are exactly what a real run presented, which is the
+       gap that made a 92% starter-deck model die on floor 8 of a live run:
+       the model had never seen a 16-card deck at 40 HP holding three relics.
+
+    The two paths are mutually exclusive. When `situation_pool` is set, the
+    starter-deck, encounter-pool, player_hp and player_max_hp arguments are
+    ignored -- the situation owns every state field. They stay on the
+    constructor for backwards compatibility and for the tests that still
+    exercise the starter-deck path.
     """
 
     metadata = {"render_modes": ["ansi"]}
@@ -42,6 +61,7 @@ class STS2CombatEnv(gymnasium.Env):
         render_mode: str | None = None,
         gamma: float = 0.99,
         max_idle_steps: int = 25,
+        situation_pool: list | None = None,
     ):
         super().__init__()
         self.observation_space = spaces.Box(
@@ -63,6 +83,11 @@ class STS2CombatEnv(gymnasium.Env):
         # keeps a mask bug from becoming an infinite episode.
         self.max_idle_steps = max_idle_steps
         self._idle_steps = 0
+        # When set, reset() draws from this list instead of the starter-deck
+        # path. CombatSituation.to_combat() builds the whole fight, so the
+        # starter-deck, encounter_pool, player_hp and player_max_hp on this
+        # env are not consulted.
+        self._situation_pool = list(situation_pool) if situation_pool else None
 
         self.combat: CombatState | None = None
 
@@ -70,6 +95,17 @@ class STS2CombatEnv(gymnasium.Env):
         super().reset(seed=seed)
         reset_instance_counter()
         self._idle_steps = 0
+
+        if self._situation_pool is not None:
+            # The situation owns deck, relics, potions, HP, encounter, seeds.
+            # `to_combat()` mirrors RunManager._enter_combat step-for-step and
+            # calls start_combat() internally, so the rest of reset is just
+            # observation and mask.
+            idx = int(self.np_random.integers(0, len(self._situation_pool)))
+            self.combat = self._situation_pool[idx].to_combat()
+            obs = encode_observation(self.combat)
+            info = {"action_mask": get_action_mask(self.combat)}
+            return obs, info
 
         rng_seed = int(self.np_random.integers(0, INT_MAX_EXCLUSIVE))
         rng = Rng(rng_seed)

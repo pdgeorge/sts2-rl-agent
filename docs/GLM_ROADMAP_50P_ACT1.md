@@ -258,3 +258,34 @@ Landed on `glm52`. Pure-python; no mod change required. Defines and tests the ta
 - The C# mod patch (PR #3 / Phase 1.1) — needed to send `encounter`, `encounter_seed`, `combat_seed`, and the upgraded flag on deck entries. Without it, calling `from_bridge_state` on a real bridge payload raises, which is the intended loud failure.
 
 **Pre-existing test failures noted but not addressed:** 123 parity tests in `test_regent_*`, `test_silent_*`, `test_status_curse_*` fail on `glm52` independent of these changes (verified by stashing the edits and re-running). They're content-parity regressions from earlier work, not regressions from this PR.
+
+## PR #4 changelog — Phase 3.1: --situation-set training flag
+
+Landed on `glm52`. Pure-python; no mod change required. Adds the env-and-script plumbing the next training run needs to leave the starter-deck plateau behind.
+
+**Changes:**
+
+- `sts2_env/gym_env/combat_env.py`: `STS2CombatEnv.__init__` gains a `situation_pool: list | None` argument. When set, `reset()` draws a random `CombatSituation` from it and calls `to_combat()` instead of building the Ironclad starter deck + Act 1 encounter pool. The situation owns the deck, HP, relics, potions, room type and encounter; the env's `encounter_pool` / `player_hp` / `player_max_hp` arguments are simply not consulted when `situation_pool` is set. When `None` (the default), every existing test and every existing training command runs exactly as before.
+
+- `scripts/train_combat.py`: new `--situation-set PATH` flag. Loads the JSON fixture with `load_situations` and passes it through to every env (train and eval). The script's banner now prints the situation count and, when `--resume-from` is also set, a note that the fine-tune is re-fitting a starter-deck model to the real distribution.
+
+- `tests/test_combat_env_situation_pool.py`: 7 new tests covering the situation path's contract — obs shape, action mask legality, episode termination under END_TURN-only, starter-deck fallback when `None`, the situation path actually changing deck size away from the starter's 10, and same-seed reproducibility.
+
+**Why this is the lift that breaks the plateau.**
+
+`combat_v3_overnight` scored 92% on the starter-deck benchmark and 6.7% on bosses in the 200-fight harvested benchmark (`docs/MODELS.md:28`). The starter-deck model had never seen a 16-card deck at 40 HP holding three relics; it could not have learned the right plays because the situations it learned on did not contain them. Training against the harvested fixture puts the model in the rooms it dies in.
+
+**What's not in this PR.**
+
+The actual retraining run. It needs the decompile on disk to match the installed game build (the script refuses otherwise), and ~2M steps overnight. The user can pull the trigger:
+
+```bash
+python scripts/train_combat.py \
+    --resume-from output/combat_v3_overnight/final_model.zip \
+    --situation-set tests/fixtures/act1_combat_benchmark.json \
+    --total-timesteps 2000000 \
+    --n-envs 8 \
+    --output-dir output/combat_real_situations
+```
+
+A larger fixture (2000 situations rather than 200) is the next harvest step, per Phase 3.2 of the roadmap.
