@@ -50,6 +50,23 @@ logger = logging.getLogger(__name__)
 DEFAULT_MAX_NODES = 20_000
 DEFAULT_TIME_BUDGET = 3.0
 DEFAULT_MAX_DEPTH = 12
+DEFAULT_LOOKAHEAD_TURNS = 2
+MAX_PLAYOUT_ACTIONS_PER_TURN = 12
+
+LOOKAHEAD_WEIGHT = 0.5
+"""How much the state after the playout counts, against the state right after the
+enemies reply.
+
+Not a tuning knob -- it is what stops the lookahead trading away this turn. Scored
+on the playout alone, dying in two turns and dying right now are the same number,
+so the searcher became indifferent to surviving: at 12 HP against 12 telegraphed
+damage it played Strike and died at 0, where without lookahead it played Defend
+and lived at 5. Both lines ended in death inside the crude playout, so both scored
+about -10 and it took the marginally larger.
+
+Keeping the immediate term at full weight makes dying now strictly worse than
+dying later, which is true, and doubly true given the playout is a rough policy
+whose predicted deaths are not to be trusted."""
 
 
 @dataclass
@@ -114,6 +131,83 @@ def _state_key(combat: "CombatState") -> tuple:
     )
 
 
+def _is_power_card(card) -> bool:
+    from sts2_env.core.enums import CardType
+
+    return getattr(card, "card_type", None) == CardType.POWER
+
+
+def _incoming_damage(combat: "CombatState") -> int:
+    """What the enemies have telegraphed for their next turn."""
+    total = 0
+    for enemy in combat.enemies:
+        if not enemy.is_alive:
+            continue
+        ai = combat.enemy_ais.get(enemy.combat_id)
+        if ai is None:
+            continue
+        for intent in ai.current_move.intents:
+            total += (intent.damage or 0) * max(1, intent.hits or 1)
+    return total
+
+
+def _playout(combat: "CombatState", turns: int) -> None:
+    """Play `turns` more turns quickly, in place, to see past this one.
+
+    A Power costs energy now and pays for it over the turns that follow, and a
+    boss is decided across a dozen of them. Scoring the state the moment the
+    enemies have replied cannot see either, so Inflame reads as a wasted turn and
+    is never played -- 15 power cards in 465 plays, against a benchmark where 73
+    of 200 decks hold one.
+
+    Deliberately cheap and deliberately not search: block when a hit is coming
+    and there is block to be had, otherwise hit the thing in front. It exists to
+    make a scaling card's payoff visible, not to play well -- the searcher is
+    already doing that for the turn it can see.
+    """
+    from sts2_env.gym_env.action_space import action_to_card_and_target
+
+    for _ in range(turns):
+        if combat.is_over:
+            return
+
+        for _ in range(MAX_PLAYOUT_ACTIONS_PER_TURN):
+            if combat.is_over:
+                return
+            mask = get_action_mask(combat)
+            actions = [int(a) for a in np.where(mask == 1)[0] if a != ACTION_END_TURN]
+            if not actions or combat.pending_choice is not None:
+                break
+
+            need_block = _incoming_damage(combat) > combat.player.block
+            best_action, best_value = None, -1.0
+            for action in actions:
+                hand_index, _ = action_to_card_and_target(action)
+                if hand_index is None or hand_index >= len(combat.hand):
+                    continue
+                card = combat.hand[hand_index]
+                block = card.base_block or 0
+                damage = card.base_damage or 0
+                value = float(block if need_block and block else damage)
+                # A Power has neither damage nor block, so scoring it on those
+                # alone rates it zero -- and stopping the playout there hid the
+                # very payoff this lookahead exists to reveal. Ranked last, but
+                # played rather than treated as a reason to stop.
+                if value <= 0 and _is_power_card(card):
+                    value = 0.5
+                if value > best_value:
+                    best_action, best_value = action, value
+
+            if best_action is None or best_value <= 0:
+                break
+            if not apply_combat_action(combat, best_action):
+                break
+
+        if combat.is_over:
+            return
+        combat.end_player_turn()
+
+
 def _branch_actions(combat: "CombatState") -> list[int]:
     """The moves worth branching on here, end-turn excluded.
 
@@ -136,6 +230,7 @@ def search_turn(
     time_budget: float = DEFAULT_TIME_BUDGET,
     max_depth: int = DEFAULT_MAX_DEPTH,
     include_potions: bool = True,
+    lookahead_turns: int = DEFAULT_LOOKAHEAD_TURNS,
 ) -> SearchResult:
     """Find the best sequence of plays for the turn `combat` is in.
 
@@ -169,6 +264,10 @@ def search_turn(
         ended = clone_combat(state)
         ended.end_player_turn()
         score = evaluate(ended, weights)
+        if lookahead_turns:
+            future = clone_combat(ended)
+            _playout(future, lookahead_turns)
+            score += LOOKAHEAD_WEIGHT * evaluate(future, weights)
 
         if score > best_score:
             second_score = best_score
@@ -248,6 +347,7 @@ class SearchAgent:
         time_budget: float = DEFAULT_TIME_BUDGET,
         max_depth: int = DEFAULT_MAX_DEPTH,
         include_potions: bool = True,
+        lookahead_turns: int = DEFAULT_LOOKAHEAD_TURNS,
         name: str | None = None,
     ):
         self.weights = weights
@@ -255,7 +355,10 @@ class SearchAgent:
         self.time_budget = time_budget
         self.max_depth = max_depth
         self.include_potions = include_potions
-        self.name = name or f"search(nodes<={max_nodes}, t<={time_budget}s)"
+        self.lookahead_turns = lookahead_turns
+        self.name = name or (
+            f"search(nodes<={max_nodes}, t<={time_budget}s, "
+            f"lookahead={lookahead_turns})")
 
         self._plan: list[int] = []
         self._last_gap: float | None = None
@@ -277,6 +380,7 @@ class SearchAgent:
             time_budget=self.time_budget,
             max_depth=self.max_depth,
             include_potions=self.include_potions,
+            lookahead_turns=self.lookahead_turns,
         )
         self._plan = list(result.actions)
         self._last_gap = result.gap
@@ -300,6 +404,7 @@ class SearchAgent:
                 time_budget=self.time_budget,
                 max_depth=self.max_depth,
                 include_potions=self.include_potions,
+                lookahead_turns=self.lookahead_turns,
             )
             self._last_gap = result.gap
             self.searches += 1

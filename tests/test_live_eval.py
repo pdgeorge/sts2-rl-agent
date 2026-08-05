@@ -43,17 +43,29 @@ def test_records_each_run(recorder):
     assert recorder.floors() == [8, 19]
 
 
-def test_act1_clear_counts_floor_17_not_16(recorder):
-    """Floor 16 is the boss itself; reaching it is not beating it."""
-    recorder(_run(1, 16))
+def test_reaching_the_boss_is_not_beating_it(recorder):
+    """These two tests used to assert that floor 17 meant act 1 was cleared.
+
+    That was wrong, and it was wrong in the direction that flatters the agent.
+    The live game's act 1 boss room IS floor 17 -- the simulator's floor 16 is a
+    different count -- so a run that dies to the boss ends on 17 with everything
+    a victory would have. On 2026-08-05 that reported "CLEARED act 1: 6/30,
+    20.0%" for a session in which the boss was never once beaten: all six were
+    floor 17, room Boss, 0 HP, act 1.
+
+    A clear is now reaching act 2, which no death can fake.
+    """
+    recorder(_run(1, 17, room_type="Boss", act=1))
     report = _norm(recorder.report())
-    assert "reached the act 1 boss (f>=16) 1/1 100.0%" in report
-    assert "CLEARED act 1 (f>=17) 0/1 0.0%" in report
+    assert "reached the act 1 boss 1/1 100.0%" in report
+    assert "died to it 1/1 100.0%" in report
+    assert "CLEARED act 1 (reached act 2) 0/1 0.0%" in report
 
 
-def test_act1_clear_counts_a_run_past_the_boss(recorder):
-    recorder(_run(1, 17))
-    assert "CLEARED act 1 (f>=17) 1/1 100.0%" in _norm(recorder.report())
+def test_act1_is_cleared_by_reaching_act_2(recorder):
+    recorder(_run(1, 18, room_type="Monster", act=2))
+    report = _norm(recorder.report())
+    assert "CLEARED act 1 (reached act 2) 1/1 100.0%" in report
 
 
 def test_log_is_written_and_flushed_per_run(tmp_path):

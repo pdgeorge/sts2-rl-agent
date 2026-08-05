@@ -24,6 +24,7 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from sts2_env.bridge.card_quality import SKIP_THRESHOLD, rank_cards
 from sts2_env.bridge.client import STS2GameClient
 from sts2_env.bridge.cyra_events import CyraPublisher
 from sts2_env.bridge.journal import RunJournal
@@ -651,18 +652,54 @@ def _pick_card_select_indexes(state: dict[str, Any]) -> list[int]:
 
 
 def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
-    """Choose a card reward, or return None when skipping is the best action."""
+    """Choose a card reward, or return None when taking nothing is better.
+
+    Scored by asking the simulator what each card is, rather than by the old
+    rule -- prefer a Power, else an Attack, else a Skill, taking the first of
+    that type on offer -- which took BLIGHT_STRIKE (8 damage for 1) over SUNDER
+    (26 for 3) because Blight Strike was listed first.
+
+    ON SKIPPING. The screen-driven path cannot skip: RlCardRewardScreenHandler
+    reports `can_skip: false` and the game's own handler always takes a card.
+    Returning None there would claim a decision the game cannot carry out, which
+    is what leaves a screen open and loops a run forever (docs/KNOWN_ISSUES.md).
+    So this only declines when the mod says a skip is real, and takes the least
+    bad card otherwise -- and says so, because "took a card it rated as harmful"
+    is worth seeing in the log rather than silently accepting.
+    """
     cards = list(state.get("cards", []))
     can_skip = bool(state.get("can_skip", False))
     if not cards:
         return None if can_skip else DEFAULT_CHOICE_INDEX
-    if can_skip and _read_deck_size(state) > CARD_REWARD_LARGE_DECK_SIZE:
+
+    deck = state.get("deck") or []
+    ranked = rank_cards(cards, deck)
+    best_score, best_index, best_card = ranked[0]
+
+    deck_is_bloated = _read_deck_size(state) > CARD_REWARD_LARGE_DECK_SIZE
+    not_worth_it = best_score < SKIP_THRESHOLD
+
+    if can_skip and (not_worth_it or deck_is_bloated):
+        logger.info(
+            "CARD_REWARD: skipping (best was %s at %.2f, deck %d)",
+            _card_label(best_card), best_score, _read_deck_size(state),
+        )
         return None
-    for card_type in CARD_REWARD_TYPE_PRIORITY:
-        for fallback_index, card in enumerate(cards):
-            if _canonical_text(card.get("type")) == card_type:
-                return _read_index(card, fallback_index)
-    return _read_index(cards[0], DEFAULT_CHOICE_INDEX)
+
+    if not_worth_it:
+        logger.warning(
+            "CARD_REWARD: every option looks bad (best %s at %.2f) and this "
+            "screen cannot skip; taking the least bad.",
+            _card_label(best_card), best_score,
+        )
+
+    return _read_index(best_card, best_index)
+
+
+def _card_label(card: Any) -> str:
+    if isinstance(card, dict):
+        return str(card.get("id") or card.get("label") or card)
+    return str(card)
 
 
 def _pick_reward_screen_option(state: dict[str, Any]) -> int:

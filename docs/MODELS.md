@@ -46,6 +46,47 @@ starter-deck numbers measuring a different thing.
 
 ---
 
+## turn search v2 — 2026-08-05 — two turns of lookahead
+
+Same searcher, plus a cheap playout of two further turns blended into the score
+at half weight. Against `combat_v3_overnight` on the same 200 fights:
+
+```
+                    model     search v1   search v2
+win rate            74.0%       79.5%       83.0%
+hp lost overall      24.5        17.3        16.7
+MONSTER             85.5%       90.6%       93.7%
+ELITE               42.3%       53.8%       53.8%
+BOSS                 6.7%        6.7%       20.0%
+
+paired against the model:  win +9.0% +/- 2.1% clear, hp -7.8 +/- 0.7 clear
+won only by search 19, only by the model 1
+```
+
+**The boss row is the point.** v1 matched the model exactly at 6.7% because its
+horizon ended with the enemies' reply, and a boss is not a one-turn problem.
+
+**Half weight, not full, and it cost boss wins to do it.** Scored on the playout
+alone the boss rate was 33.3%, and the searcher also played Strike into 12
+telegraphed damage at 12 HP and died, where v1 played Defend and lived: when both
+lines end in death somewhere inside a crude playout, dying now and dying in two
+turns score the same, so surviving the turn stopped counting. Keeping the
+immediate term at full weight makes dying now strictly worse than dying later --
+which is true, and truer still given the playout is a rough policy whose
+predicted deaths are not to be trusted. 20% with that property beats 33% without.
+
+**Deeper is not better.** Four turns of lookahead scored *worse* than two (boss
+13.3% against 33.3% on the elite and boss subset). The playout compounds its own
+errors the further it runs, which is the argument for using `combat_v3_overnight`
+as the rollout policy rather than a hand-written one -- the next thing to try.
+
+**It still does not play Powers.** 3.6% of plays against 3.2% before, on decks
+where 73 of 200 hold one. Two turns is not long enough for a scaling card to pay
+off, so the searcher declines them and is arguably right to in a short fight and
+wrong in a boss. Unsolved.
+
+---
+
 ## turn search v1 — 2026-08-05 — the Phase 1 gate, passed
 
 `sts2_env/search/`, scored with `scripts/score_combat_benchmark.py --search`.

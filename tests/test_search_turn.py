@@ -274,3 +274,46 @@ def test_the_agent_reports_what_it_spent() -> None:
     stats = agent.stats()
     assert stats["searches"] > 0
     assert stats["nodes_per_search"] > 0
+
+
+# -- seeing past this turn ---------------------------------------------------
+
+def test_the_lookahead_plays_the_turns_out_without_touching_the_original() -> None:
+    from sts2_env.search.turn_search import _playout
+
+    combat = _combat()
+    original_turn = combat.turn_count
+    scratch = clone_combat(combat)
+    _playout(scratch, 2)
+
+    assert scratch.turn_count > original_turn
+    assert combat.turn_count == original_turn
+
+
+def test_the_playout_does_not_stop_dead_on_a_power() -> None:
+    """A Power has no damage and no block, so ranking on those alone scores it
+    zero -- and stopping there hid the payoff the lookahead exists to reveal."""
+    from sts2_env.search.turn_search import _playout
+
+    combat = _combat()
+    _set_hand(combat, CardId.INFLAME, CardId.STRIKE_IRONCLAD)
+    combat.energy = 3
+
+    scratch = clone_combat(combat)
+    _playout(scratch, 1)
+
+    assert scratch.turn_count > combat.turn_count, "the playout stalled instead of playing on"
+
+
+def test_lookahead_is_on_by_default() -> None:
+    """It took boss fights from 6.7% to 33.3% on the benchmark; off by default
+    would be leaving that on the floor."""
+    from sts2_env.search.turn_search import DEFAULT_LOOKAHEAD_TURNS
+
+    assert DEFAULT_LOOKAHEAD_TURNS >= 1
+
+
+def test_a_lookahead_search_still_returns_a_playable_line() -> None:
+    combat = _combat()
+    result = search_turn(combat, lookahead_turns=2)
+    _play_line(combat, result)
