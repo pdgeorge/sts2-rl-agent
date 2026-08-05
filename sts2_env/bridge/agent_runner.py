@@ -25,6 +25,7 @@ from typing import Any
 
 from sts2_env.bridge.client import STS2GameClient
 from sts2_env.bridge.cyra_events import CyraPublisher
+from sts2_env.bridge.journal import RunJournal
 from sts2_env.bridge.milestones import MilestoneWatcher
 from sts2_env.bridge.protocol import (
     ActionType,
@@ -133,6 +134,7 @@ def run_agent(
     on_run_end: "Callable[[dict[str, Any]], None] | None" = None,
     tell_cyra: bool = False,
     combat_policy_path: str | None = None,
+    journal_path: str | None = None,
 ) -> None:
     """Main agent loop.
 
@@ -152,6 +154,10 @@ def run_agent(
         on_run_end: Called with a summary dict as each run finishes.
         tell_cyra: Publish the four run milestones to cyra_brain. Off by default
             so training and evaluation never depend on a broker being up.
+        journal_path: JSONL file recording every room, fight, card played and
+            reward taken. The per-run summary says a run reached floor 11; this
+            says what happened on the way, which is what a decision about what to
+            fix next actually needs.
     """
     model = load_model(model_path)
     adapter = StateAdapter()
@@ -223,6 +229,7 @@ def run_agent(
 
         step_count = 0
         combat_count = 0
+        _was_in_combat = False
         run_index = 0
         run_started = time.monotonic()
         # Last run-level fields seen. game_over does not always carry them, so
@@ -232,6 +239,11 @@ def run_agent(
         _relic_warning_done = False
         cyra = CyraPublisher(enabled=tell_cyra)
         milestones = MilestoneWatcher()
+        journal = RunJournal(journal_path, model=model_path)
+        journal.start_run(1)
+        # Wrapped once, so every action the runner sends is recorded on the way
+        # through rather than at each of the fourteen places that send one.
+        client = journal.wrap(client)
 
         try:
             while True:
@@ -284,6 +296,15 @@ def run_agent(
                             "observation will read as an EMPTY deck and every card "
                             "reward is decided blind. Rebuild the mod.")
 
+                journal.observe(state)
+
+                # Counted here rather than never: this was initialised, reset and
+                # reported without ever being incremented, so every live record
+                # written so far says "combats": 0.
+                if _phase_for_state(state) in Phase.COMBAT_PHASES and not _was_in_combat:
+                    combat_count += 1
+                _was_in_combat = _phase_for_state(state) in Phase.COMBAT_PHASES
+
                 for event in milestones.observe(state):
                     logger.info("CYRA: %s", event["text"])
                     cyra.publish(event)
@@ -317,6 +338,7 @@ def run_agent(
                             "combats": combat_count,
                             "seconds": round(time.monotonic() - run_started, 1),
                         })
+                        journal.record_run_end(summary)
                         on_run_end(summary)
                     if run_index >= max_runs:
                         break
@@ -326,8 +348,10 @@ def run_agent(
                                 run_index)
                     step_count = 0
                     combat_count = 0
+                    _was_in_combat = False
                     progress = {}
                     milestones.reset()
+                    journal.start_run(run_index + 1)
                     run_started = time.monotonic()
                     continue
                 if phase == MSG_TYPE_ERROR:
@@ -956,6 +980,10 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--journal", default=None,
+        help="JSONL recording every room, fight, card played and reward taken.",
+    )
+    parser.add_argument(
         "--combat-policy",
         default=None,
         help=(
@@ -986,6 +1014,7 @@ def main() -> None:
         speed=args.speed,
         allow_random_fallback=args.allow_random_fallback,
         combat_policy_path=args.combat_policy,
+        journal_path=args.journal or None,
     )
 
 

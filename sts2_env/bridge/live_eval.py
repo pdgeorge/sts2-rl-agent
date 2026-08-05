@@ -168,6 +168,11 @@ def main() -> None:
                         help="Sample actions instead of taking the argmax. Live "
                              "runs are few, and a deterministic policy replays "
                              "the same mistake on the same state every time.")
+    parser.add_argument("--journal", default="output/live_journal.jsonl",
+                        help="JSONL recording every room, fight, card played and "
+                             "reward taken. The run log says a run reached floor "
+                             "11; this says what happened on the way. Pass an "
+                             "empty string to turn it off.")
     parser.add_argument("--tell-cyra", action="store_true",
                         help="Publish run milestones to cyra_brain over RabbitMQ. "
                              "Needs cyra_game reachable (CYRA_GAME_PATH) and a "
@@ -210,6 +215,7 @@ def main() -> None:
             max_runs=args.runs,
             on_run_end=recorder,
             tell_cyra=args.tell_cyra,
+            journal_path=args.journal or None,
             combat_policy_path=args.combat_policy,
         )
     except KeyboardInterrupt:
