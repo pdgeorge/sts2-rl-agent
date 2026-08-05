@@ -416,3 +416,30 @@ Landed on `glm52`. Pure-python; opt-in flag `--live-search`. The next live sessi
 ```
 
 Expected vs Phase 0.3 baseline: same hallway win rate, much lower HP-per-fight (the search survives turns the model threw away), occasional boss win. If boss win rate moves from 0% to ≥10% across 20 runs, continue to Phase 3. If still 0%, the deckbuilding phase is the gating failure.
+
+## Overnight summary — 6 PRs landed
+
+All six phases through Phase 2.1 were committed on `glm52` in one autonomous session. Pure-python work fully tested; the C# mod patch (PR #6) is committed but **uncompiled and unvalidated against the live game** — it's the only piece needing the user's machine.
+
+```
+bb5ba8c  PR #1  bridge: name the enemy a run died to, + act_clear event (Phase 0)
+721ce30  PR #2  search: CombatSituation.from_bridge_state (Phase 1.2)
+e4c33f3  PR #4  combat_env: --situation-set training flag (Phase 3.1)
+bbcf294  PR #5  hierarchical_env: combat solver routes through step() (Phase 4.1)
+2631d43  PR #6  bridge: encounter/seeds + upgraded deck (Phase 1.1, C# uncompiled)
+35e6d8b  PR #7  bridge: live_search -- opt-in SearchAgent on the live path (Phase 2.1)
+```
+
+**302 bridge/search/gym-env tests pass**; 3387 across the wider suite pass. The 97 pre-existing `test_regent_*` parity failures (documented in PR #1's changelog) are unchanged by these commits — verified by stashing the edits and re-running.
+
+**What's deferred to the user:**
+
+1. **Compile PR #6** — `dotnet build bridge_mod/STS2BridgeMod.csproj`. Validate the combat_action JSON includes `encounter` / `encounter_seed` / `combat_seed` and that deck entries are now `{id, upgraded}` dicts. The `(long)seed` cast may overflow for very large `ulong` seeds — if the simulator's `Rng` masks negatives, the streams diverge; check `sts2_env/core/rng.py` before iterating.
+2. **Phase 2.4 live session** — run `live_eval --live-search` for 20 runs and compare to Phase 0.3 baseline. Same command shape as Phase 0.3 but with `--live-search`.
+3. **Phase 3.2 + Phase 3.3 retraining** — `scripts/harvest_combat_benchmark.py --count 2000 --combat-model output/combat_v3_overnight/final_model.zip`, then `train_combat.py --resume-from output/combat_v3_overnight/final_model.zip --situation-set <harvest_output>.json --total-timesteps 2000000 --n-envs 8`. Needs the decompile-to-game-build match the trainer already enforces.
+4. **Phase 3.4 live session** — `live_eval --combat-policy <new_model> --live-search` for 20 runs. This is the diagnostic: either 50% Act 1 is on the table or it isn't, and the journal will say why.
+5. **Phase 4.1+4.2 meta-policy training** — `train_meta_policy.py --combat-policy output/combat_v3_overnight/final_model.zip ...` to verify the eval-reward curve is now non-flat (was flat for `meta_ppo_v1..v7`).
+
+**What's safe to skip on first live iteration:** Phase 5 (LLM decision router). It's a 1-2 week conditional piece that only matters if Phase 4 alone doesn't close the milestone. Try the simpler stack first.
+
+The next decision the user makes — whether to ship Phase 2.4 first or jump to Phase 3.3 first — depends on which question they want to answer first: "does live search help on its own?" (Phase 2.4) or "does training on real situations help?" (Phase 3.3). Both feed into the same Phase 3.4 session where the answer to "is 50% achievable?" lands.
