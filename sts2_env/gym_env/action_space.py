@@ -57,6 +57,42 @@ def action_to_potion_and_target(action: int) -> tuple[int | None, int | None]:
     return slot_idx, target_offset - 1
 
 
+def apply_combat_action(combat: CombatState, action: int) -> bool:
+    """Perform `action` on `combat`. Returns whether anything actually happened.
+
+    The single definition of what an action index *does*, as `action_to_*` above
+    are the single definition of what one *means*. Both the training env and the
+    searcher call this, because an agent that plays a line in search and then
+    sends a different one to the game is the bug class that has cost this project
+    the most runs -- and two copies of this dispatch is how that happens.
+
+    A False return means the action was rejected and the state is unchanged.
+    That should be impossible when the caller respects `get_action_mask`, so it
+    is a mask bug rather than a legal outcome; callers cut the episode off after
+    a run of them rather than looping forever.
+    """
+    if combat.pending_choice is not None:
+        if action == ACTION_END_TURN:
+            combat.resolve_pending_choice(None)
+        else:
+            combat.resolve_pending_choice(action - 1)
+        return True
+
+    if action == ACTION_END_TURN:
+        combat.end_player_turn()
+        return True
+
+    if is_potion_action(action):
+        slot_idx, target_idx = action_to_potion_and_target(action)
+        return bool(
+            slot_idx is not None
+            and combat.use_potion(slot_idx, target_index=target_idx)
+        )
+
+    hand_idx, target_idx = action_to_card_and_target(action)
+    return bool(hand_idx is not None and combat.play_card(hand_idx, target_idx))
+
+
 def get_action_mask(combat: CombatState, owner: Creature | None = None) -> np.ndarray:
     """Return boolean mask of valid actions."""
     mask = np.zeros(ACTION_SPACE_SIZE, dtype=np.int8)

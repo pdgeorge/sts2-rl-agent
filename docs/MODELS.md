@@ -8,6 +8,156 @@ Add a row when a model is worth keeping. A model with no row is a scratch run.
 
 ---
 
+## The act 1 combat benchmark — 2026-08-05
+
+`tests/fixtures/act1_combat_benchmark.json`, scored with
+`scripts/score_combat_benchmark.py`.
+
+Every combat number above this line was measured on `STS2CombatEnv`: the Ironclad
+starter deck, at full HP, against a random act 1 encounter. No run is in that
+state after floor 1, which is why a model reported at 92% there dies on floor 8
+of a live run. The benchmark is 200 fights harvested from real runs -- the deck as
+it had grown, the HP as it had been spent, the relics collected, against the
+encounter the map actually rolled.
+
+200 situations: 50 per floor band, 159 monster / 26 elite / 15 boss, decks of
+10-20 cards, HP from 16% to full, relics up to 3.
+
+**`combat_v3_overnight/final_model.zip`, the bar Phase 1 has to beat:**
+
+```
+             win rate      hp lost
+overall      74.0% +/-3.1     24.5
+MONSTER      85.5%           19.1
+ELITE        42.3%           41.0
+BOSS          6.7%           53.1
+floors 13-16 54.0%           32.9
+
+random baseline 32.0%        44.5
+```
+
+**Read the elite and boss rows.** This model wins hallway fights and loses 58% of
+elites and 93% of bosses -- 1 boss fight in 15. That is exactly where live runs
+end: `output/live_eval_*.jsonl` shows deaths at elites and at floor 17, the act 1
+boss. The headline 74% is not the problem; the 6.7% is.
+
+Not comparable to the 71%/92% recorded below for `combat_ppo_v3`, which are
+starter-deck numbers measuring a different thing.
+
+---
+
+## Everything trained before 2026-08-05 learned a game with one relic in it
+
+Not a model row. It applies to every row below, so it goes above them.
+
+`RunState.__init__` aliased `self.relics = self.player.relics`, and
+`CombatState._build_player_state` rebound the player's list on every combat.
+After the first fight the two names pointed at different lists: relics obtained
+later went to the player's, `RunManager._enter_combat` fed the stale one into the
+next combat, and that overwrote the player's. **No relic obtained after the first
+combat survived into the next one.** No error, no log line.
+
+So the simulator held exactly one relic for a whole run while the real game hands
+out five or six by the end of act 1. Every model below trained against that, which
+makes the sim-to-live gap partly an artefact rather than a mystery -- relics are
+most of what makes a real act 1 survivable, and the deckbuilding and routing
+policies were learning without them.
+
+Fixed 2026-08-05; `RunState.relics` is now a property over the player's list and
+cannot come apart. Pinned by `tests/test_relic_persistence.py`, four of whose
+five cases fail on the old code. **Every number below predates the fix.**
+
+---
+
+## meta_ppo_v1 .. v7 — 2026-08-01/02 — trained with almost no reward signal
+
+`output/meta_ppo_v{1..7}/`. Hierarchical meta-policy: non-combat decisions only,
+combat fast-forwarded by a solver.
+
+```
+        evals   steps      first    last     best
+v1       46      920,000    3.37     4.20    4.55
+v2       19      380,000    3.34     3.40    4.34
+v3       15      300,000    3.02     3.57    4.18
+v4        2       39,984    2.78     2.78    2.93
+v5        3      299,988    3.24     3.24    4.28
+v6        7      999,960    3.24     3.55    4.41
+v7        2    1,207,608    3.92     3.92    3.99
+```
+
+**Why they went nowhere**, found 2026-08-05 by reading rather than by training:
+`HierarchicalRunEnv.step` fast-forwards combat by calling `run_env._step_combat`
+directly, which bypasses the reward block in `run_env.step`. `CombatSolver.solve`
+returns a hardcoded `0.0`, and floors gained inside a fast-forwarded combat are
+never credited either, because the next step's `floor_before` has already moved.
+
+The meta-policy's entire reward was therefore the terminal +/-  payout and the
+card-reward shaping term. No combat win, no elite, no boss, no floor. It was
+asked to learn deckbuilding and routing from a signal that arrives once, at the
+end, hundreds of steps later.
+
+Compounding it, `HeuristicCombatSolver` picks the highest-damage card and **never
+plays block**, so the world these policies were optimising for was one where
+fights go badly for reasons no meta decision could affect.
+
+Do not resume any of these. The environment they trained in has to be repaired
+first.
+
+---
+
+## combat_ppo_v4, v5, combat_v3_overnight — 2026-08-01/04
+
+```
+                     evals   steps         first    last    best
+combat_ppo_v4         201     2,010,000    -0.68   -0.22    0.83
+combat_ppo_v5          11       219,912    -0.42    0.07    0.67
+combat_v3_overnight   160    40,000,000    -0.01   -0.11    0.55
+```
+
+`combat_v3_overnight` is the one still in use, and the one benchmarked above.
+**40M steps with a flat evaluation curve** -- first three evals -0.01, last three
+-0.11. Whatever it knows, it knew early; the remaining 39M steps bought nothing
+measurable. That is the same shape as `run_ppo_v4` below, and the same lesson:
+more steps at the same strength do not help.
+
+Trained on starter-deck-at-full-HP only (`STS2CombatEnv.reset`), which is why its
+benchmark numbers on real situations are so uneven -- 85.5% on hallway fights,
+6.7% on bosses.
+
+---
+
+## run_ppo_v2_6m — 2026-08-03 — unloadable against the current build
+
+`output/run_ppo_v2_6m/`. 6M steps, eval 4.77 -> 4.17, best 5.65.
+
+Kept only as the record of a failure mode worth not repeating: it was trained
+against observation layout v2 (2586 dims) and the current build is v3. Loading it
+raises `ObservationLayoutMismatch` -- see `output/crash_log.json`. The layout
+fingerprint doing that is working exactly as intended; the model is simply gone
+unless the tree is checked out at the revision that produced it.
+
+This is the cost a learned policy carries and a searcher does not.
+
+---
+
+## teacher / student — 2026-08-05 — flat MC teacher, distilled
+
+`output/teacher_data.npz`, `output/teacher_16.npz`, `output/student_v{1,2}.pt`.
+
+Flat Monte Carlo search used as a teacher, then distilled into a network.
+46,460 decisions from 150 runs, 309.7 per run, **44,067 of them in combat**.
+Teacher mean floor **9.5**.
+
+That number is the interesting one: it is the same wall `alpha` (9.7) and
+`run_ppo_v4` (9.5) hit by a completely different method. Flat MC with random
+rollouts is a weak evaluator for a card game -- a random policy discards its own
+block and misplays its own hand, so every branch scores about equally badly -- and
+flat MC has no tree, so it cannot find *sequences*, which is where most of the
+value in a turn lives. It is evidence about that specific search, not about
+search.
+
+---
+
 ## run_ppo_v4 — 2026-07-30 — a null result, kept as one
 
 `output/run_ppo_v4/best_model/best_model.zip`

@@ -238,6 +238,12 @@ class RunManager:
         # Master RNG (for encounter selection, gold rolls, etc.)
         self._rng = Rng(seed + RUN_MANAGER_RNG_SEED_OFFSET)
 
+        # (encounter setup name, encounter seed, combat seed) for the fight most
+        # recently entered from an encounter pool, or None if the current combat
+        # did not come from one. Cleared rather than left stale, so a caller
+        # cannot capture an event fight as though it were the last rolled one.
+        self._last_encounter: tuple[str, int, int] | None = None
+
         # Build RunState
         config = _CHARACTER_CONFIG.get(character_id, _CHARACTER_CONFIG[DEFAULT_CHARACTER_ID])
         self._run_state = RunState(
@@ -559,8 +565,13 @@ class RunManager:
 
         if pool:
             setup_fn = self._rng.choice(pool)
-            encounter_rng = Rng(self._rng.next_int(0, INT_MAX))
-            setup_fn(self._combat, encounter_rng)
+            encounter_seed = self._rng.next_int(0, INT_MAX)
+            # Recorded because it is otherwise unrecoverable: once setup runs, the
+            # enemies exist but which roll produced them does not, and replaying a
+            # fight needs the roll rather than the species. Read by
+            # CombatSituation.from_run_manager.
+            self._last_encounter = (setup_fn.__name__, encounter_seed, combat_seed)
+            setup_fn(self._combat, Rng(encounter_seed))
 
         self._fire_modifiers_after_room_entered(RoomVisitContext(room_type), combat=self._combat)
         self._combat.start_combat()
@@ -574,6 +585,9 @@ class RunManager:
     ) -> None:
         self._phase = self.PHASE_COMBAT
         self._current_room_type = RoomType.MONSTER
+        # Not from an encounter pool, so the last rolled one no longer describes
+        # the fight in progress.
+        self._last_encounter = None
         self._current_room = CombatRoom(
             room_type=RoomType.MONSTER,
             encounter_id=encounter_id,

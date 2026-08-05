@@ -630,7 +630,11 @@ class CombatState:
             if not player_state.deck:
                 player_state.deck = list(deck)
             if relics:
-                player_state.relics = self._normalize_relic_ids(relics)
+                # In place. Rebinding here is what detached RunState's relic list
+                # from the player's for a year of training: everything holding the
+                # old list kept reading it, and the relics collected since were
+                # invisible to the next combat. See RunState.relics.
+                player_state.relics[:] = self._normalize_relic_ids(relics)
             if potions is not None:
                 player_state.potions = list(potions)
             player_state.max_hp = player_max_hp
