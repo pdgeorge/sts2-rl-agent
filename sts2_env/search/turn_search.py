@@ -53,6 +53,40 @@ DEFAULT_MAX_DEPTH = 12
 DEFAULT_LOOKAHEAD_TURNS = 2
 MAX_PLAYOUT_ACTIONS_PER_TURN = 12
 
+DEFAULT_TOP_K = 0
+"""How many of the turn's best lines get played to the end of the fight.
+
+ZERO, which is to say off, and the reason is recorded rather than assumed.
+
+Rolling the top five lines out to the end -- three sampled futures each -- was
+built to fix two things and fixed neither. Against the same 200 fights it moved
+the win rate +0.5% +/- 1.1% (three fights won that were lost, two lost that were
+won: a coin flip), left the power-play rate as flat in fight length as it was
+before (boss 3.2 -> 4.2%, elite 2.3 -> 3.3%, hallway 4.6 -> 4.5%, where the
+longest fights should show the highest rate and do not), and cost five times the
+compute. It also lost a behaviour that was right: with rollouts on, the searcher
+plays Strike before Bash and throws away the Vulnerable multiplier, because
+three samples cannot resolve a three-damage difference and the noise decides.
+
+It did buy -1.0 +/- 0.3 HP a fight, which is real. Not worth the rest.
+
+The diagnosis is not depth, it is the playout. A rollout inherits every blind
+spot of the policy playing it, and this one ranks Powers last and plays them only
+when nothing else is legal -- so playing a fight to its end still never shows a
+Power being used well. Making the playout competent is the prerequisite for this
+being worth switching on, and for deck evaluation by simulation being honest
+about the same cards.
+
+Set it to 5 to turn it back on once that is true."""
+
+DEFAULT_ROLLOUT_TURNS = 40
+DEFAULT_ROLLOUT_SAMPLES = 3
+TERMINAL_WEIGHT = 0.5
+"""How much the end of the fight counts, against the state right after the
+enemies reply. Same rule and the same reason as LOOKAHEAD_WEIGHT below: a
+rollout that ends in death must not make dying now and dying in ten turns score
+alike."""
+
 LOOKAHEAD_WEIGHT = 0.5
 """How much the state after the playout counts, against the state right after the
 enemies reply.
@@ -81,6 +115,7 @@ class SearchResult:
 
     nodes: int = 0
     leaves: int = 0
+    rollouts: int = 0
     elapsed: float = 0.0
     exhausted: bool = True
     """False when a budget cut the search short -- the answer is then the best of
@@ -129,6 +164,34 @@ def _state_key(combat: "CombatState") -> tuple:
             for e in combat.enemies
         ),
     )
+
+
+def _reseed_futures(combat: "CombatState", salt: int) -> None:
+    """Give this copy a different future: another shuffle, other enemy choices.
+
+    Only the parts nobody can see yet. The enemies' *current* telegraphed intent
+    is already fixed in the state and is not touched, so the searcher keeps
+    reasoning about the hit it can actually see coming.
+    """
+    from sts2_env.run.run_state import RunRngSet
+
+    state = getattr(combat, "current_player_state", None)
+    player_state = getattr(state, "player_state", None)
+    run_state = getattr(player_state, "run_state", None)
+    if run_state is None:
+        return
+
+    # Derived from the position, never from `id(combat)`. An address changes
+    # between processes, which would make the same fight play differently on
+    # every run -- and reproducibility is the property the whole benchmark rests
+    # on: two agents are only comparable if each faces the same fight twice.
+    seed = (
+        combat.turn_count * 1_000_003
+        + max(0, combat.player.current_hp) * 10_007
+        + sum(max(0, e.current_hp) for e in combat.enemies) * 101
+        + salt
+    ) & 0x7FFFFFFF
+    run_state.rng = RunRngSet(seed)
 
 
 def _is_power_card(card) -> bool:
@@ -231,6 +294,9 @@ def search_turn(
     max_depth: int = DEFAULT_MAX_DEPTH,
     include_potions: bool = True,
     lookahead_turns: int = DEFAULT_LOOKAHEAD_TURNS,
+    top_k: int = DEFAULT_TOP_K,
+    rollout_turns: int = DEFAULT_ROLLOUT_TURNS,
+    rollout_samples: int = DEFAULT_ROLLOUT_SAMPLES,
 ) -> SearchResult:
     """Find the best sequence of plays for the turn `combat` is in.
 
@@ -246,6 +312,11 @@ def search_turn(
     best_score = -float("inf")
     best_actions: tuple[int, ...] = ()
     second_score = -float("inf")
+    # Every line and its cheap score, so the most promising few can be looked at
+    # properly afterwards. Kept as paths rather than states: replaying three
+    # actions from the root costs one clone, where holding hundreds of states
+    # costs hundreds.
+    shortlist: list[tuple[float, tuple[int, ...]]] = []
 
     def out_of_budget() -> bool:
         return (
@@ -268,6 +339,8 @@ def search_turn(
             future = clone_combat(ended)
             _playout(future, lookahead_turns)
             score += LOOKAHEAD_WEIGHT * evaluate(future, weights)
+
+        shortlist.append((score, path))
 
         if score > best_score:
             second_score = best_score
@@ -316,15 +389,106 @@ def search_turn(
         # the turn is always legal, and is what an empty line means.
         best_score, best_actions = 0.0, ()
 
+    rollouts = 0
+    if top_k and len(shortlist) > 1:
+        best_actions, best_score, second_score, rollouts = _rescore_by_playing_to_the_end(
+            combat, shortlist,
+            weights=weights, top_k=top_k, rollout_turns=rollout_turns,
+            rollout_samples=rollout_samples,
+            fallback=(best_actions, best_score, second_score),
+            deadline=started + time_budget,
+        )
+
     return SearchResult(
         actions=best_actions,
         score=best_score,
         runner_up=second_score if second_score > -float("inf") else None,
         nodes=counters["nodes"],
         leaves=counters["leaves"],
+        rollouts=rollouts,
         elapsed=time.perf_counter() - started,
         exhausted=exhausted,
     )
+
+
+def _rescore_by_playing_to_the_end(
+    combat: "CombatState",
+    shortlist: list[tuple[float, tuple[int, ...]]],
+    *,
+    weights: EvalWeights,
+    top_k: int,
+    rollout_turns: int,
+    rollout_samples: int,
+    fallback: tuple[tuple[int, ...], float, float],
+    deadline: float,
+) -> tuple[tuple[int, ...], float, float, int]:
+    """Play the most promising lines to the end of the fight and rank on that.
+
+    The cheap score stops two turns after this one, which is where a scaling
+    card's whole value lives: measured across the benchmark, the searcher played
+    Powers at 3.2% in bosses, 2.3% in elites and 4.6% in hallway fights -- a rate
+    completely flat in fight length, when a correct agent would play them most in
+    the longest fights. Playing a line to its actual conclusion prices Inflame
+    without anyone deciding what Strength is worth: it either changed the result
+    or it did not.
+
+    Only the top few, because a rollout costs what a hundred leaf evaluations do
+    and the cheap score is a good enough filter to pick which ones deserve it.
+
+    The immediate term stays at full weight for the same reason it does in the
+    two-turn lookahead: a rollout that ends in death cannot be allowed to make
+    dying now and dying in ten turns look alike, or the searcher throws away
+    survivable turns on the say-so of a rough playout policy.
+    """
+    ranked = sorted(shortlist, key=lambda entry: -entry[0])[:top_k]
+
+    scored: list[tuple[float, tuple[int, ...]]] = []
+    rollouts = 0
+    for _, path in ranked:
+        if time.perf_counter() >= deadline:
+            break
+
+        state = clone_combat(combat)
+        replayed = True
+        for action in path:
+            if not apply_combat_action(state, action):
+                replayed = False
+                break
+        if not replayed or state.pending_choice is not None:
+            continue
+
+        state.end_player_turn()
+        immediate = evaluate(state, weights)
+
+        # Several futures, not one. A rollout is a sample, and one sample carries
+        # the whole variance: at weight 0.5 that was enough to drown a precise
+        # 3-damage fact and make the searcher play Strike before Bash, throwing
+        # away the Vulnerable multiplier it had just been shown how to use.
+        #
+        # Reseeding also removes a quiet cheat. A clone carries the real RNG, so a
+        # single rollout knows the exact order of every future draw -- information
+        # the live game will never hand over. Averaging over redrawn futures both
+        # cuts the noise and measures the thing that transfers.
+        outcomes = []
+        for sample in range(max(1, rollout_samples)):
+            future = clone_combat(state)
+            if sample:
+                _reseed_futures(future, sample)
+            _playout(future, rollout_turns)
+            outcomes.append(evaluate(future, weights))
+            rollouts += 1
+
+        terminal = sum(outcomes) / len(outcomes)
+        scored.append((immediate + TERMINAL_WEIGHT * terminal, path))
+
+    if not scored:
+        actions, best, second = fallback
+        return actions, best, second, rollouts
+
+    scored.sort(key=lambda entry: -entry[0])
+    best_score, best_actions = scored[0]
+    runner_up = scored[1][0] if len(scored) > 1 else -float("inf")
+    return best_actions, best_score, runner_up, rollouts
 
 
 class SearchAgent:
@@ -348,6 +512,9 @@ class SearchAgent:
         max_depth: int = DEFAULT_MAX_DEPTH,
         include_potions: bool = True,
         lookahead_turns: int = DEFAULT_LOOKAHEAD_TURNS,
+        top_k: int = DEFAULT_TOP_K,
+        rollout_turns: int = DEFAULT_ROLLOUT_TURNS,
+        rollout_samples: int = DEFAULT_ROLLOUT_SAMPLES,
         name: str | None = None,
     ):
         self.weights = weights
@@ -356,9 +523,12 @@ class SearchAgent:
         self.max_depth = max_depth
         self.include_potions = include_potions
         self.lookahead_turns = lookahead_turns
+        self.top_k = top_k
+        self.rollout_turns = rollout_turns
+        self.rollout_samples = rollout_samples
         self.name = name or (
-            f"search(nodes<={max_nodes}, t<={time_budget}s, "
-            f"lookahead={lookahead_turns})")
+            f"search(t<={time_budget}s, lookahead={lookahead_turns}, "
+            f"top_k={top_k})")
 
         self._plan: list[int] = []
         self._last_gap: float | None = None
@@ -381,6 +551,9 @@ class SearchAgent:
             max_depth=self.max_depth,
             include_potions=self.include_potions,
             lookahead_turns=self.lookahead_turns,
+            top_k=self.top_k,
+            rollout_turns=self.rollout_turns,
+            rollout_samples=self.rollout_samples,
         )
         self._plan = list(result.actions)
         self._last_gap = result.gap
@@ -405,6 +578,9 @@ class SearchAgent:
                 max_depth=self.max_depth,
                 include_potions=self.include_potions,
                 lookahead_turns=self.lookahead_turns,
+                top_k=self.top_k,
+                rollout_turns=self.rollout_turns,
+                rollout_samples=self.rollout_samples,
             )
             self._last_gap = result.gap
             self.searches += 1

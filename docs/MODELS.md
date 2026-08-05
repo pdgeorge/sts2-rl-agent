@@ -46,6 +46,70 @@ starter-deck numbers measuring a different thing.
 
 ---
 
+## turn search v3 — 2026-08-05 — terminal rollouts, a null result, kept off
+
+`--top-k 5 --rollout-samples 3`. Off by default; the code stays because the
+diagnosis below is worth acting on later.
+
+The top five lines of each turn played to the END of the fight, three sampled
+futures each, scored `immediate + 0.5 * mean(terminal)`. Built to fix two things
+-- bosses, and Powers never being played -- on the reasoning that both are
+multi-turn and the horizon was truncating exactly where their value lives.
+
+Paired over the same 200 fights:
+
+```
+                     v2        v3
+win rate           83.0%     83.5%     +0.5% +/- 1.1%   inside the noise
+hp lost             16.6      15.7     -1.0  +/- 0.3    clear
+ELITE              53.8%     61.5%     (26 fights, +/-10%)
+BOSS               20.0%     26.7%     (15 fights, +/-11%)
+won only by v3: 3,  only by v2: 2
+```
+
+**It did not do what it was built for.** The win rate is a coin flip. The elite
+and boss rows moved the right way and cannot be claimed at those sample sizes.
+Cost: five times the compute, 0.57 s a turn against v2's 0.11.
+
+**And the power test it was designed against fails outright:**
+
+```
+                  turns/fight    v2      v3
+BOSS                  9.3       3.2%   4.2%
+ELITE                 5.6       2.3%   3.3%
+MONSTER              23.4       4.6%   4.5%
+```
+
+The rate is still flat in fight length -- the longest fights show no more scaling
+than the shortest, which is the signature of not seeing the payoff at all. The
+bar was "sensitive to fight length", not "a bigger number", precisely so a bias
+shift could not be mistaken for a fix. It is a bias shift.
+
+**It also lost something correct.** With rollouts on the searcher plays Strike
+before Bash, throwing away the Vulnerable multiplier, because three samples
+cannot resolve a three-damage difference and the noise decides which line wins.
+`tests/test_search_turn.py` catches this; the test flipped with the sampling
+seed, which is what a decision made by noise looks like.
+
+**The diagnosis, which is the useful part.** Depth was never the problem. A
+rollout inherits every blind spot of the policy that plays it, and the playout
+ranks Powers last and plays them only when nothing else is legal -- so playing a
+fight to its conclusion still never shows a Power being *used*. The same
+limitation was measured independently from the deckbuilding side: with the
+trained model as playout, adding Inflame to a starter deck scored +1.5 HP, i.e.
+worse than not taking it.
+
+So a competent playout policy is the prerequisite for three separate things:
+terminal rollouts paying for themselves, deck evaluation by simulation being
+honest about scaling cards, and Powers being played at all. That is the next
+piece of work, and it was already visible in the flat-MC teacher's 9.5 floors.
+
+The noise floor was measurable before any of this was built -- two identical decks
+differ by +/-8.8 HP over 16 fights, +/-3.3 over 128 -- and it was read as a caveat
+rather than as the prediction it turned out to be.
+
+---
+
 ## turn search v2 — 2026-08-05 — two turns of lookahead
 
 Same searcher, plus a cheap playout of two further turns blended into the score

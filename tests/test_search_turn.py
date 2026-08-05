@@ -317,3 +317,113 @@ def test_a_lookahead_search_still_returns_a_playable_line() -> None:
     combat = _combat()
     result = search_turn(combat, lookahead_turns=2)
     _play_line(combat, result)
+
+
+# -- playing the shortlist to the end ----------------------------------------
+
+def test_rollouts_only_run_for_the_shortlist() -> None:
+    """A rollout costs what a hundred leaf evaluations do, so only the most
+    promising few earn one -- times however many futures each is sampled over."""
+    combat = _combat(encounter="setup_slimes_weak")
+    result = search_turn(combat, top_k=3, rollout_samples=2)
+    assert result.rollouts <= 3 * 2
+    assert result.leaves > 3
+
+
+def test_several_futures_are_sampled_rather_than_one() -> None:
+    """One rollout is one sample carrying the whole variance, and at half weight
+    that was enough to drown a 3-damage certainty: the searcher played Strike
+    before Bash and threw away the Vulnerable multiplier."""
+    combat = _combat(encounter="setup_slimes_weak")
+    one = search_turn(combat, top_k=2, rollout_samples=1)
+    many = search_turn(combat, top_k=2, rollout_samples=4)
+    assert many.rollouts > one.rollouts
+
+
+def test_rollouts_can_be_turned_off() -> None:
+    combat = _combat()
+    assert search_turn(combat, top_k=0).rollouts == 0
+
+
+def test_rescoring_still_returns_a_line_that_can_be_played() -> None:
+    for seed in (1001, 1002, 1003):
+        combat = _combat(seed=seed)
+        _play_line(combat, search_turn(combat, top_k=5))
+
+
+def test_rescoring_leaves_the_real_combat_untouched() -> None:
+    combat = _combat()
+    before = (combat.player.current_hp, combat.turn_count,
+              [c.card_id.name for c in combat.hand],
+              [e.current_hp for e in combat.enemies])
+    search_turn(combat, top_k=5)
+    assert (combat.player.current_hp, combat.turn_count,
+            [c.card_id.name for c in combat.hand],
+            [e.current_hp for e in combat.enemies]) == before
+
+
+def test_lethal_is_still_taken_with_rollouts_on() -> None:
+    """The rollout must not talk it out of winning now."""
+    combat = _combat()
+    _set_hand(combat, CardId.STRIKE_IRONCLAD, CardId.STRIKE_IRONCLAD, CardId.DEFEND_IRONCLAD)
+    combat.energy = 3
+    for enemy in combat.enemies:
+        enemy.current_hp = 4
+
+    _play_line(combat, search_turn(combat, top_k=5))
+    assert combat.is_over and combat.player_won
+
+
+def test_a_survivable_turn_is_still_survived_with_rollouts_on() -> None:
+    """The failure the two-turn lookahead introduced, re-checked at full depth:
+    a rollout ending in death must not make dying now look equivalent."""
+    combat = _combat(hp=12, encounter="setup_fossil_stalker_normal")
+    _set_hand(combat, CardId.DEFEND_IRONCLAD, CardId.STRIKE_IRONCLAD)
+    combat.energy = 1
+
+    result = search_turn(combat, top_k=5)
+    after = clone_combat(combat)
+    _play_line(after, result)
+    after.end_player_turn()
+    assert after.player.current_hp > 0
+
+
+def test_the_time_budget_is_respected_by_the_rollout_stage() -> None:
+    combat = _combat(encounter="setup_slimes_weak")
+    result = search_turn(combat, top_k=50, time_budget=0.05)
+    assert result.elapsed < 3.0
+    _play_line(combat, result)
+
+
+def test_the_same_position_searches_the_same_way_twice() -> None:
+    """Reproducibility is what the benchmark rests on: two agents are only
+    comparable if each faces the same fight twice.
+
+    The resampled futures are seeded from the position, never from `id(combat)`
+    -- an address differs between processes, which would have made the same
+    fight play differently on every run while looking deterministic.
+    """
+    first = search_turn(_combat(), top_k=5, rollout_samples=3)
+    second = search_turn(_combat(), top_k=5, rollout_samples=3)
+    assert first.actions == second.actions
+    assert first.score == pytest.approx(second.score)
+
+
+def test_resampling_actually_varies_the_future() -> None:
+    """If every sample were identical, averaging would buy nothing."""
+    from sts2_env.search.cloning import clone_combat
+    from sts2_env.search.evaluate import evaluate
+    from sts2_env.search.turn_search import _playout, _reseed_futures
+
+    base = _combat()
+    base.end_player_turn()
+
+    outcomes = set()
+    for sample in range(4):
+        future = clone_combat(base)
+        if sample:
+            _reseed_futures(future, sample)
+        _playout(future, 6)
+        outcomes.add(round(evaluate(future), 4))
+
+    assert len(outcomes) > 1, "every sampled future came out identical"
