@@ -289,3 +289,39 @@ python scripts/train_combat.py \
 ```
 
 A larger fixture (2000 situations rather than 200) is the next harvest step, per Phase 3.2 of the roadmap.
+
+## PR #5 changelog — Phase 4.1: HierarchicalRunEnv reward leak fix
+
+Landed on `glm52`. Pure-python; no mod change required. Fixes the bug that made seven meta-policy training versions (`meta_ppo_v1..v7`) silently unlearnable, as `docs/MODELS.md:240` diagnosed.
+
+**The bug, confirmed by stashing the fix.** `HeuristicCombatSolver.solve` and `FrozenRLCombatSolver.solve` both called `run_env._step_combat(action)` — the private method that applies the action but bypasses the reward block in `run_env.step`. So the meta-policy never saw:
+
+- `COMBAT_WON` (1.0, per `reward_config.py:58`) — never credited for a fight won.
+- `ELITE_WON` (3.0) and `BOSS_WON` (10.0) — never credited for harder rooms.
+- `FLOOR_REACHED` (0.35) for floors advanced when a combat was fast-forwarded across an act boundary.
+- Card-reward shaping for the meta-decision immediately after.
+
+Only the terminal `RUN_WIN` / `RUN_DEATH` and the card-reward shaping (which fires outside the solver) reached the meta-policy. Its entire reward signal was sparse and arrived once at the end of a 400-step rollout, hundreds of steps from any decision it could attribute the reward to.
+
+**The fix.** Both solvers now route through `run_env.step(action)` instead of `run_env._step_combat(action)`. The accumulated `step_reward` is returned to the meta-policy via `reward += combat_reward` (already in `HierarchicalRunEnv.step` at `:257`). The work `step` does that `_step_combat` didn't (observation encoding, terminated/truncated evaluation) is cheap and only happens inside a fast-forward loop — never on the hot training path.
+
+Also propagates `truncated` from internal steps (the step cap can fire mid-fast-forward; the old code hard-coded `truncated=False`).
+
+**How the tests pinned it.** Without the fix, every fast-forwarded combat's max positive step reward is `0.35` (FLOOR_REACHED alone). With the fix, the step that wins a hallway fight rewards `1.35` (FLOOR_REACHED + COMBAT_WON). The test asserts `max_positive_step_reward >= 1.0`. `test_floor_alone_does_not_satisfy_the_combat_won_assertion` pins `FLOOR_REACHED < COMBAT_WON` so a later change to reward config cannot silently hide the leak.
+
+**Stash-verified:** with the fix reverted and only the tests applied, `test_a_combat_that_ends_during_fastforward_emits_combat_won` fails with `assert 0.35 >= 1.0` — exactly the regression the test exists to catch.
+
+**What's not in this PR.**
+
+- A full meta-policy training run to verify the model now learns. That's Phase 4.2+3 with `FrozenRLCombatSolver` (defaults to `combat_v3_overnight`); the user can pull the trigger:
+
+```bash
+python scripts/train_meta_policy.py \
+    --combat-policy output/combat_v3_overnight/final_model.zip \
+    --total-timesteps 5000000 \
+    --act-count 1 \
+    --n-envs 8 \
+    --output-dir output/meta_ppo_v8_rewarded
+```
+
+The eval-reward curve on `v1..v7` was flat across all evaluations (per `docs/MODELS.md:223`). The first eval after this fix that *isn't* flat is the signal Phase 4 worked.
