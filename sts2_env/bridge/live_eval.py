@@ -37,10 +37,32 @@ from sts2_env.bridge.agent_runner import run_agent
 
 logger = logging.getLogger(__name__)
 
-# Act 1's boss sits on floor 16, so clearing it means reaching 17.
-ACT1_BOSS_FLOOR = 16
-ACT1_CLEARED_FLOOR = ACT1_BOSS_FLOOR + 1
+# In the live game the act 1 boss room IS floor 17 -- not 16, which is where the
+# simulator puts it. Counting "reached floor 17" as a clear therefore counted
+# every boss DEATH as a win, and on 2026-08-05 it reported 20% cleared from 30
+# runs in which the boss was never once beaten: all six were floor 17, room Boss,
+# 0 HP, act 1.
+#
+# So a clear is not a floor at all. It is reaching act 2, which the run summary
+# states outright and which no death can fake.
+ACT1_BOSS_FLOOR = 17
 ACT3_START_FLOOR = 33
+
+
+def _reached_act_1_boss(run: dict[str, Any]) -> bool:
+    if str(run.get("room_type", "")).upper() == "BOSS":
+        return True
+    return int(run.get("floor") or 0) >= ACT1_BOSS_FLOOR
+
+
+def _cleared_act_1(run: dict[str, Any]) -> bool:
+    """Past the act 1 boss, rather than merely standing in front of it."""
+    act = run.get("act")
+    if isinstance(act, int):
+        return act >= 2
+    # No act reported: fall back to being strictly beyond the boss floor, which
+    # a death on the boss cannot satisfy.
+    return int(run.get("floor") or 0) > ACT1_BOSS_FLOOR
 
 
 class LiveEvalRecorder:
@@ -84,7 +106,7 @@ class LiveEvalRecorder:
         f = self.floors()
         if not f:
             return "no runs yet"
-        cleared = sum(1 for x in f if x >= ACT1_CLEARED_FLOOR)
+        cleared = sum(1 for r in self.runs if _cleared_act_1(r))
         return (f"{len(f)} runs, mean floor {statistics.mean(f):.1f}, "
                 f"act 1 cleared {cleared}/{len(f)}")
 
@@ -94,8 +116,9 @@ class LiveEvalRecorder:
             return "\nNo runs finished, so there is nothing to report.\n"
 
         n = len(f)
-        reached = sum(1 for x in f if x >= ACT1_BOSS_FLOOR)
-        cleared = sum(1 for x in f if x >= ACT1_CLEARED_FLOOR)
+        reached = sum(1 for r in self.runs if _reached_act_1_boss(r))
+        cleared = sum(1 for r in self.runs if _cleared_act_1(r))
+        died_on_boss = reached - cleared
         act3 = sum(1 for x in f if x >= ACT3_START_FLOOR)
         results: dict[str, int] = {}
         for r in self.runs:
@@ -112,9 +135,11 @@ class LiveEvalRecorder:
             f"floors    mean {statistics.mean(f):.1f}   "
             f"median {statistics.median(f):.0f}   min {min(f)}   max {max(f)}",
             "",
-            f"  reached the act 1 boss (f>={ACT1_BOSS_FLOOR})   "
+            f"  reached the act 1 boss      "
             f"{reached:>3}/{n}  {reached / n:5.1%}",
-            f"  CLEARED act 1          (f>={ACT1_CLEARED_FLOOR})   "
+            f"  ... and died to it          "
+            f"{died_on_boss:>3}/{n}  {died_on_boss / n:5.1%}",
+            f"  CLEARED act 1 (reached act 2)"
             f"{cleared:>3}/{n}  {cleared / n:5.1%}",
             f"  reached act 3          (f>={ACT3_START_FLOOR})   "
             f"{act3:>3}/{n}  {act3 / n:5.1%}",
