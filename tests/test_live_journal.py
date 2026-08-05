@@ -131,6 +131,49 @@ def test_a_new_floor_is_recorded_with_the_state_of_the_run(journal, tmp_path) ->
     assert floors[0]["hp"] == 44
 
 
+# -- act transitions are the run's actual progress, not a floor count --------
+
+def test_reaching_act_2_is_recorded_as_an_act_clear(journal, tmp_path) -> None:
+    """The act-1 boss was beaten when `act` increments from 1 to 2.
+
+    Recorded as its own event so a clear can be derived from the journal
+    alone -- independent of the run-end summary, which a kill -9 can lose.
+    """
+    journal.observe(_combat_state(act=1, floor=17))
+    journal.observe({"type": "card_reward", "act": 2, "floor": 18,
+                     "run_hp": 55, "cards": []})
+    clears = [e for e in _events(journal, tmp_path) if e["event"] == "act_clear"]
+    assert len(clears) == 1
+    assert clears[0]["act_from"] == 1
+    assert clears[0]["act_to"] == 2
+    assert clears[0]["floor"] == 17
+
+
+def test_the_first_act_seen_is_not_a_clear(journal, tmp_path) -> None:
+    """Starting in act 1 is the run's opening state, not progress into it."""
+    journal.observe(_combat_state(act=1, floor=1))
+    clears = [e for e in _events(journal, tmp_path) if e["event"] == "act_clear"]
+    assert clears == []
+
+
+def test_an_act_that_does_not_change_does_not_emit(journal, tmp_path) -> None:
+    journal.observe(_combat_state(act=1, floor=5))
+    journal.observe(_combat_state(act=1, floor=6))
+    journal.observe({"type": "card_reward", "act": 1, "floor": 6, "cards": []})
+    clears = [e for e in _events(journal, tmp_path) if e["event"] == "act_clear"]
+    assert clears == []
+
+
+def test_act_clear_carries_the_hp_to_cross_the_boundary(journal, tmp_path) -> None:
+    """Which HP the run had as it crossed into act 2 is the thing to know."""
+    journal.observe(_combat_state(act=1, floor=17, hp=40))
+    journal.observe({"type": "card_reward", "act": 2, "floor": 18,
+                     "run_hp": 40, "run_max_hp": 80, "cards": []})
+    clear = [e for e in _events(journal, tmp_path) if e["event"] == "act_clear"][0]
+    assert clear["hp"] == 40
+    assert clear["max_hp"] == 80
+
+
 # -- the decisions -----------------------------------------------------------
 
 def test_every_action_is_recorded_without_the_caller_doing_anything(journal, tmp_path) -> None:

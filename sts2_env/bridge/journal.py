@@ -128,6 +128,7 @@ class RunJournal:
         self._started = False
         self._floor: Any = None
         self._room: Any = None
+        self._act: Any = None
         self._in_combat = False
         self._combat_hp: int | None = None
         self._combat_floor: Any = None
@@ -182,6 +183,29 @@ class RunJournal:
                 ascension=state.get("ascension", 0),
                 model=self.model,
             )
+
+        # Act transitions are one-way progress: when `act` increments, the
+        # run has just cleared the previous act's boss. Recorded as its own
+        # event so a clear can be derived from the journal alone, independent
+        # of the run-end summary's `act_cleared` boolean. The first time we
+        # see an act number is the run's starting act, not a clear, so it is
+        # recorded silently.
+        #
+        # Tracked before the floor block below, so the act_clear event carries
+        # the floor the boss was on -- the previous floor -- rather than the
+        # floor the run crossed into. That is the diagnostically useful number:
+        # "the boss on floor 17 was beaten", not "the run is now on floor 18".
+        act = state.get("act")
+        if isinstance(act, int):
+            if isinstance(self._act, int) and act > self._act:
+                self.write("act_clear", act_from=self._act, act_to=act,
+                           floor=self._floor, room_type=self._room,
+                           hp=state.get("run_hp"), max_hp=state.get("run_max_hp"))
+                self._act = act
+            elif not isinstance(self._act, int):
+                self._act = act
+            # act < self._act would be a bridge bug; ignored rather than
+            # rewinding the tracker.
 
         if floor != self._floor and floor is not None:
             self._floor = floor

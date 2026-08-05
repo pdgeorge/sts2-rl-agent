@@ -239,6 +239,7 @@ def run_agent(
         step_count = 0
         combat_count = 0
         _was_in_combat = False
+        last_enemy_id: str | None = None
         run_index = 0
         run_started = time.monotonic()
         # Last run-level fields seen. game_over does not always carry them, so
@@ -357,9 +358,22 @@ def run_agent(
                 # Counted here rather than never: this was initialised, reset and
                 # reported without ever being incremented, so every live record
                 # written so far says "combats": 0.
-                if _phase_for_state(state) in Phase.COMBAT_PHASES and not _was_in_combat:
+                if phase in Phase.COMBAT_PHASES and not _was_in_combat:
                     combat_count += 1
-                _was_in_combat = _phase_for_state(state) in Phase.COMBAT_PHASES
+                _was_in_combat = phase in Phase.COMBAT_PHASES
+
+                # Track the enemy the run is currently fighting, so the run-end
+                # summary can say which one killed it. The bridge nests combat
+                # fields inside `combat_state`; the same fallback as
+                # state_adapter.py is used. Only the first alive enemy is
+                # recorded -- enough to name the boss or the elite, and a
+                # multi-enemy fight names the one the bridge lists first.
+                if _was_in_combat:
+                    combat_payload = state.get("combat_state") or state
+                    for e in (combat_payload.get("enemies") or []):
+                        if e.get("is_alive", True):
+                            last_enemy_id = e.get("id")
+                            break
 
                 for event in milestones.observe(state):
                     logger.info("CYRA: %s", event["text"])
@@ -387,12 +401,30 @@ def run_agent(
                             if k in ("floor", "act", "run_hp", "run_max_hp",
                                      "deck_size", "gold", "relic_count", "room_type")
                         })
+                        # `act_cleared` is derived here so a JSONL record
+                        # carries its own verdict and downstream reports do
+                        # not have to re-derive it from `act` -- which is
+                        # missing on some bridge versions, where the fallback
+                        # `floor > ACT1_BOSS_FLOOR` in live_eval._cleared_act_1
+                        # then has to do the work. Stamping it here records
+                        # which path was taken.
+                        run_hp = progress.get("run_hp")
+                        died = isinstance(run_hp, int) and run_hp <= 0
                         summary.update({
                             "run": run_index,
                             "result": result,
                             "steps": step_count,
                             "combats": combat_count,
                             "seconds": round(time.monotonic() - run_started, 1),
+                            "act_cleared": int(progress.get("act", 1) or 1) >= 2,
+                            # `death_enemy_id` is the enemy the player was
+                            # fighting when the run ended. None on a win or
+                            # when the bridge never reported a combat state,
+                            # which is why the field is present-and-None on
+                            # old logs rather than absent -- a missing field
+                            # could mean either, and that ambiguity is the
+                            # kind of thing that costs a debugging hour.
+                            "death_enemy_id": last_enemy_id if died else None,
                         })
                         journal.record_run_end(summary)
                         on_run_end(summary)
@@ -405,6 +437,7 @@ def run_agent(
                     step_count = 0
                     combat_count = 0
                     _was_in_combat = False
+                    last_enemy_id = None
                     progress = {}
                     milestones.reset()
                     journal.start_run(run_index + 1)
