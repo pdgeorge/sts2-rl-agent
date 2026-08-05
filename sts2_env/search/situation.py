@@ -284,6 +284,113 @@ class CombatSituation:
             ascension_level=mgr.run_state.ascension_level,
         )
 
+    @classmethod
+    def from_bridge_state(
+        cls,
+        state: dict[str, Any],
+        *,
+        situation_id: str | None = None,
+    ) -> CombatSituation:
+        """Build a CombatSituation from a bridge combat state message.
+
+        The counterpart to `from_run_manager` for the live-game path: where
+        the simulator reads from a RunManager mid-run, this reads from the
+        JSON payload the C# mod sends at the moment a fight begins. The two
+        must agree on every field, because `to_combat` is called on the
+        result and a searcher that clones a fight different from the one on
+        screen is worse than useless -- it looks correct and is not.
+
+        WHAT THE BRIDGE MUST SEND
+
+        Run-level fields (act, floor, run_hp, run_max_hp, gold, relics,
+        potion_slots, deck, room_type, ascension, act_floor) arrive via
+        RlRunInfo.Attach on every state. The current mod sends `deck` as a
+        list of bare card-id strings -- the upgraded flag is lost, which
+        the Phase 1.1 mod patch extends to `{"id", "upgraded"}` dicts.
+
+        Encounter identification (the `encounter` setup-function name,
+        `encounter_seed`, and `combat_seed`) is NOT sent by the current
+        mod. These three are required: `to_combat` dispatches to
+        `resolve_encounter` with the seed, which is the only way to bring
+        the same enemies back with the same HP rolls. They are added by the
+        Phase 1.1 mod patch; without them this method raises, which is the
+        right failure -- a quiet fallback to a random encounter would have
+        the search planning against a different fight from the one on
+        screen.
+
+        `character_id` is not currently sent by the mod, which is
+        hardcoded to Ironclad (RlAutoSlayer.PreferredCharacterId). It
+        defaults to "Ironclad" here and is added by the Phase 1.1 patch.
+        """
+        floor = int(state.get("floor", 0) or 0)
+        sid = situation_id or f"bridge-f{floor:02d}"
+
+        # Combat fields are nested inside `combat_state` by some handlers and
+        # flat in others -- same fallback as state_adapter.py. Used only for
+        # player HP/max_hp when run_hp/run_max_hp are absent, which they
+        # always are in the current mod.
+        combat = state.get("combat_state") or state
+        player = combat.get("player") or {}
+
+        # Deck: accept both the current mod format (list of id strings, the
+        # upgraded flag lost) and the target format (list of dicts with id
+        # and upgraded). The Phase 1.1 patch moves the current mod to the
+        # target; until then an upgraded card is read as a base card, which
+        # reproduces the wrong fight rather than a half-right one.
+        raw_deck = state.get("deck") or []
+        deck = tuple(_parse_deck_entry(d) for d in raw_deck)
+
+        # Encounter identification. Required because `to_combat` calls
+        # `resolve_encounter(self.encounter)(combat, Rng(self.encounter_seed))`
+        # -- the setup function recreates the enemies, and the seed fixes which
+        # HP roll they got. Missing encounter raises here rather than inside
+        # `to_combat` because the message is clearer at the point of missing
+        # data, and a caller that wants to handle the gap (live_search) needs
+        # to know before the fight is entered.
+        encounter = state.get("encounter")
+        if not encounter:
+            raise ValueError(
+                "Bridge state has no `encounter` field. The mod must be patched "
+                "(Phase 1.1) to send the encounter setup-function name and its "
+                "seed; without them the SearchAgent would clone a fight that "
+                "does not match the one on screen."
+            )
+        encounter_seed = int(state.get("encounter_seed", 0) or 0)
+        combat_seed = int(state.get("combat_seed", encounter_seed) or 0)
+
+        # Potions: the mod sends `potion_slots` as a positional list with
+        # null where empty, same shape as from_run_manager. `potions` is the
+        # combat-only list of usable potions, different and not what we want.
+        raw_potions = state.get("potion_slots") or state.get("potions") or ()
+
+        # Room type: the mod sends MapPointType as a string (e.g. "Monster",
+        # "Elite", "Boss"). Normalised to uppercase for consistency with
+        # `_room_type_name`, which is what from_run_manager produces.
+        room_type = str(state.get("room_type") or "MONSTER").upper()
+
+        return cls(
+            situation_id=sid,
+            character_id=(
+                state.get("character_id")
+                or state.get("character")
+                or "Ironclad"
+            ),
+            current_hp=int(state.get("run_hp", 0) or player.get("hp", 0) or 0),
+            max_hp=int(state.get("run_max_hp", 0) or player.get("max_hp", 0) or 0),
+            deck=deck,
+            encounter=encounter,
+            encounter_seed=encounter_seed,
+            combat_seed=combat_seed,
+            relics=tuple(state.get("relics") or ()),
+            potions=tuple(raw_potions),
+            max_potion_slots=int(state.get("max_potion_slots") or 3),
+            gold=int(state.get("gold") or 0),
+            room_type=room_type,
+            act_floor=int(state.get("act_floor") or 1),
+            total_floor=floor,
+            ascension_level=int(state.get("ascension") or 0),
+        )
+
 
 def _instantiate_potion(potion_id: str | None, slot: int):
     """Same contract as cards and encounters: a name this build does not have
@@ -297,6 +404,22 @@ def _instantiate_potion(potion_id: str | None, slot: int):
             f"No potion named {potion_id!r} in this build. Regenerate the "
             f"fixture against the current game build."
         ) from exc
+
+
+def _parse_deck_entry(entry: Any) -> CardRef:
+    """Build a CardRef from one element of the bridge state's `deck` list.
+
+    The current mod sends bare strings (e.g. "STRIKE_IRONCLAD"); the upgraded
+    flag is lost, which is the gap the Phase 1.1 mod patch closes. The target
+    format is a dict with `id` and `upgraded`. Both are accepted here so the
+    Python side is correct before and after the mod changes.
+    """
+    if isinstance(entry, dict):
+        return CardRef(
+            card_id=str(entry["id"]),
+            upgraded=bool(entry.get("upgraded", False)),
+        )
+    return CardRef(card_id=str(entry), upgraded=False)
 
 
 def _room_type_name(room_type: Any) -> str:

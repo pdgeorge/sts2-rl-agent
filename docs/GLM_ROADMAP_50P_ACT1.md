@@ -230,3 +230,31 @@ What actually needed doing turned out smaller than the plan above: the `combats`
 - The live session validation (Phase 0.3) — needs the mod compiled; deferred until PR #3.
 
 **Pre-existing test failures noted but not addressed:** 123 parity tests in `test_regent_*`, `test_silent_*`, `test_status_curse_*` fail on `glm52` independent of these changes (verified by stashing the edits and re-running). They're content-parity regressions from earlier work, not regressions from this PR.
+
+## PR #2 changelog — Phase 1.2: CombatSituation.from_bridge_state
+
+Landed on `glm52`. Pure-python; no mod change required. Defines and tests the target spec for the Phase 1.1 mod patch (PR #3).
+
+**Changes:**
+
+- `sts2_env/search/situation.py`: new classmethod `CombatSituation.from_bridge_state(state, *, situation_id=None)`. The live-game counterpart to `from_run_manager`: reads the JSON the C# mod sends at combat_start and produces a `CombatSituation` the SearchAgent can clone.
+  - Accepts deck entries in two forms: the current mod's bare id strings (upgraded flag lost, defaults to False) and the target spec `{"id": str, "upgraded": bool}` dicts (which PR #3 will move the mod to). Both paths tested.
+  - Requires `encounter` (the setup function name) and `encounter_seed`/`combat_seed` (ints). Raises `ValueError` with a clear message if `encounter` is missing — a quiet fallback to a random encounter would have the search planning against a different fight than the one on screen. These fields are the Phase 1.1 mod patch's job.
+  - Defaults `character_id` to `"Ironclad"` when absent (the current mod hardcodes Ironclad per `RlAutoSlayer.cs:78` and sends no character_id field).
+  - `combat_seed` falls back to `encounter_seed` when absent, so a mod that sends one seed rather than two still works.
+  - New helper `_parse_deck_entry` handles both deck entry formats.
+
+- `tests/test_combat_situation_from_bridge.py`: 13 new tests covering:
+  - Encounter + seed rebuild the same enemies (reproducibility)
+  - Player HP / deck / relics / potions / room type / floor fields round-trip
+  - Upgraded flag is preserved when the mod sends dicts
+  - Missing encounter raises rather than silently randomising
+  - Missing encounter_seed defaults to 0; missing combat_seed falls back to encounter_seed
+  - Two rebuilds of one situation agree on enemy HP (the benchmark's foundational property)
+  - A bridge-built situation plays a turn through the simulator without raising
+
+**What's not in this PR:**
+
+- The C# mod patch (PR #3 / Phase 1.1) — needed to send `encounter`, `encounter_seed`, `combat_seed`, and the upgraded flag on deck entries. Without it, calling `from_bridge_state` on a real bridge payload raises, which is the intended loud failure.
+
+**Pre-existing test failures noted but not addressed:** 123 parity tests in `test_regent_*`, `test_silent_*`, `test_status_curse_*` fail on `glm52` independent of these changes (verified by stashing the edits and re-running). They're content-parity regressions from earlier work, not regressions from this PR.
