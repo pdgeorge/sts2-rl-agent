@@ -144,6 +144,7 @@ def run_agent(
     tell_cyra: bool = False,
     combat_policy_path: str | None = None,
     journal_path: str | None = None,
+    live_search: bool = False,
 ) -> None:
     """Main agent loop.
 
@@ -165,11 +166,36 @@ def run_agent(
             so training and evaluation never depend on a broker being up.
         journal_path: JSONL file recording every room, fight, card played and
             reward taken. The per-run summary says a run reached floor 11; this
-            says what happened on the way, which is what a decision about what to
-            fix next actually needs.
+            says what happened on the way, which is what a decision about what
+            to fix next actually needs.
+        live_search: Use the SearchAgent's turn planner for combat decisions
+            instead of the trained model's single-step argmax. The trained
+            model is one-turn myopic; the search enumerates legal orderings
+            and lets the enemies reply on a clone, lifting boss win rate
+            from 6.7% to ~20% on the harvested benchmark per
+            docs/MODELS.md:120. Requires the mod patch from PR #6 (Phase 1.1)
+            to send `encounter` / `encounter_seed` / `combat_seed`; without
+            them, live_search raises ValueError on the first combat_action
+            and the runner falls back to END_TURN. The model's path is
+            unchanged when this is False.
     """
     model = load_model(model_path)
     adapter = StateAdapter()
+
+    # The SearchAgent-backed combat decider, opt-in. Constructed once and
+    # reset on each fight's combat_start by the main loop. Kept in scope
+    # along with the previous combat action index so the local sim mirrors
+    # the actions the runner sends to the live game.
+    live_search_agent = None
+    if live_search:
+        from sts2_env.bridge.live_search import LiveSearch
+
+        live_search_agent = LiveSearch()
+        logger.info("LiveSearch enabled: combat decisions use the SearchAgent "
+                    "planner instead of the trained model's argmax. Requires "
+                    "the Phase 1.1 mod patch; if the mod does not send "
+                    "`encounter` / `encounter_seed`, the first combat_action "
+                    "will raise and the runner falls back to END_TURN per step.")
 
     # Which adapter to use is decided by the model, not a flag. A combat model
     # wants 131 dims and a full-run model 277; guessing wrong produces a shape
@@ -240,6 +266,9 @@ def run_agent(
         combat_count = 0
         _was_in_combat = False
         last_enemy_id: str | None = None
+        # The action we last returned from live_search; mirrors into the local
+        # sim on the next decide call. Reset on each combat_start.
+        _live_search_last_action: int | None = None
         run_index = 0
         run_started = time.monotonic()
         # Last run-level fields seen. game_over does not always carry them, so
@@ -360,6 +389,11 @@ def run_agent(
                 # written so far says "combats": 0.
                 if phase in Phase.COMBAT_PHASES and not _was_in_combat:
                     combat_count += 1
+                    # A new fight has started: reset the live-search mirror so
+                    # the next decide call rebuilds the local sim fresh.
+                    if live_search_agent is not None:
+                        live_search_agent.reset_for_new_fight()
+                        _live_search_last_action = None
                 _was_in_combat = phase in Phase.COMBAT_PHASES
 
                 # Track the enemy the run is currently fighting, so the run-end
@@ -438,6 +472,9 @@ def run_agent(
                     combat_count = 0
                     _was_in_combat = False
                     last_enemy_id = None
+                    _live_search_last_action = None
+                    if live_search_agent is not None:
+                        live_search_agent.reset_for_new_fight()
                     progress = {}
                     milestones.reset()
                     journal.start_run(run_index + 1)
@@ -477,6 +514,62 @@ def run_agent(
                     continue
 
                 if phase in Phase.COMBAT_PHASES:
+                    # ---- Combat: live search OR trained model ----
+                    # Live search is SearchAgent-backed: enumerate legal
+                    # orderings this turn, score by ending the turn on a
+                    # copy and letting enemies reply, keep the best line.
+                    # The action returned is in the same Discrete(115) layout
+                    # the model uses, so the existing decode + send path is
+                    # reused.
+                    if live_search_agent is not None:
+                        # Build/mirror the local sim, ask the SearchAgent.
+                        try:
+                            action_int = live_search_agent.decide(
+                                state, prev_action=_live_search_last_action,
+                            )
+                        except Exception:
+                            # The most likely cause is the mod missing the
+                            # Phase 1.1 fields (encounter, encounter_seed),
+                            # which from_bridge_state raises on. Log once
+                            # per occurrence and fall back to END_TURN so the
+                            # live game advances; the next combat_start will
+                            # get a fresh build.
+                            logger.exception(
+                                "LiveSearch.decide raised; falling back to "
+                                "END_TURN. Likely cause: the mod has not been "
+                                "patched to send encounter/encounter_seed "
+                                "(PR #6 / Phase 1.1). If so, every combat step "
+                                "will log this until the mod is rebuilt."
+                            )
+                            client.end_turn()
+                            _live_search_last_action = 0
+                            continue
+
+                        # If the bridge just sent the first state of a fight,
+                        # the runner's _was_in_combat will transition here:
+                        # reset the local mirror so the next call builds fresh.
+                        # (Done below in the combat-enter branch, but kept here
+                        # for clarity -- the construction path already detects
+                        # `self._local is None` and builds.)
+
+                        decoded = adapter.decode_action(action_int, state)
+                        if verbose:
+                            logger.info("LIVE_SEARCH: chose %s", decoded)
+                        _live_search_last_action = action_int
+                        if decoded["type"] == ActionType.END_TURN:
+                            client.end_turn()
+                        elif decoded.get("out_of_hand"):
+                            client.use_potion(
+                                decoded.get("slot", decoded.get("potion_slot", -1)),
+                                decoded.get("target_index", -1),
+                            )
+                        else:
+                            client.play_card(
+                                decoded["card_index"],
+                                decoded.get("target_index", -1),
+                            )
+                        continue
+
                     # ---- Combat: use trained model ----
                     # Hierarchical models may delegate combat to a separate policy.
                     combat_adapter = adapter
@@ -1331,6 +1424,21 @@ def main() -> None:
             "map, rewards, shop, rest, and events."
         ),
     )
+    parser.add_argument(
+        "--live-search",
+        action="store_true",
+        help=(
+            "Use the SearchAgent turn planner for combat decisions instead of "
+            "the trained model's single-step argmax. The search enumerates "
+            "legal orderings this turn and lets the enemies reply on a clone, "
+            "lifting boss win rate from 6.7%% to ~20%% on the harvested "
+            "benchmark (docs/MODELS.md:120). Requires the Phase 1.1 mod "
+            "patch from PR #6 to send encounter / encounter_seed / "
+            "combat_seed; without them, the first combat_action raises and "
+            "the runner logs + falls back to END_TURN every step until the "
+            "mod is rebuilt."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -1354,6 +1462,7 @@ def main() -> None:
         allow_random_fallback=args.allow_random_fallback,
         combat_policy_path=args.combat_policy,
         journal_path=args.journal or None,
+        live_search=args.live_search,
     )
 
 

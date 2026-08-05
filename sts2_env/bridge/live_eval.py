@@ -213,6 +213,18 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--live-search",
+        action="store_true",
+        help=(
+            "Use the SearchAgent turn planner for combat decisions instead of "
+            "the trained model's argmax. Lifts boss win rate from 6.7%% to ~20%% "
+            "on the harvested benchmark (docs/MODELS.md:120). Requires the "
+            "Phase 1.1 mod patch from PR #6 to send encounter/seed fields; "
+            "without it, the runner logs and falls back to END_TURN every "
+            "combat step."
+        ),
+    )
+    parser.add_argument(
         "--crash-log",
         default="output/crash_log.json",
         help="JSON file written when the game crashes or disconnects mid-run.",
@@ -242,6 +254,7 @@ def main() -> None:
             tell_cyra=args.tell_cyra,
             journal_path=args.journal or None,
             combat_policy_path=args.combat_policy,
+            live_search=args.live_search,
         )
     except KeyboardInterrupt:
         logger.info("Interrupted.")

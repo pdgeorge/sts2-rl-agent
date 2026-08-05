@@ -369,3 +369,50 @@ grep combat_start output/live_journal_pr6_test.jsonl | head -1
 # It should now report encounter, encounter_seed, combat_seed, and
 # deck entries as dicts.
 ```
+
+## PR #7 changelog — Phase 2.1: live_search.py — the SearchAgent on the live path
+
+Landed on `glm52`. Pure-python; opt-in flag `--live-search`. The next live session can use real lookahead in combat instead of the trained model's single-step argmax.
+
+**What it does:**
+
+`sts2_env/bridge/live_search.py` (~190 LoC) — `LiveSearch` class wraps `SearchAgent`:
+
+- Builds a local `CombatState` from the bridge's `combat_action` state on the first call of each fight, via `CombatSituation.from_bridge_state(state).to_combat()` (PR #2's path).
+- Mirrors every action the runner sends to the live game into the local sim: each `decide(bridge_state, prev_action=...)` applies the previously-returned action to the local sim to keep it in lockstep.
+- Calls `SearchAgent.act(local_combat)` to plan the turn: enumerate legal orderings, end the turn on a clone, let the enemies reply on the clone, keep the best line. The action returned is in the same `Discrete(115)` layout the trained model uses, so the existing `state_adapter.decode_action` path sends it to the game unchanged.
+- Detects drift (HP, block, energy, hand-size mismatches beyond tolerance) and logs loudly without crashing — the SearchAgent's plan-divergence handling is the backstop.
+- Resets per-fight via `reset_for_new_fight()`, which the runner calls at the combat-start transition.
+
+**Runner integration:**
+
+- `sts2_env/bridge/agent_runner.py` — `run_agent` gains `live_search: bool = False` parameter; when True, the combat branch routes through `LiveSearch.decide(state, prev_action)` instead of `model.predict(obs, action_masks=mask)`. The decoded action goes to the bridge via the existing `play_card` / `end_turn` / `use_potion` client methods. Per-run and per-fight resets tracked. Falls back to `END_TURN` if the SearchAgent raises (the likely cause being the mod missing the Phase 1.1 fields, which `from_bridge_state` raises on).
+- `--live-search` CLI flag wired into both `agent_runner` and `live_eval`.
+- No-op path when False: the existing model path runs unchanged. Backwards compatible.
+
+**Tests** (`tests/test_live_search.py` — 8 new):
+
+1. First `decide` returns a legal action in `Discrete(115)`.
+2. First `decide` invokes search at least once and increments the rebuild counter.
+3. Subsequent decides within a fight return legal actions without rebuild.
+4. The SearchAgent keeps planning across calls within a turn (replay vs replan).
+5. `reset_for_new_fight` triggers a fresh build on the next decide.
+6. Drift is logged but does not break `decide` — no exception.
+7. Missing `encounter` (mod not patched) raises `ValueError` on first decide — loud failure, the right behaviour.
+8. The action returned decodes via `StateAdapter.decode_action` — pins that the SearchAgent and the adapter agree on action-index meaning.
+
+**What's NOT done here:**
+
+- Drift recovery mid-fight. `to_combat()` always starts a fresh fight (calls `start_combat`); there's no path to rebuild a mid-fight CombatState from JSON. The roadmap's Phase 2 hinted this might be needed — for the milestone it's not, because the SearchAgent's plan-divergence handling is the backstop, and a fresh rebuild happens at every combat_start.
+- The Phase 2.4 live session: needs the mod compiled (PR #6) and STS2 running. After PR #6 lands and the user validates the mod, run:
+
+```bash
+.venv/bin/python -m sts2_env.bridge.live_eval \
+    --model-path output/combat_v3_overnight/final_model.zip \
+    --live-search \
+    --log output/live_eval_pr7_search.jsonl \
+    --journal output/live_journal_pr7_search.jsonl \
+    --runs 20 --verbose
+```
+
+Expected vs Phase 0.3 baseline: same hallway win rate, much lower HP-per-fight (the search survives turns the model threw away), occasional boss win. If boss win rate moves from 0% to ≥10% across 20 runs, continue to Phase 3. If still 0%, the deckbuilding phase is the gating failure.
