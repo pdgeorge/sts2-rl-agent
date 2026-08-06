@@ -90,12 +90,20 @@ class TestCardRarityOdds:
         assert odds.current_value == pytest.approx(initial + odds.rarity_growth)
 
     def test_uniform_base_odds_without_pity_change_api(self):
+        """The point of this API is that it does NOT move the pity counter.
+
+        Which rarity a given seed lands on is incidental -- it used to be
+        asserted as COMMON, which held only for the generator this project had
+        before it matched the game's. What must hold is that the roll is a real
+        rarity and that `current_value` is untouched.
+        """
         odds = CardRarityOdds()
         odds.current_value = 0.4
-        rng = Rng(42)
 
-        assert odds.roll_with_base_odds(rng, context="uniform") == CardRarity.COMMON
-        assert odds.current_value == pytest.approx(0.4)
+        for seed in range(25):
+            result = odds.roll_with_base_odds(Rng(seed), context="uniform")
+            assert isinstance(result, CardRarity)
+            assert odds.current_value == pytest.approx(0.4)
 
     def test_a7_changes_odds(self):
         odds_normal = CardRarityOdds(ascension_level=0)

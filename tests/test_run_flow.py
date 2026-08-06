@@ -448,6 +448,11 @@ class TestConcreteRunObjects:
         mgr._enter_shop()
         inv = mgr._shop_inventory
         assert inv is not None
+        # Whether the starting gold happens to cover the rolled prices is
+        # incidental to "a purchase adds a real card and potion" -- and when
+        # it did not, this failed as a bare StopIteration out of the `next`
+        # below, which reads as a broken shop rather than an unaffordable one.
+        mgr.run_state.player.gold = 9_999
 
         card_entry = next(entry for entry in inv.cards if entry.card_id and mgr.run_state.player.gold >= entry.price)
         gold_before = mgr.run_state.player.gold

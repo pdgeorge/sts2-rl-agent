@@ -59,6 +59,15 @@ def test_normal_victory_still_uses_single_card_reward_screen():
 
 
 def test_elite_victory_offers_relic_reward_object():
+    """An elite victory offers a relic, whatever else it offers first.
+
+    Setting base potion odds to 0.0 does NOT suppress the potion on an elite:
+    `PotionRewardOdds.roll` adds `ELITE_BONUS * 0.50` to the return check, so
+    an elite keeps a 12.5% potion chance at zero base odds. The test used to
+    assume the relic came immediately after the card skip, which held only
+    because seed 3 happened to miss that 12.5% window. It is the ordering that
+    is incidental; the relic is the invariant.
+    """
     mgr = RunManager(seed=3, character_id="Ironclad")
     mgr.run_state.potion_reward_odds.current_value = 0.0
     mgr._combat = _won_combat(extra_card_rewards=0)
@@ -69,7 +78,11 @@ def test_elite_victory_offers_relic_reward_object():
     assert mgr.phase == RunManager.PHASE_CARD_REWARD
     assert mgr._offered_relic is None
 
-    mgr._do_card_reward_skip()
+    # Skip through whatever precedes the relic (a potion, on some seeds).
+    for _ in range(4):
+        mgr._do_card_reward_skip()
+        if mgr._offered_relic is not None:
+            break
 
     assert mgr.phase == RunManager.PHASE_CARD_REWARD
     assert mgr._offered_relic is not None

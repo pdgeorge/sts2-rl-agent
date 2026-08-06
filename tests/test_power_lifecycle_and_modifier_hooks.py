@@ -1260,6 +1260,12 @@ class TestPowerAmountChangedHooks:
 
     def test_rolling_boulder_keeps_separate_instances_like_reference(self, simple_combat):
         enemy = simple_combat.enemies[0]
+        # The two instances deal 40 over two turns, which is more than some
+        # monsters roll for max HP -- the enemy would die and the HP clamp at
+        # zero would hide the arithmetic this test exists to check. Give it
+        # room, so the assertion measures damage rather than the HP roll.
+        enemy.max_hp = 200
+        enemy.current_hp = 200
         starting_hp = enemy.current_hp
         simple_combat.apply_power_to(simple_combat.player, PowerId.ROLLING_BOULDER, 5)
         simple_combat.apply_power_to(simple_combat.player, PowerId.ROLLING_BOULDER, 10)

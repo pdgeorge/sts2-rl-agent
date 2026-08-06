@@ -5448,18 +5448,50 @@ class TestFixedRotation:
         assert lethal_combat.enemies[-1].get_power_amount(PowerId.MINION) == 0
 
     def test_fabricator_spawn_history_is_shared_across_bot_pools(self):
-        rng_seed = 0
-        combat = _make_combat(rng_seed)
-        fabricator, fabricator_ai = create_fabricator(Rng(rng_seed))
-        combat.add_enemy(fabricator, fabricator_ai)
-        expected_first_fabricate = [NOISEBOT_MONSTER_ID, STABBOT_MONSTER_ID]
-        expected_second_fabricate = [NOISEBOT_MONSTER_ID, ZAPBOT_MONSTER_ID]
+        """Each fabricate spawns two bots drawn from the shared bot set.
 
-        fabricator_ai.states[FABRICATOR_FABRICATE_MOVE].perform(combat)
-        fabricator_ai.states[FABRICATOR_FABRICATE_MOVE].perform(combat)
+        The exact sequence this used to pin (`[NOISEBOT, STABBOT]` then
+        `[NOISEBOT, ZAPBOT]` for seed 0) came from the generator this project
+        had before it matched the game's, and was never checked against the
+        game -- so it is not re-pinned under the new generator, which would
+        just bake in a fresh unverifiable constant. What is asserted is the
+        mechanism: two bots per fabricate, from the valid set, deterministic
+        for a seed, and reaching the whole set across seeds.
 
-        assert [enemy.monster_id for enemy in combat.enemies[1:3]] == expected_first_fabricate
-        assert [enemy.monster_id for enemy in combat.enemies[3:5]] == expected_second_fabricate
+        Re-pinning an exact sequence needs a reference from the decompile or a
+        live capture of a Fabricator fight; neither exists yet.
+        """
+        valid_bots = {
+            NOISEBOT_MONSTER_ID, STABBOT_MONSTER_ID,
+            ZAPBOT_MONSTER_ID, GUARDBOT_MONSTER_ID,
+        }
+        reached = set()
+
+        for rng_seed in range(8):
+            combat = _make_combat(rng_seed)
+            fabricator, fabricator_ai = create_fabricator(Rng(rng_seed))
+            combat.add_enemy(fabricator, fabricator_ai)
+
+            fabricator_ai.states[FABRICATOR_FABRICATE_MOVE].perform(combat)
+            first = [enemy.monster_id for enemy in combat.enemies[1:3]]
+            fabricator_ai.states[FABRICATOR_FABRICATE_MOVE].perform(combat)
+            second = [enemy.monster_id for enemy in combat.enemies[3:5]]
+
+            assert len(first) == 2 and len(second) == 2
+            assert set(first) | set(second) <= valid_bots
+            reached.update(first + second)
+
+        assert reached == valid_bots, f"unreachable bots: {valid_bots - reached}"
+
+        # Deterministic for a given seed.
+        def spawn_for(seed):
+            combat = _make_combat(seed)
+            fab, ai = create_fabricator(Rng(seed))
+            combat.add_enemy(fab, ai)
+            ai.states[FABRICATOR_FABRICATE_MOVE].perform(combat)
+            return [enemy.monster_id for enemy in combat.enemies[1:3]]
+
+        assert spawn_for(0) == spawn_for(0)
 
     def test_guardbot_guard_block_is_unpowered_like_original(self):
         rng_seed = 1239
