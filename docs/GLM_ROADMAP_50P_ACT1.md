@@ -760,3 +760,71 @@ The durable fix is the fourth one: the stuck detector now escalates to end-turn 
 ### Against the goal
 
 Target is 50% Act 1 over 20 consecutive runs. This is **10% ± 6.7%** — two runs, which establishes "not zero" and nothing more.
+
+## Phase 5 — REDESIGNED: retrieval, not a generative router (design note, 2026-08-06)
+
+The plan above specifies a **Qwen-7B-Instruct-Q4 generative router** with constrained decoding, prompted with the options and asked to name one. That is not what we are building. This section supersedes 5.1 and 5.2; they are kept above as the reasoning that got us here.
+
+### What changed
+
+A 7B is roughly ten times larger than needed, and there is an STS2-specific asset already built: [`t22000t/slay-the-spire-2-card-embeddings`](https://huggingface.co/datasets/t22000t/slay-the-spire-2-card-embeddings) — **576 cards** (essentially the whole pool; the simulator knows 577), **1024-dim**, unit-normalised so a dot product *is* cosine similarity, encoded from prettified-JSON mechanics fields with card self-references replaced by `~`, via **Qwen3-Embedding-0.6B**.
+
+Three consequences, all favourable:
+
+- **The vectors are precomputed.** No model runs at decision time — load a matrix, take a dot product. Microseconds, so the live-path latency objection to a 7B disappears.
+- **Constrained decoding becomes unnecessary.** Section 5.2 exists only to stop a generative model naming an option that isn't on offer. Retrieval scores *only the offered cards*, so an invalid answer is structurally impossible. That subsystem is deleted, not deferred.
+- **It targets what the heuristic cannot do.** `card_quality.py` scores cards in isolation — "26 damage beats 8" — with no concept of the deck having a plan. Cosine against an archetype vector is exactly "does this belong in what I am building".
+
+### What the reference implementation actually does, and how ours must differ
+
+[`t22000t/slaythespire-build-me-a-deck`](https://huggingface.co/spaces/t22000t/slaythespire-build-me-a-deck) embeds the **user's prompt** ("build me a strike deck"), scores every card by cosine to it, and picks greedily under mana-curve and type-mix constraints. Its own description: *"greedy similarity-based selection with constraint-feasibility checks; not an optimization solver"*. The 72B LLM it loads is invoked **only after** the deck is built, to write prose about boss matchups — it plays no part in selection.
+
+That demonstrably produces coherent, synergistic decks. Perfected Strike lands near a "strike deck" query because both texts talk about Strikes. So *embeddings do capture synergy*, via textual co-occurrence.
+
+Three things it gets for free that we do not:
+
+1. **Intent comes from a human.** The query vector is the user's sentence. The agent has nobody to ask.
+2. **It picks from the whole pool.** We pick 1 of 3 the game offers — far more constrained, far less forgiving.
+3. **It has no notion of power level.** Pure theme-matching takes a weak on-theme card over a strong off-theme one.
+
+The narrow limitation that survives: similarity says Perfected Strike is *about* Strikes; it does not say it hits for 6 more because you hold eight. That is a number, and **the simulator can compute it exactly** — a signal neither an embedding nor an LLM has.
+
+### The design
+
+**Where intent comes from — two stages.**
+
+- **Picks 1–3: no archetype yet.** The Ironclad starter is 5 Strike, 4 Defend, Bash. A centroid over the whole deck is 10 parts starter to 1 part signal and would read "attack deck" for every run. So the centroid is computed over **non-starter cards only**, and not trusted until there are ~3 of them.
+- **Picks 4+: archetype fit.** Centroid of the non-starter cards becomes the query; offered cards are scored by cosine to it.
+
+**Early picks favour deck-*defining* cards, not merely strong ones.** Feast is a great card that commits to nothing; Barricade defines a deck. Computable from the same vectors: cosine each card against every archetype label and look at the *shape* — Barricade spikes on one and is near-zero elsewhere, Feast is moderately similar to everything. `max(sims) − mean(sims)` is that in one number. High = defining, low = generically fine.
+
+So: **picks 1–3 maximise `quality × peakedness`; picks 4+ maximise `quality × fit-to-centroid`.** Same ingredients, reweighted by stage.
+
+**Archetype labels are kept for legibility.** A dozen plain-text archetype descriptions, embedded once offline. The deck's nearest label is logged — "floor 7, deck reads as: exhaust" — so a strange pick can be diagnosed against what the agent thought it was building. Costs one dot product; the scoring itself can use the raw centroid.
+
+**`card_quality.py` is not replaced.** It stops being a placeholder and becomes the permanent *quality* term, with embeddings supplying the *direction* it never had. That also means there is no fallback problem: if the embedding half fails, behaviour degrades to today's.
+
+### HARD CONSTRAINT: no deck thinning
+
+**Cyra cannot remove cards, so no archetype may depend on removing Strikes or Defends.**
+
+This is not merely unimplemented — it is currently *harmful*. `remove_card` sits 4th in `SHOP_PURCHASE_ACTION_PRIORITY`, so it fires whenever relics, cards and potions are unaffordable. The card it removes comes from `_pick_card_select_indexes`, which sorts **basics last** — correct for the *upgrade* screens it was written for, exactly inverted for removal. The agent would keep its Strikes and remove its Bludgeon. **Separate defect, worth fixing independently of Phase 5.**
+
+The constraint is a useful filter rather than only a limitation. It selects archetypes where the starter cards are *assets*:
+
+- **Strike-synergy** (Perfected Strike) — actively wants the 5 Strikes. Best possible fit.
+- **Block scaling** (Barricade) — Defends are on-theme; deck size matters less when not racing.
+- **Power/scaling** (Inflame, Demon Form) — survive, then deploy; deck size is a mild tax.
+
+And it rules out exhaust loops, precise draw combos, and anything needing to see a specific card every turn. Those read as viable to a naive similarity score and then quietly lose runs. **The archetype vocabulary must be short and screened for fat-deck viability**, not "every archetype in the game".
+
+### Validation before building (next step)
+
+Cheap, offline, no live time:
+
+1. Pull the embeddings; check coverage against the simulator's card ids.
+2. Define the short fat-deck-viable archetype list.
+3. Classify a sample of the 2000 harvested real decks by nearest label and read the results. If floor-14 decks come back as plausible archetypes, the signal is real; if everything reads "attack deck", it is not.
+4. Check peakedness actually separates Barricade from Feast.
+
+If 3 or 4 fail, the approach is wrong and we have spent an afternoon rather than two weeks.
