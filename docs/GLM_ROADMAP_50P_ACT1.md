@@ -858,3 +858,51 @@ A clean ~2.5× gap. `max(sims) − mean(sims)` is a usable "does this card commi
 **What this does NOT show.** Harvested decks classify 61→80% strike-synergy as floors deepen, which looks alarming until you notice those decks were assembled by a walker making **random** card picks, and the Ironclad pool is itself 41% strike-synergy by this measure. A random deck should skew that way. The distribution is therefore evidence of nothing, in either direction — the test was weak, not the classifier.
 
 **Still unproven, and the next real experiment:** that archetype-guided picking builds *better decks*. That needs an A/B of full simulated runs — `card_quality.py` alone versus quality × fit — compared on floors reached. Everything above says only that the signal is real enough to be worth building on.
+
+### The five archetypes, and their seed cards
+
+Decided with the user. `infinity` is **out** — it needs a thin deck and precise draw, neither of which Cyra can arrange.
+
+```python
+ARCHETYPE_SEEDS = {
+    "strike-synergy": ["PERFECTED_STRIKE", "ASHEN_STRIKE", "TWIN_STRIKE",
+                       "POMMEL_STRIKE", "SETUP_STRIKE"],
+    "block-scaling":  ["BARRICADE", "BODY_SLAM", "DEMONIC_SHIELD"],
+    "strength":       ["DEMON_FORM", "INFLAME", "LIMIT_BREAK"],
+    "exhaust":        ["CORRUPTION", "DARK_EMBRACE", "FIEND_FIRE"],
+    "bloodletting":   ["RUPTURE", "TEAR_ASUNDER", "SPITE", "INFERNO"],
+}
+```
+
+**Exhaust is viable after all**, and an earlier note in this document was wrong to exclude it. Corruption makes Skills free and exhausts them, which thins the deck *during the fight* — precisely the thinning Cyra cannot do between fights. Dark Embrace turns that into draw. A fat exhaust deck works.
+
+**Bloodletting is seeded on its payoffs, not its enablers.** `RUPTURE`, `TEAR_ASUNDER`, `SPITE` and `INFERNO` are what make losing HP good; `BLOODLETTING`, `OFFERING`, `HEMOKINESIS`, `BLOOD_WALL` merely spend it. Seeding on payoffs is what makes the archetype mean "this deck is built to lose HP profitably" rather than "this deck contains a card that costs HP". Genuinely risky — it trades the resource that ends runs — and kept anyway because the cluster is real.
+
+### Accumulate votes; commit on margin
+
+Better than the "3 picks then switch" I first proposed, and the improvement is the user's.
+
+Keep a running total per archetype: `score[a] += cosine(card, a)` for each non-starter card taken. Commit when the leader's margin over the runner-up crosses a threshold — which may be pick 2 after two Barricade-ish cards, or pick 6 if the draft has been diffuse. A fixed pick count is arbitrary in both directions.
+
+**Peakedness needs no separate term.** It falls out: a deck-defining card adds ~+0.5 to one archetype and ~0 to the rest, a diffuse card adds ~+0.2 to everything, so committed cards dominate the running total automatically. One mechanism, not two.
+
+**On calibration — a correction.** An earlier draft of this note argued z-scoring was mandatory because `strike-synergy` sits +0.065 above `exhaust` in mean similarity across the pool, and claimed a block deck could therefore be mislabelled. **Tested, and false.** Body Slam + Crimson Mantle + Barricade scores `block +0.866` against `strike +0.169`; a 0.065 offset cannot touch a five-fold margin. Every clear deck classified identically raw and z-scored. The bias is real in the mean and does not flip decisions, because the signal dwarfs it.
+
+Z-scores are still worth computing, for **calibration rather than correctness**: a commit threshold is meaningful on z-scores and arbitrary on raw cosines, and `gut_phrase(gap)` needs a calibrated margin to choose between "I'm sure" and "I think". So: raw for picking, z for the threshold and the phrasing.
+
+Deliberately keeping the Ironclad one-note for the MVP. Her aggression comes from `card_quality` favouring damage and from the pool being 41% attack-ish, not from any classifier offset. That is who she is; she can learn nuance later.
+
+### A fifth Cyra milestone: the moment she picks a plan
+
+When the archetype commits, tell her. `MilestoneWatcher` already has four events, each returning `_milestone(text, kind)`:
+
+```python
+def archetype_chosen(self, archetype: str, margin: float) -> dict | None:
+    """Fires once a run, when the deck's direction stops being ambiguous."""
+    return _milestone(f"I'm going with a {archetype} deck. {gut_phrase(margin)}",
+                      "sts2_archetype")
+```
+
+Worth having beyond the plumbing: it is the first moment in a run where she states a *plan* rather than narrating a move. Every other milestone reports something that happened to her. And `gut_phrase` already turns a margin into hedged or confident wording, so a narrow commit reads as uncertain — which is honest, and better characterisation than false confidence.
+
+Fires once per run, at the commit, and the logged label is also what makes a strange pick diagnosable afterwards.
