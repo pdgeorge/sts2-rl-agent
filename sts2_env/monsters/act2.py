@@ -436,7 +436,7 @@ def create_bowlbug_egg(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Mo
         BOWLBUG_EGG_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=BOWLBUG_EGG_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=BOWLBUG_EGG_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def bite(combat: CombatState) -> None:
         bite_dmg = _ascension_value(
@@ -486,7 +486,7 @@ def create_bowlbug_nectar(rng: Rng, ascension_level: int = 0) -> tuple[Creature,
         BOWLBUG_NECTAR_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=BOWLBUG_NECTAR_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=BOWLBUG_NECTAR_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def thrash(combat: CombatState) -> None:
         _deal_damage_to_player(combat, creature, BOWLBUG_NECTAR_THRASH_DAMAGE)
@@ -540,7 +540,7 @@ def create_bowlbug_rock(rng: Rng, ascension_level: int = 0) -> tuple[Creature, M
         BOWLBUG_ROCK_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=BOWLBUG_ROCK_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=BOWLBUG_ROCK_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def headbutt(combat: CombatState) -> None:
         headbutt_dmg = _ascension_value(
@@ -604,7 +604,7 @@ def create_bowlbug_silk(rng: Rng, ascension_level: int = 0) -> tuple[Creature, M
         BOWLBUG_SILK_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=BOWLBUG_SILK_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=BOWLBUG_SILK_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def toxic_spit(combat: CombatState) -> None:
         apply_power_to_living_player_targets(combat, PowerId.WEAK, BOWLBUG_SILK_TOXIC_SPIT_WEAK, applier=creature)
@@ -680,7 +680,7 @@ def create_exoskeleton(rng: Rng, slot: str = EXOSKELETON_FIRST_SLOT, ascension_l
         EXOSKELETON_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=EXOSKELETON_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=EXOSKELETON_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def skitter(combat: CombatState) -> None:
         skitter_hits = _ascension_value(
@@ -788,7 +788,7 @@ def create_chomper(rng: Rng, scream_first: bool = False, ascension_level: int = 
         CHOMPER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=CHOMPER_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=CHOMPER_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def clamp(combat: CombatState) -> None:
         clamp_dmg = _ascension_value(
@@ -966,7 +966,7 @@ def create_wriggler(
         WRIGGLER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=WRIGGLER_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=WRIGGLER_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def bite(combat: CombatState) -> None:
         bite_dmg = _ascension_value(
@@ -1055,7 +1055,7 @@ def create_louse_progenitor(rng: Rng, ascension_level: int = 0) -> tuple[Creatur
         LOUSE_PROGENITOR_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=LOUSE_PROGENITOR_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=LOUSE_PROGENITOR_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def web(combat: CombatState) -> None:
         web_dmg = _ascension_value(
@@ -1164,7 +1164,7 @@ def create_myte(rng: Rng, slot: str = MYTE_FIRST_SLOT, ascension_level: int = 0)
         MYTE_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=MYTE_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=MYTE_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def bite(combat: CombatState) -> None:
         bite_dmg = _ascension_value(
@@ -1276,7 +1276,7 @@ def create_tough_egg(
         TOUGH_EGG_BASE_INITIAL_MAX_HP,
     )
     hp = rng.next_int(initial_min_hp, initial_max_hp)
-    creature = Creature(max_hp=hp, monster_id=TOUGH_EGG_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=TOUGH_EGG_MONSTER_ID, min_initial_hp=initial_min_hp, max_initial_hp=initial_max_hp)
 
     def hatch(combat: CombatState) -> None:
         from sts2_env.core.hooks import scaled_multiplayer_enemy_max_hp
@@ -1377,7 +1377,7 @@ def create_ovicopter(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Mons
         OVICOPTER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=OVICOPTER_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=OVICOPTER_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def can_lay(combat: CombatState | None) -> bool:
         if combat is None:
@@ -1578,7 +1578,7 @@ def create_spiny_toad(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Mon
         SPINY_TOAD_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=SPINY_TOAD_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=SPINY_TOAD_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def lash(combat: CombatState) -> None:
         lash_dmg = _ascension_value(
@@ -1833,7 +1833,7 @@ def create_decimillipede_segment(
         DECIMILLIPEDE_SEGMENT_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=DECIMILLIPEDE_SEGMENT_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=DECIMILLIPEDE_SEGMENT_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def writhe(combat: CombatState) -> None:
         writhe_dmg = _ascension_value(

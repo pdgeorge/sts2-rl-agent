@@ -442,19 +442,38 @@ class TestAct1NormalEncounters:
             "FIRST_ACID_GOOP",
         ]
 
-    def test_ruby_raiders_normal_samples_three_unique_raiders_in_original_pool_order(self):
-        encounter_seed = 42
-        expected_raiders_for_seed = [
-            "CROSSBOW_RUBY_RAIDER",
+    def test_ruby_raiders_normal_samples_three_unique_raiders_from_the_pool(self):
+        """Three distinct raiders, all from the five-raider pool.
+
+        This used to pin the exact triple seed 42 produced. That triple was an
+        artefact of the generator this project had before it matched the game's
+        -- and it was not even "pool order", despite the old test name: the
+        pool is [AXE, ASSASSIN, BRUTE, CROSSBOW, TRACKER] and the expectation
+        began with CROSSBOW, because `rng.sample` returns selection order.
+        What the encounter actually guarantees is three, distinct, from the
+        pool, so that is what is asserted -- across seeds, not one.
+        """
+        pool = {
             "AXE_RUBY_RAIDER",
             "ASSASSIN_RUBY_RAIDER",
-        ]
-        combat = _make_combat()
+            "BRUTE_RUBY_RAIDER",
+            "CROSSBOW_RUBY_RAIDER",
+            "TRACKER_RUBY_RAIDER",
+        }
+        seen_across_seeds = set()
 
-        setup_ruby_raiders_normal(combat, Rng(encounter_seed))
+        for seed in range(20):
+            combat = _make_combat()
+            setup_ruby_raiders_normal(combat, Rng(seed))
+            chosen = [enemy.monster_id for enemy in combat.enemies]
 
-        assert [enemy.monster_id for enemy in combat.enemies] == expected_raiders_for_seed
-        assert len(set(enemy.monster_id for enemy in combat.enemies)) == len(expected_raiders_for_seed)
+            assert len(chosen) == 3
+            assert len(set(chosen)) == 3, f"seed {seed} repeated a raider: {chosen}"
+            assert set(chosen) <= pool, f"seed {seed} produced {chosen}"
+            seen_across_seeds.update(chosen)
+
+        # Sampling that can never reach part of the pool would be a real bug.
+        assert seen_across_seeds == pool
 
     def test_ruby_raiders_tough_ascension_hp_matches_csharp(self):
         seen_raiders = set()
@@ -719,22 +738,39 @@ class TestAct1Pools:
 
 class TestAct2Pools:
     def test_decimillipede_elite_offsets_segment_openers_from_original_random_starter(self):
-        encounter_seed = 0
-        expected_openers = [
-            "CONSTRICT_MOVE",
-            "WRITHE_MOVE",
-            "BULK_MOVE",
-        ]
-        combat = _make_combat(encounter_seed)
+        """The three segments open on consecutive moves of one cycle.
 
-        setup_decimillipede_elite(combat, Rng(encounter_seed))
+        Which move the first segment starts on is the random part -- that is
+        what "offsets from a random starter" means -- so pinning one seed's
+        triple pinned the starter, not the offsetting. The rotation is the
+        real claim, and it holds for every seed checked.
+        """
+        cycle = ["CONSTRICT_MOVE", "WRITHE_MOVE", "BULK_MOVE"]
+        starters = set()
 
-        assert [enemy.monster_id for enemy in combat.enemies] == [
-            "DECIMILLIPEDE_SEGMENT",
-            "DECIMILLIPEDE_SEGMENT",
-            "DECIMILLIPEDE_SEGMENT",
-        ]
-        assert [combat.enemy_ais[enemy.combat_id].current_move.state_id for enemy in combat.enemies] == expected_openers
+        for seed in range(8):
+            combat = _make_combat(seed)
+            setup_decimillipede_elite(combat, Rng(seed))
+
+            assert [enemy.monster_id for enemy in combat.enemies] == [
+                "DECIMILLIPEDE_SEGMENT",
+                "DECIMILLIPEDE_SEGMENT",
+                "DECIMILLIPEDE_SEGMENT",
+            ]
+            openers = [
+                combat.enemy_ais[enemy.combat_id].current_move.state_id
+                for enemy in combat.enemies
+            ]
+            offset = cycle.index(openers[0])
+            expected = cycle[offset:] + cycle[:offset]
+            assert openers == expected, (
+                f"seed {seed} openers {openers} are not a rotation of {cycle}"
+            )
+            starters.add(openers[0])
+
+        # A "random starter" that is always the same one would pass the
+        # rotation check above while being broken.
+        assert len(starters) > 1
 
     def test_act2_weak_tough_ascension_hp_matches_csharp(self):
         for seed in range(5):

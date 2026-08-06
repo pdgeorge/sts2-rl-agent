@@ -76,6 +76,27 @@ def _card_reward(floor):
             "run_hp": 50, "run_max_hp": 80, "deck_size": 10, "gold": 100}
 
 
+def _combat(floor, enemy="JAW_WORM", hp=70, run_hp=70, act=1):
+    """A combat_action state with the fields the runner now captures.
+
+    Enemies nest the way the real bridge does, so the runner's
+    `state.get("combat_state") or state` fallback has to find them.
+    """
+    return {
+        "type": "combat_action",
+        "floor": floor,
+        "act": act,
+        "room_type": "Monster",
+        "run_hp": run_hp,
+        "run_max_hp": 80,
+        "combat_state": {
+            "player": {"hp": hp, "max_hp": 80, "energy": 3, "block": 0},
+            "hand": [{"id": "STRIKE_IRONCLAD", "cost": 1, "type": "Attack"}],
+            "enemies": [{"id": enemy, "hp": 30, "max_hp": 40, "is_alive": True}],
+        },
+    }
+
+
 @pytest.fixture
 def patched(monkeypatch):
     from sts2_env.gym_env.run_env import RUN_OBS_SIZE
@@ -151,3 +172,69 @@ def test_progress_does_not_leak_between_runs(patched):
 
     assert seen[0]["floor"] == 18
     assert seen[1].get("floor", 0) != 18, "stale floor carried into the next run"
+
+
+# -- the new run-end fields: act_cleared and death_enemy_id ------------------
+
+def test_a_run_that_reached_act_2_is_marked_cleared(patched):
+    seen, _ = _play(patched, [
+        _card_reward(17),
+        {"type": "run_complete", "floor": 18, "act": 2, "result": "win",
+         "run_hp": 50, "run_max_hp": 80},
+    ], max_runs=1)
+    assert seen[0]["act_cleared"] is True
+
+
+def test_a_run_that_died_in_act_1_is_not_marked_cleared(patched):
+    seen, _ = _play(patched, [
+        _card_reward(9),
+        {"type": "run_complete", "floor": 9, "act": 1, "result": "died",
+         "run_hp": 0},
+    ], max_runs=1)
+    assert seen[0]["act_cleared"] is False
+
+
+def test_the_enemy_the_run_died_to_is_recorded(patched):
+    seen, _ = _play(patched, [
+        _combat(floor=9, enemy="JAW_WORM", hp=80, run_hp=10),
+        {"type": "run_complete", "floor": 9, "act": 1, "result": "died",
+         "run_hp": 0},
+    ], max_runs=1)
+    assert seen[0]["death_enemy_id"] == "JAW_WORM"
+
+
+def test_a_won_run_has_no_death_enemy(patched):
+    seen, _ = _play(patched, [
+        _combat(floor=17, enemy="VANTOM", hp=80, run_hp=20),
+        {"type": "run_complete", "floor": 18, "act": 2, "result": "win",
+         "run_hp": 20},
+    ], max_runs=1)
+    assert seen[0]["death_enemy_id"] is None
+
+
+def test_death_enemy_id_does_not_leak_between_runs(patched):
+    seen, _ = _play(patched, [
+        _combat(floor=9, enemy="JAW_WORM", run_hp=10),
+        {"type": "run_complete", "floor": 9, "act": 1, "result": "died",
+         "run_hp": 0},
+        {"type": "run_complete", "floor": 7, "act": 1, "result": "died",
+         "run_hp": 0},
+    ], max_runs=2)
+    # First run died to JAW_WORM. Second run never entered combat; the
+    # tracker must have been reset rather than inherited.
+    assert seen[0]["death_enemy_id"] == "JAW_WORM"
+    assert seen[1]["death_enemy_id"] is None
+
+
+def test_combats_counter_increments_per_fight(patched):
+    # The bridge sends many combat_action messages per fight, so the counter
+    # increments on the *transition* into combat, not on every combat state.
+    # Two fights therefore need a non-combat state between them.
+    seen, _ = _play(patched, [
+        _combat(floor=3, hp=80, run_hp=80),
+        _card_reward(3),
+        _combat(floor=4, hp=70, run_hp=70),
+        {"type": "run_complete", "floor": 4, "act": 1, "result": "died",
+         "run_hp": 0},
+    ], max_runs=1)
+    assert seen[0]["combats"] == 2

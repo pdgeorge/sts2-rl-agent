@@ -293,7 +293,7 @@ def create_dense_vegetation_wriggler(
     rng: Rng, slot: str = "wriggler1",
 ) -> tuple[Creature, MonsterAI]:
     hp = rng.next_int(17, 21)
-    creature = Creature(max_hp=hp, monster_id="WRIGGLER")
+    creature = Creature(max_hp=hp, monster_id="WRIGGLER", min_initial_hp=17, max_initial_hp=21)
     bite_dmg = 6
     wriggle_str = 2
     wriggle_infections = 1

@@ -1,0 +1,896 @@
+"""A combat about to start, as plain data, and how to rebuild it.
+
+Two things need this and they must not grow separate implementations. The
+benchmark needs to replay the same 200 fights against every candidate agent, and
+the live bridge needs to turn the mod's JSON into something the searcher can
+clone. Both are "build a CombatState from a description"; keeping them one
+module is what stops them disagreeing later about what a description means.
+
+It is JSON rather than a pickle deliberately. A pickled CombatState is exact and
+free, and it breaks the first time a field is renamed -- which is precisely the
+event this project has to survive. A named field that no longer resolves fails
+loudly at load, which is the failure this codebase keeps choosing on purpose.
+
+The encounter is stored as the setup function's name plus the seed it was rolled
+with, so the enemies come back with the same HP rolls rather than merely the same
+species. When the bridge path lands it will carry explicit enemies instead --
+there is no encounter function to name when the fight is already in progress --
+which is why `to_combat` dispatches rather than assuming.
+
+WHAT IS AND IS NOT REPRODUCED
+
+Reproduced exactly, every time: the deck, HP, relics, potions, the enemies and
+their HP rolls, their opening intents and powers. Two rebuilds of one situation
+are identical, which is the property a benchmark actually rests on -- every agent
+faces the same fight.
+
+Not reproduced: the opening shuffle of the run it was harvested from. A run's
+`shuffle` stream has been advanced by every fight before this one, and the rebuilt
+run starts that stream at zero, so the same deck deals a different opening hand.
+Restoring the position would mean serialising a `_DotNetCompatRandom`'s internal
+array -- brittle across builds in exactly the way this module chose JSON to avoid.
+A fresh draw from the right deck is also the better test: it does not bake one
+lucky opening into the fixture.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any, Callable, Iterable
+
+from sts2_env.cards.base import CardInstance, reset_instance_counter
+from sts2_env.cards.factory import create_card
+from sts2_env.core.combat import CombatState
+from sts2_env.core.creature import Creature
+from sts2_env.core.enums import CardId, IntentType, PowerId, RoomType
+from sts2_env.core.rng import Rng
+from sts2_env.monsters.intents import Intent
+from sts2_env.potions.base import create_potion
+from sts2_env.powers.base import PowerInstance
+from sts2_env.run.rooms import create_room
+from sts2_env.run.run_state import RunState
+
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Encounter registry
+# ---------------------------------------------------------------------------
+
+_ENCOUNTER_MODULES = (
+    "sts2_env.encounters.act1",
+    "sts2_env.encounters.act2",
+    "sts2_env.encounters.act3",
+    "sts2_env.encounters.act4",
+)
+
+_ENCOUNTER_CACHE: dict[str, Callable[..., None]] | None = None
+
+
+def encounter_registry() -> dict[str, Callable[..., None]]:
+    """Every `setup_*` encounter function, by name.
+
+    Built by import rather than by hand: an encounter added to an act module is
+    resolvable here without anyone remembering to register it.
+    """
+    global _ENCOUNTER_CACHE
+    if _ENCOUNTER_CACHE is not None:
+        return _ENCOUNTER_CACHE
+
+    import importlib
+
+    registry: dict[str, Callable[..., None]] = {}
+    for module_name in _ENCOUNTER_MODULES:
+        module = importlib.import_module(module_name)
+        for name in dir(module):
+            if not name.startswith("setup_"):
+                continue
+            value = getattr(module, name)
+            if callable(value):
+                registry[name] = value
+    _ENCOUNTER_CACHE = registry
+    return registry
+
+
+def _setup_name_for_encounter_id(encounter_id: str) -> str:
+    """Normalise any of the names a bridge may send for an encounter into the
+    `setup_X` form `encounter_registry` keys on.
+
+    The mod sends `EncounterModel.Id.Entry` (PascalCase class name like
+    "NibbitsWeak"). The Python registry keys on the setup-function name
+    ("setup_nibbits_weak"). Round-tripping requires a normaliser rather
+    than a one-shot renaming convention, because both representations
+    exist on the wire and a fixture might carry either depending on which
+    path wrote it.
+    """
+    name = str(encounter_id)
+    if name.startswith("setup_"):
+        return name.lower()
+    # Strip a `setup_`-prefixed substring at the end (e.g. "TheKin setup_the_kin"
+    # never happens, but stay safe). Pass through anything that already looks
+    # like a setup name unchanged after lowercasing.
+    # PascalCase -> snake_case: insert _ before each uppercase that follows a
+    # lowercase, and before each uppercase run that ends in lowercase. Mirrors
+    # the regex in RESEARCH.md's `class_name_to_id`.
+    import re
+
+    s = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", name)
+    s = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", "_", s)
+    return "setup_" + s.lower()
+
+
+def resolve_encounter(name: str) -> Callable[..., None]:
+    """Look up an encounter setup function by any of its common names.
+
+    Accepts the Python `setup_X` form (the registry key, what
+    `from_run_manager` writes), the C# `EncounterModel.Id.Entry` PascalCase
+    form (what RlRunInfo sends over the wire), and the UPPER_SNAKE form
+    some intermediate fixtures have used. All three resolve to the same
+    function.
+    """
+    registry = encounter_registry()
+    if name in registry:
+        return registry[name]
+    normalised = _setup_name_for_encounter_id(name)
+    if normalised in registry:
+        return registry[normalised]
+    raise KeyError(
+        f"No encounter setup named {name!r}. A fixture written against an "
+        f"older build can name an encounter this one has renamed or removed; "
+        f"regenerate the fixture rather than editing it by hand."
+    )
+
+
+# ---------------------------------------------------------------------------
+# The situation
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class CardRef:
+    """A card in a deck: which one, and whether it is upgraded."""
+
+    card_id: str
+    upgraded: bool = False
+
+    def instantiate(self) -> CardInstance:
+        try:
+            cid = CardId[self.card_id]
+        except KeyError as exc:
+            raise KeyError(
+                f"No card named {self.card_id!r} in this build. Regenerate the "
+                f"fixture against the current game build."
+            ) from exc
+        return create_card(cid, upgraded=self.upgraded)
+
+
+@dataclass(frozen=True)
+class CombatSituation:
+    """One fight, at the moment it begins, reproducible from these fields alone."""
+
+    situation_id: str
+    character_id: str
+    current_hp: int
+    max_hp: int
+    deck: tuple[CardRef, ...]
+    encounter: str
+    encounter_seed: int
+    combat_seed: int
+    relics: tuple[str, ...] = ()
+    potions: tuple[str | None, ...] = ()
+    max_potion_slots: int = 3
+    gold: int = 0
+    room_type: str = "MONSTER"
+    act_floor: int = 1
+    total_floor: int = 1
+    ascension_level: int = 0
+    #: Enemy max HP as it actually was, in slot order -- reported by the bridge
+    #: for a live fight, read off the RunManager's combat for a harvested one.
+    #: Empty only for a fixture written before this field existed, which falls
+    #: back to rolling from `encounter_seed`.
+    #:
+    #: This exists because monster HP *cannot* be reconstructed from the
+    #: encounter seed. `CombatState.cs:499` rolls it from
+    #: `RunState.Rng.Niche` -- a run-level stream whose position depends on
+    #: everything that happened earlier in the run -- not from the encounter's
+    #: own RNG. No amount of generator parity recovers it; the only way to know
+    #: a live fight's enemy HP is that the game says so.
+    enemy_max_hp: tuple[int, ...] = ()
+
+    # -- construction ------------------------------------------------------
+
+    def to_combat(self) -> CombatState:
+        """Rebuild the fight. Same inputs give the same enemies, every time.
+
+        Mirrors `RunManager._enter_combat` step for step; that ordering is
+        load-bearing, because relics and room modifiers fire during setup and a
+        different order gives a different opening state.
+
+        The `RunState` is not decoration. `CombatState.shuffle_rng` and
+        `monster_ai_rng` resolve through `player_state.run_state.rng`, falling
+        back to the combat's own RNG when there is none -- so a player built
+        without one draws its shuffles and its enemy moves from a different
+        stream than any real run does. The fight would still be reproducible,
+        and it would not be representative. Building the streams from
+        `combat_seed` gives both.
+        """
+        reset_instance_counter()
+
+        deck = [ref.instantiate() for ref in self.deck]
+        potions = [_instantiate_potion(pid, i) for i, pid in enumerate(self.potions)]
+
+        run_state = RunState(
+            seed=self.combat_seed,
+            ascension_level=self.ascension_level,
+            character_id=self.character_id,
+        )
+        run_state.act_floor = self.act_floor
+        run_state.total_floor = self.total_floor
+
+        player = run_state.player
+        player.max_hp = self.max_hp
+        player.current_hp = self.current_hp
+        player.gold = self.gold
+        player.deck = deck
+        # In place: RunState aliases `self.relics` to this exact list object, so
+        # rebinding the attribute would leave run_state.relics pointing at the
+        # old one and the two would disagree about what the player owns.
+        player.relics[:] = list(self.relics)
+        player.potions = potions
+        player.max_potion_slots = self.max_potion_slots
+
+        room = create_room(RoomType[self.room_type])
+        combat = CombatState(
+            player_hp=self.current_hp,
+            player_max_hp=self.max_hp,
+            deck=deck,
+            rng_seed=self.combat_seed,
+            relics=list(self.relics),
+            gold=self.gold,
+            character_id=self.character_id,
+            potions=potions,
+            max_potion_slots=self.max_potion_slots,
+            player_state=player,
+            room=room,
+            ascension_level=self.ascension_level,
+        )
+
+        resolve_encounter(self.encounter)(combat, Rng(self.encounter_seed))
+
+        # If the game told us the enemies' HP, use it. The encounter setup just
+        # rolled its own from `encounter_seed`, and for a live fight that roll
+        # is unrecoverable by construction (see `enemy_max_hp`). Overwriting it
+        # here rather than only in `to_combat_mid_fight` means a bridge-built
+        # situation cannot quietly produce a fight with the wrong enemy HP --
+        # which it did, by 1-2 HP per enemy, for every fight in the first live
+        # capture taken.
+        for index, reported in enumerate(self.enemy_max_hp):
+            if index >= len(combat.enemies):
+                break
+            enemy = combat.enemies[index]
+            enemy.max_hp = int(reported)
+            enemy.current_hp = int(reported)
+
+        combat.start_combat()
+        return combat
+
+    def to_combat_mid_fight(self, bridge_state: dict[str, Any]) -> CombatState:
+        """Build a CombatState that matches the bridge's report of *now*.
+
+        The bridge is ground truth -- whatever HP, block, energy, powers, hand
+        and enemy state it reports is what the live game has, and the local
+        sim must agree. ``to_combat`` builds a fresh fight from the
+        situation's seed/encounter/deck, which matches the opening state but
+        diverges within a few turns (different shuffle, different enemy
+        intent rolls, relic trigger order). This method takes that fresh
+        build and **overwrites** the mutable state with the bridge's report,
+        so the SearchAgent plans against the position the player is actually
+        in rather than a frozen fiction that drifted two turns ago.
+
+        What is overwritten:
+
+        * Player HP, block, energy, max_energy -- direct assignments.
+        * Player powers -- the bridge's list replaces the player's powers
+          dict; amounts are set verbatim, no hook re-firing.
+        * Hand -- rebuilt from the bridge's hand list as fresh CardInstance
+          objects (the simulator's own draw is discarded). The draw and
+          discard piles are left as ``to_combat`` built them -- the search
+          does not look at piles beyond their counts, and the bridge sends
+          only counts, so we cannot do better without more protocol.
+        * Each enemy's HP, block, powers -- direct assignments, same as the
+          player. The enemy's monster id and the encounter setup are already
+          correct from ``to_combat``.
+        * Enemy intent -- the bridge sends the live game's next-move intent.
+          When the move id it names exists in the simulator's state machine,
+          we install the bridge's intent onto that ``MoveState`` and re-point
+          the AI at it, so the SearchAgent's _incoming_damage reads the right
+          telegraph *and* the move keeps its follow-up chain. When the move
+          id is unknown (a parity gap), the override is skipped rather than
+          synthesising a follow-up-less state that would crash ``roll_move``.
+
+        What is NOT overwritten (and why):
+
+        * Draw pile order -- the bridge sends only ``draw_pile_count``. We
+          leave whatever ``to_combat`` rolled. The search's lookahead uses
+          the simulator's draw, which is an approximation; that is the same
+          approximation the offline benchmark measured at 20% boss win rate
+          per ``MODELS.md:120``.
+        * Relics, potions, character -- set at combat_start, do not change
+          mid-fight.
+        * Encounter / encounter_seed / combat_seed -- already baked in.
+        """
+        combat = self.to_combat()
+        _sync_combat_from_bridge(combat, bridge_state)
+        return combat
+
+    # -- serialisation -----------------------------------------------------
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["deck"] = [{"card_id": c.card_id, "upgraded": c.upgraded} for c in self.deck]
+        data["relics"] = list(self.relics)
+        data["potions"] = list(self.potions)
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> CombatSituation:
+        return cls(
+            situation_id=data["situation_id"],
+            character_id=data["character_id"],
+            current_hp=int(data["current_hp"]),
+            max_hp=int(data["max_hp"]),
+            deck=tuple(
+                CardRef(card_id=c["card_id"], upgraded=bool(c.get("upgraded", False)))
+                for c in data["deck"]
+            ),
+            encounter=data["encounter"],
+            encounter_seed=int(data["encounter_seed"]),
+            combat_seed=int(data["combat_seed"]),
+            relics=tuple(data.get("relics", ())),
+            potions=tuple(data.get("potions", ())),
+            max_potion_slots=int(data.get("max_potion_slots", 3)),
+            gold=int(data.get("gold", 0)),
+            room_type=data.get("room_type", "MONSTER"),
+            act_floor=int(data.get("act_floor", 1)),
+            total_floor=int(data.get("total_floor", 1)),
+            ascension_level=int(data.get("ascension_level", 0)),
+        )
+
+    # -- capture -----------------------------------------------------------
+
+    @classmethod
+    def from_run_manager(cls, mgr: Any, situation_id: str) -> CombatSituation:
+        """Snapshot the fight a RunManager has just entered.
+
+        Reads `_last_encounter`, which `_enter_combat` records for exactly this
+        purpose: the setup function and seed are chosen inside that method and
+        are otherwise unrecoverable afterwards -- the enemies exist, but which
+        roll produced them does not.
+        """
+        encounter = getattr(mgr, "_last_encounter", None)
+        if encounter is None:
+            raise ValueError(
+                "RunManager has not entered a combat, or this build does not "
+                "record the encounter it rolled."
+            )
+        name, encounter_seed, combat_seed = encounter
+
+        player = mgr.run_state.player
+
+        # Record the enemies this run actually rolled, for the same reason the
+        # bridge path does: monster HP comes from the run-level Niche stream
+        # (`CombatState.cs:496`), whose position depends on everything earlier
+        # in the run, so `encounter_seed` cannot reproduce it. Without this a
+        # fixture drifts away from the fight it was harvested from the moment
+        # anything about the RNG changes -- which is exactly what happened when
+        # the generator was corrected on 2026-08-06.
+        live_combat = getattr(mgr, "_combat", None)
+        enemy_max_hp = tuple(
+            int(enemy.max_hp) for enemy in getattr(live_combat, "enemies", ()) or ()
+        )
+
+        return cls(
+            situation_id=situation_id,
+            character_id=player.character_id,
+            current_hp=player.current_hp,
+            max_hp=player.max_hp,
+            deck=tuple(
+                CardRef(card_id=card.card_id.name, upgraded=bool(card.upgraded))
+                for card in player.deck
+            ),
+            encounter=name,
+            encounter_seed=encounter_seed,
+            combat_seed=combat_seed,
+            relics=tuple(mgr.run_state.relics),
+            potions=tuple(
+                (p.potion_id if p is not None else None)
+                for p in (player.potions or [])
+            ),
+            max_potion_slots=player.max_potion_slots,
+            gold=player.gold,
+            room_type=_room_type_name(mgr._current_room_type),
+            act_floor=mgr.run_state.act_floor,
+            total_floor=mgr.run_state.total_floor,
+            ascension_level=mgr.run_state.ascension_level,
+            enemy_max_hp=enemy_max_hp,
+        )
+
+    @classmethod
+    def from_bridge_state(
+        cls,
+        state: dict[str, Any],
+        *,
+        situation_id: str | None = None,
+    ) -> CombatSituation:
+        """Build a CombatSituation from a bridge combat state message.
+
+        The counterpart to `from_run_manager` for the live-game path: where
+        the simulator reads from a RunManager mid-run, this reads from the
+        JSON payload the C# mod sends at the moment a fight begins. The two
+        must agree on every field, because `to_combat` is called on the
+        result and a searcher that clones a fight different from the one on
+        screen is worse than useless -- it looks correct and is not.
+
+        WHAT THE BRIDGE MUST SEND
+
+        Run-level fields (act, floor, run_hp, run_max_hp, gold, relics,
+        potion_slots, deck, room_type, ascension, act_floor) arrive via
+        RlRunInfo.Attach on every state. The current mod sends `deck` as a
+        list of bare card-id strings -- the upgraded flag is lost, which
+        the Phase 1.1 mod patch extends to `{"id", "upgraded"}` dicts.
+
+        Encounter identification (the `encounter` setup-function name,
+        `encounter_seed`, and `combat_seed`) is NOT sent by the current
+        mod. These three are required: `to_combat` dispatches to
+        `resolve_encounter` with the seed, which is the only way to bring
+        the same enemies back with the same HP rolls. They are added by the
+        Phase 1.1 mod patch; without them this method raises, which is the
+        right failure -- a quiet fallback to a random encounter would have
+        the search planning against a different fight from the one on
+        screen.
+
+        `character_id` is not currently sent by the mod, which is
+        hardcoded to Ironclad (RlAutoSlayer.PreferredCharacterId). It
+        defaults to "Ironclad" here and is added by the Phase 1.1 patch.
+        """
+        floor = int(state.get("floor", 0) or 0)
+        sid = situation_id or f"bridge-f{floor:02d}"
+
+        # Combat fields are nested inside `combat_state` by some handlers and
+        # flat in others -- same fallback as state_adapter.py. Used only for
+        # player HP/max_hp when run_hp/run_max_hp are absent, which they
+        # always are in the current mod.
+        combat = state.get("combat_state") or state
+        player = combat.get("player") or {}
+
+        # Deck: accept both the current mod format (list of id strings, the
+        # upgraded flag lost) and the target format (list of dicts with id
+        # and upgraded). The Phase 1.1 patch moves the current mod to the
+        # target; until then an upgraded card is read as a base card, which
+        # reproduces the wrong fight rather than a half-right one.
+        raw_deck = state.get("deck") or []
+        deck = tuple(_parse_deck_entry(d) for d in raw_deck)
+
+        # Encounter identification. Required because `to_combat` calls
+        # `resolve_encounter(self.encounter)(combat, Rng(self.encounter_seed))`
+        # -- the setup function recreates the enemies, and the seed fixes which
+        # HP roll they got. Missing encounter raises here rather than inside
+        # `to_combat` because the message is clearer at the point of missing
+        # data, and a caller that wants to handle the gap (live_search) needs
+        # to know before the fight is entered.
+        encounter = state.get("encounter")
+        if not encounter:
+            raise ValueError(
+                "Bridge state has no `encounter` field. The mod must be patched "
+                "(Phase 1.1) to send the encounter setup-function name and its "
+                "seed; without them the SearchAgent would clone a fight that "
+                "does not match the one on screen."
+            )
+        encounter_seed = int(state.get("encounter_seed", 0) or 0)
+        combat_seed = int(state.get("combat_seed", encounter_seed) or 0)
+
+        # Potions: the mod sends `potion_slots` as a positional list with
+        # null where empty, same shape as from_run_manager. `potions` is the
+        # combat-only list of usable potions, different and not what we want.
+        raw_potions = state.get("potion_slots") or state.get("potions") or ()
+
+        # Room type: the mod sends MapPointType as a string (e.g. "Monster",
+        # "Elite", "Boss"). Normalised to uppercase for consistency with
+        # `_room_type_name`, which is what from_run_manager produces.
+        room_type = str(state.get("room_type") or "MONSTER").upper()
+
+        # Enemy max HP, straight from the game. Not reconstructable: the game
+        # rolls it from the run-level Niche stream (`CombatState.cs:499`), so
+        # the encounter seed cannot produce it no matter how faithful the
+        # generator is. Read rather than re-derived -- if the game says 43, it
+        # is 43.
+        enemy_max_hp = tuple(
+            int(enemy.get("max_hp", 0) or 0)
+            for enemy in (combat.get("enemies") or state.get("enemies") or [])
+            if isinstance(enemy, dict) and enemy.get("max_hp")
+        )
+
+        return cls(
+            situation_id=sid,
+            character_id=(
+                state.get("character_id")
+                or state.get("character")
+                or "Ironclad"
+            ),
+            current_hp=int(state.get("run_hp", 0) or player.get("hp", 0) or 0),
+            max_hp=int(state.get("run_max_hp", 0) or player.get("max_hp", 0) or 0),
+            deck=deck,
+            encounter=encounter,
+            encounter_seed=encounter_seed,
+            combat_seed=combat_seed,
+            relics=tuple(state.get("relics") or ()),
+            potions=tuple(raw_potions),
+            max_potion_slots=int(state.get("max_potion_slots") or 3),
+            gold=int(state.get("gold") or 0),
+            room_type=room_type,
+            act_floor=int(state.get("act_floor") or 1),
+            total_floor=floor,
+            ascension_level=int(state.get("ascension") or 0),
+            enemy_max_hp=enemy_max_hp,
+        )
+
+
+def _instantiate_potion(potion_id: str | None, slot: int):
+    """Same contract as cards and encounters: a name this build does not have
+    fails here, saying so, rather than further in as a missing effect.
+
+    Returns ``None`` for an empty slot or an unknown potion id. A potion the
+    bridge reports that the simulator does not know (a new game-patch potion
+    the simulator has not caught up to, or a transient id we cannot coerce)
+    is dropped rather than crashing the whole ``to_combat`` build -- a
+    searcher that clones a fight missing one potion is still useful; a
+    searcher that crashes is not, and the crash used to tank every combat
+    step of a live run via the LiveSearch fallback to END_TURN.
+    """
+    if not potion_id:
+        return None
+    try:
+        return create_potion(potion_id, slot=slot)
+    except KeyError as exc:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "No potion named %r in this build; dropping it from the "
+            "situation clone. Update sts2_env/potions/all.py to support "
+            "the new potion; until then the search clone has one fewer "
+            "potion slot than the live game, which is wrong but playable.",
+            potion_id,
+        )
+        return None
+
+
+def _parse_deck_entry(entry: Any) -> CardRef:
+    """Build a CardRef from one element of the bridge state's `deck` list.
+
+    The current mod sends bare strings (e.g. "STRIKE_IRONCLAD"); the upgraded
+    flag is lost, which is the gap the Phase 1.1 mod patch closes. The target
+    format is a dict with `id` and `upgraded`. Both are accepted here so the
+    Python side is correct before and after the mod changes.
+    """
+    if isinstance(entry, dict):
+        return CardRef(
+            card_id=str(entry["id"]),
+            upgraded=bool(entry.get("upgraded", False)),
+        )
+    return CardRef(card_id=str(entry), upgraded=False)
+
+
+# Powers worth coercing between the bridge's UPPER_SNAKE ids and the
+# simulator's PowerId enum. Built from the enum rather than hand-listed, so a
+# new PowerId lands here automatically; any power the bridge sends that is
+# not in the enum is dropped with a warning (the same drop-and-continue
+# pattern _instantiate_potion uses, so a single unmodelled power does not
+# tank the live fight).
+_POWER_ID_BY_NAME: dict[str, PowerId] = {p.name: p for p in PowerId}
+
+
+def _coerce_power_id(name: str) -> PowerId | None:
+    """Resolve a bridge power id to a PowerId enum member, or None.
+
+    The bridge sends ``power.Id.Entry`` which is ``Slugify(ClassName)`` --
+    so ``StrengthPower`` -> ``STRENGTH_POWER``. The simulator's ``PowerId``
+    enum members are UPPER_SNAKE of the class name; the mod's slug matches
+    on most powers (e.g. ``VULNERABLE``, ``WEAK``, ``STRENGTH``) because
+    the slugify strips the ``Power`` suffix sometimes and leaves it other
+    times. Try (a) the raw name, (b) with a trailing ``_POWER`` removed,
+    (c) with a trailing ``_POWER`` added.
+    """
+    if name in _POWER_ID_BY_NAME:
+        return _POWER_ID_BY_NAME[name]
+    if name.endswith("_POWER"):
+        stripped = name[:-len("_POWER")]
+        if stripped in _POWER_ID_BY_NAME:
+            return _POWER_ID_BY_NAME[stripped]
+    with_suffix = f"{name}_POWER" if not name.endswith("POWER") else name
+    if with_suffix in _POWER_ID_BY_NAME:
+        return _POWER_ID_BY_NAME[with_suffix]
+    return None
+
+
+def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None:
+    """Overwrite mutable combat state with the bridge's ground-truth report.
+
+    See ``CombatSituation.to_combat_mid_fight`` for the contract: the bridge
+    is the authority on the current position; the local sim matches it, the
+    search plans against the match, and any approximation (the draw pile
+    order, the enemy's next-next move) is what the search's horizon already
+    tolerated.
+    """
+    crash = state.get("combat_state") or state
+    if not isinstance(crash, dict):
+        return
+    player_json = crash.get("player") or {}
+    if not isinstance(player_json, dict):
+        return
+
+    # -- player HP / block / energy / powers / hand -------------------------
+    pcard = combat.primary_player
+    if "hp" in player_json:
+        pcard.current_hp = int(player_json["hp"])
+    if "block" in player_json:
+        pcard.block = int(player_json.get("block", 0))
+    if "energy" in player_json:
+        combat.current_player_state.energy = int(player_json["energy"])
+    if "max_energy" in player_json:
+        combat.current_player_state.base_max_energy = int(
+            player_json.get("max_energy", 3)
+        )
+
+    # Player powers: full reset, then apply the bridge's list verbatim.
+    # The bridge's report is the live game's authoritative state; the
+    # simulator's own power application (which would fire hooks and modify
+    # amounts) is bypassed -- we just set the dict, because the goal is to
+    # mirror what's on screen, not to re-derive it.
+    pcard.powers.clear()
+    for p in (player_json.get("powers") or []):
+        pid = _coerce_power_id(str(p.get("id", "")).upper())
+        if pid is None:
+            logger.warning(
+                "bridge powers: %r not in this build; dropping. The "
+                "search clone has one fewer player power than the live "
+                "game, which is wrong but playable.",
+                p.get("id"),
+            )
+            continue
+        amount = int(p.get("amount", 0))
+        pcard.powers[pid] = PowerInstance(power_id=pid, amount=amount)
+
+    # Hand: clear and rebuild from the bridge's list. Cards come back as
+    # fresh CardInstance objects via the factory; their internal counters do
+    # not matter for the search's plan (which only looks at damage/block/cost/
+    # type/target).
+    hand_json = crash.get("hand") or []
+    if isinstance(hand_json, list):
+        new_hand = []
+        for card_json in hand_json:
+            if not isinstance(card_json, dict):
+                continue
+            cid_str = card_json.get("id")
+            if not cid_str:
+                continue
+            try:
+                cid = CardId[cid_str]
+            except KeyError:
+                logger.warning(
+                    "bridge hand: card %r not in this build; dropping.",
+                    cid_str,
+                )
+                continue
+            upgraded = bool(card_json.get("upgraded", False))
+            instance = create_card(cid, upgraded=upgraded)
+            # Carry the game's own playability verdict. It accounts for every
+            # rule the game has -- energy, curses, statuses, RINGING's one-card
+            # limit, relics this simulator may not model -- and `can_play_card`
+            # treats it as final. Absent means "no opinion", not "unplayable",
+            # so a mod that does not send the field changes nothing.
+            if "playable" in card_json:
+                instance.bridge_playable = bool(card_json.get("playable"))
+            new_hand.append(instance)
+        combat.current_player_state.hand[:] = new_hand
+
+    # -- enemies: HP, block, powers, intent ---------------------------------
+    enemies_json = crash.get("enemies") or []
+    if isinstance(enemies_json, list):
+        # Match by monster id, not by position. The game drops a dead enemy
+        # from its list; `to_combat` always rebuilds the full opening roster.
+        # Zipping those by index silently pairs the wrong monsters -- observed
+        # live on SLIMES_WEAK, where the sim's 3-slime roster met a 1-slime
+        # report and LEAF_SLIME_M's HP was written onto LEAF_SLIME_S, leaving
+        # two untouched full-HP phantoms the search could target. The runner
+        # then sent target_index 1 at an enemy that was not on screen, the game
+        # ignored it, and the same state came back until the stuck-detector
+        # stopped the session.
+        matched: dict[int, dict] = {}
+        unclaimed = list(range(len(combat.enemies)))
+        for enemy_json in enemies_json:
+            if not isinstance(enemy_json, dict):
+                continue
+            wanted = str(enemy_json.get("id", "")).upper()
+            slot = next(
+                (
+                    i for i in unclaimed
+                    if str(combat.enemies[i].monster_id).upper() == wanted
+                ),
+                # No id match: fall back to the first free slot rather than
+                # dropping the enemy. A monster this build names differently is
+                # a parity gap, and playing it in the wrong slot beats not
+                # seeing it at all.
+                unclaimed[0] if unclaimed else None,
+            )
+            if slot is None:
+                continue
+            unclaimed.remove(slot)
+            matched[slot] = enemy_json
+
+        # Anything the bridge did not report is dead. Left alive it is a
+        # phantom: a target the search can pick and the game will refuse.
+        for i in unclaimed:
+            combat.enemies[i].current_hp = 0
+
+        # The live game compacts its enemy list as monsters die, so the sim's
+        # slot for a survivor is not the index the game expects in a PLAY.
+        # Record the translation; `LiveSearch` applies it to the action before
+        # it goes on the wire. Without it the fix above merely moves the bug:
+        # the search stops targeting phantoms and starts naming a live index
+        # that points at the wrong monster, or at nothing.
+        combat.bridge_enemy_index = {
+            sim_slot: bridge_slot
+            for bridge_slot, (sim_slot, _) in enumerate(sorted(matched.items()))
+        }
+
+        for i, enemy_json in matched.items():
+            enemy = combat.enemies[i]
+            if "hp" in enemy_json:
+                enemy.current_hp = int(enemy_json["hp"])
+            if "max_hp" in enemy_json:
+                enemy.max_hp = int(enemy_json["max_hp"])
+            if "block" in enemy_json:
+                enemy.block = int(enemy_json.get("block", 0))
+            if "is_alive" in enemy_json:
+                # The simulator's Creature has no is_alive setter -- alive
+                # is current_hp > 0. Set HP to 0 to mark dead if the bridge
+                # says so; otherwise trust the HP we just set.
+                if not enemy_json["is_alive"] and enemy.current_hp > 0:
+                    enemy.current_hp = 0
+
+            # Enemy powers: same reset-and-replace as the player.
+            enemy.powers.clear()
+            for p in (enemy_json.get("powers") or []):
+                pid = _coerce_power_id(str(p.get("id", "")).upper())
+                if pid is None:
+                    continue
+                amount = int(p.get("amount", 0))
+                enemy.powers[pid] = PowerInstance(power_id=pid, amount=amount)
+
+            # Intent: the bridge sends the next move's intent/damage/hits.
+            # Install it onto the simulator's own MoveState so the
+            # SearchAgent's _incoming_damage reads the right telegraphed hit
+            # while the move keeps its follow-up chain. See
+            # _override_enemy_intent for the unknown-move-id case.
+            intent_str = enemy_json.get("intent")
+            if intent_str:
+                _override_enemy_intent(combat, enemy, enemy_json)
+
+    # -- round number -------------------------------------------------------
+    if "round" in crash:
+        combat.round_number = int(crash["round"])
+        combat.turn_count = max(combat.turn_count, combat.round_number - 1)
+
+
+def _override_enemy_intent(
+    combat: CombatState, enemy: Creature, enemy_json: dict[str, Any],
+) -> None:
+    """Replace the enemy's current MoveState with one built from the bridge.
+
+    The intent override has one job: make ``ai.current_move.intents`` return
+    the bridge's telegraphed intent so the SearchAgent's _incoming_damage
+    reads the right incoming hit. The MoveState the bridge reports is the
+    live game's actual next move; if the simulator's state machine has that
+    state id, install the bridge's intent into it (replacing whatever intents
+    the simulator's encounter setup built) and re-point the AI at it -- so
+    the move has a follow-up, and the search's cloned enemy turns can
+    progress past the bridge-reported move.
+
+    If the bridge sends an intent_move_id the simulator does not have (a
+    move name the encounter setup did not register, or the simulator's
+    encounter has been refactored), we cannot install the override safely
+    -- the synthetic would have no follow_up_id and roll_move would raise.
+    In that case skip the intent override entirely, leave the AI as it was,
+    and the search falls back to the simulator's telegraphed intent. That is
+    wrong but not crashing -- the search will see the simulator's intent
+    rather than the bridge's, and in most cases the two agree on attack vs.
+    defend vs. buff; the damage/hits may differ, which only matters when
+    the enemy is *about* to hit, which is also when the search sees the
+    telegraphed intent the simulator built.
+    """
+    intent_str = str(enemy_json.get("intent", "UNKNOWN")).upper()
+    intent_type = _INTENT_NAME_TO_ENUM.get(intent_str)
+    if intent_type is None:
+        return  # unknown intent; leave the AI's current move as-is.
+
+    ai = combat.enemy_ais.get(enemy.combat_id)
+    move_id = enemy_json.get("intent_move_id")
+    if ai is None or not move_id:
+        return  # Nothing to override; leave the simulator's intent.
+
+    damage = int(enemy_json.get("intent_damage", 0) or 0)
+    hits = int(enemy_json.get("intent_hits", 1) or 1)
+    intent = Intent(intent_type=intent_type, damage=damage, hits=hits)
+
+    # Prefer the real MoveState in the AI's state dict -- it has a
+    # follow_up_id and the simulator's full effect; we override only its
+    # intents (the bridge's telegraphed hit is more current than whatever
+    # the encounter setup built).
+    existing = ai.states.get(str(move_id))
+    if existing is not None and hasattr(existing, "intents"):
+        existing.intents = [intent]
+        ai._current_state_id = str(move_id)
+        return
+
+    # If the move_id is not in the simulator's state machine, do NOT install
+    # a synthetic with no follow-up -- the search's cloned end_player_turn
+    # calls roll_move which calls current.get_next_state which would raise
+    # "no follow_up_id" and silently turn every search turn into a crash.
+    # Leave the AI as-is; the search sees the simulator's telegraph rather
+    # than the bridge's, which loses damage precision but keeps the run
+    # playable.
+    logger.debug(
+        "intent override for enemy %s: id %r not in simulator's state "
+        "machine; leaving simulator's intent as-is.",
+        getattr(enemy, "monster_id", "?"), move_id,
+    )
+
+
+# Intent name -> IntentType. The bridge sends the C# enum's ToString(), which
+# for the canonical intents is the same uppercase name we use in our IntentType.
+_INTENT_NAME_TO_ENUM = {
+    "ATTACK": IntentType.ATTACK,
+    "MULTI_ATTACK": IntentType.MULTI_ATTACK,
+    "MULTIATTACK": IntentType.MULTI_ATTACK,
+    "DEFEND": IntentType.DEFEND,
+    "BUFF": IntentType.BUFF,
+    "DEBUFF": IntentType.DEBUFF,
+    "DEBUFF_STRONG": IntentType.DEBUFF_STRONG,
+    "SLEEP": IntentType.SLEEP,
+    "SUMMON": IntentType.SUMMON,
+    "ESCAPE": IntentType.ESCAPE,
+    "UNKNOWN": IntentType.UNKNOWN,
+    "STATUS_CARD": IntentType.STATUS_CARD,
+    "STUN": IntentType.STUN,
+    "HEAL": IntentType.HEAL,
+    "DEATH_BLOW": IntentType.DEATH_BLOW,
+    "CARD_DEBUFF": IntentType.CARD_DEBUFF,
+}
+
+
+def _room_type_name(room_type: Any) -> str:
+    if isinstance(room_type, RoomType):
+        return room_type.name
+    return str(room_type or "MONSTER").upper()
+
+
+# ---------------------------------------------------------------------------
+# Fixture files
+# ---------------------------------------------------------------------------
+
+def save_situations(situations: Iterable[CombatSituation], path: str | Path) -> Path:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "version": 1,
+        "situations": [s.to_dict() for s in situations],
+    }
+    path.write_text(json.dumps(payload, indent=1), encoding="utf-8")
+    return path
+
+
+def load_situations(path: str | Path) -> list[CombatSituation]:
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    return [CombatSituation.from_dict(d) for d in data["situations"]]

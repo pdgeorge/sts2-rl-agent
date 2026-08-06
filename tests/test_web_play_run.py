@@ -125,13 +125,19 @@ def test_web_session_starts_at_neow_and_advances_to_map() -> None:
     assert state["phase"] == RunManager.PHASE_EVENT
     assert state["screen"]["type"] == "event"
     assert state["screen"]["title"] == "Neow"
-    assert state["actions"][0]["label"] == "Booming Conch - Gain a positive relic"
+    # Which relic Neow offers is an RNG draw; that the offer is rendered as a
+    # labelled, selectable action is what this test is about. The relic name
+    # used to be pinned here, which tied a web-session test to the generator.
+    offered = state["actions"][0]["label"]
+    assert offered.endswith(" - Gain a positive relic")
+    relic_name = offered.rsplit(" - ", 1)[0]
+    assert relic_name
 
     reward = session.take_action(0)
     assert reward["phase"] == RunManager.PHASE_CARD_REWARD
     assert reward["screen"]["type"] == "reward"
     assert reward["screen"]["items"] == [
-        {"name": "Booming Conch", "action_index": 0},
+        {"name": relic_name, "action_index": 0},
     ]
 
     map_state = session.take_action(0)

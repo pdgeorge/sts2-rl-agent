@@ -1431,8 +1431,8 @@ class RunState:
         self.extra_fields: dict[str, Any] = {}
         self.modifiers: list[Any] = []
 
-        # Primary-player compatibility aliases.
-        self.relics = self.player.relics
+        # Primary-player compatibility aliases. `relics` is a property rather
+        # than a bound list: see the note on it below.
         self.relic_grab_bag = self.player.relic_grab_bag
 
         # Odds systems
@@ -1453,6 +1453,33 @@ class RunState:
     @property
     def current_act(self) -> ActConfig:
         return self.acts[self.current_act_index]
+
+    @property
+    def relics(self) -> list[str]:
+        """The primary player's relics. One list, not a copy of one.
+
+        This used to be `self.relics = self.player.relics`, a plain alias, and it
+        silently stopped being one the moment anything rebound the player's list.
+        `CombatState._build_player_state` did exactly that on every combat, so
+        from the first fight onward `run_state.relics` was a frozen snapshot of
+        what the player owned before it -- and `RunManager._enter_combat` feeds
+        `run_state.relics` back into the next combat, which then overwrote the
+        player's real list with the stale one.
+
+        The visible effect was that no relic obtained after the first combat
+        survived into the next one. Every model trained against this simulator
+        learned a game with one relic in it, while the real game hands out five
+        or six by the end of act 1.
+
+        A property cannot come apart that way: there is one list, and it lives on
+        the player.
+        """
+        return self.player.relics
+
+    @relics.setter
+    def relics(self, value: list[str]) -> None:
+        # In place, so anything already holding this list keeps seeing the truth.
+        self.player.relics[:] = list(value)
 
     def add_player(self, player: PlayerState) -> PlayerState:
         if any(existing.player_id == player.player_id for existing in self.players):

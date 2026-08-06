@@ -151,6 +151,37 @@ def roll_random_potion_model(
     return rng.choice(rarity_models)
 
 
+def coerce_potion_id(potion_id: str) -> str:
+    """Resolve either the simulator's PascalCase id (e.g. ``StrengthPotion``)
+    or the bridge's UPPER_SNAKE ``Id.Entry`` slug (e.g. ``STRENGTH_POTION``).
+
+    The C# game's ``ModelDb.GetEntry`` calls ``StringHelper.Slugify`` on the
+    class name, so any model's ``Id.Entry`` is the CamelCase form split on
+    word boundaries and uppercased -- cards: ``StrikeIronclad`` -> ``STRIKE_IRONCLAD``,
+    potions: ``StrengthPotion`` -> ``STRENGTH_POTION``, relics the same way.
+    The simulator's registry uses ``ModelDb.Entry`` for cards (which already
+    matches the CardId enum's UPPER_SNAKE names), and uses PascalCase for
+    potions and relics -- so the live bridge's potion ids land in a registry
+    that has no entry by that name.
+
+    This is the potions equivalent of ``relics.registry.coerce_relic_id``.
+    Falls back to the input unchanged if no candidate resolves, so the
+    caller's behaviour for an unknown potion is unchanged (``KeyError`` at
+    the lookup site) -- the bridge still finds out loudly when an unknown
+    potion id arrives, just not for a known one written in the wrong case.
+    """
+    if potion_id in _POTION_MODELS:
+        return potion_id
+    # UPPER_SNAKE -> CamelCase: "STRENGTH_POTION" -> "StrengthPotion".
+    # Mirrors StringHelper.Unslugify in the decompiled Helpers.
+    parts = potion_id.split("_")
+    if len(parts) > 1:
+        camel = "".join(p.capitalize() for p in parts if p)
+        if camel in _POTION_MODELS:
+            return camel
+    return potion_id
+
+
 def create_potion(potion_id: str, slot: int = -1) -> PotionInstance:
-    model = _POTION_MODELS[potion_id]
+    model = _POTION_MODELS[coerce_potion_id(potion_id)]
     return PotionInstance(model=model, slot_index=slot)

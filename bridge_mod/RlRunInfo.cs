@@ -160,15 +160,32 @@ internal static class RlRunInfo
             }
             SetIfAbsent(state, "potion_slots", potionSlots);
 
-            // The whole deck by card id. deck_size alone meant every card reward
-            // was decided blind to what was being built -- the agent could not
-            // tell a deck that already held four Strikes from one that did not.
+            // The whole deck by card id, with the upgraded flag. deck_size alone meant
+            // every card reward was decided blind to what was being built -- the
+            // agent could not tell a deck that already held four Strikes from
+            // one that did not. The previous version of this sent bare id
+            // strings, which also lost the upgraded flag: a Bash+ read as a
+            // base Bash, and the SearchAgent's clone then featured a Vulnerable
+            // for 2 turns instead of 3 -- a different fight from the one on
+            // screen.
+            //
+            // The dict form {id, upgraded} is what sts2_env/search/situation.py
+            // CombatSituation.from_bridge_state now parses; bare strings still
+            // work as a fallback (Python defaults upgraded=False), used by
+            // tests and any mod that has not been rebuilt against this change.
             var deckIds = new List<object>();
             try
             {
                 foreach (var card in player.Deck.Cards)
                 {
-                    try { deckIds.Add(card.Id.Entry); }
+                    try
+                    {
+                        deckIds.Add(new Dictionary<string, object>
+                        {
+                            ["id"] = card.Id.Entry,
+                            ["upgraded"] = card.IsUpgraded,
+                        });
+                    }
                     catch { }
                 }
             }

@@ -37,10 +37,32 @@ from sts2_env.bridge.agent_runner import run_agent
 
 logger = logging.getLogger(__name__)
 
-# Act 1's boss sits on floor 16, so clearing it means reaching 17.
-ACT1_BOSS_FLOOR = 16
-ACT1_CLEARED_FLOOR = ACT1_BOSS_FLOOR + 1
+# In the live game the act 1 boss room IS floor 17 -- not 16, which is where the
+# simulator puts it. Counting "reached floor 17" as a clear therefore counted
+# every boss DEATH as a win, and on 2026-08-05 it reported 20% cleared from 30
+# runs in which the boss was never once beaten: all six were floor 17, room Boss,
+# 0 HP, act 1.
+#
+# So a clear is not a floor at all. It is reaching act 2, which the run summary
+# states outright and which no death can fake.
+ACT1_BOSS_FLOOR = 17
 ACT3_START_FLOOR = 33
+
+
+def _reached_act_1_boss(run: dict[str, Any]) -> bool:
+    if str(run.get("room_type", "")).upper() == "BOSS":
+        return True
+    return int(run.get("floor") or 0) >= ACT1_BOSS_FLOOR
+
+
+def _cleared_act_1(run: dict[str, Any]) -> bool:
+    """Past the act 1 boss, rather than merely standing in front of it."""
+    act = run.get("act")
+    if isinstance(act, int):
+        return act >= 2
+    # No act reported: fall back to being strictly beyond the boss floor, which
+    # a death on the boss cannot satisfy.
+    return int(run.get("floor") or 0) > ACT1_BOSS_FLOOR
 
 
 class LiveEvalRecorder:
@@ -84,7 +106,7 @@ class LiveEvalRecorder:
         f = self.floors()
         if not f:
             return "no runs yet"
-        cleared = sum(1 for x in f if x >= ACT1_CLEARED_FLOOR)
+        cleared = sum(1 for r in self.runs if _cleared_act_1(r))
         return (f"{len(f)} runs, mean floor {statistics.mean(f):.1f}, "
                 f"act 1 cleared {cleared}/{len(f)}")
 
@@ -94,8 +116,9 @@ class LiveEvalRecorder:
             return "\nNo runs finished, so there is nothing to report.\n"
 
         n = len(f)
-        reached = sum(1 for x in f if x >= ACT1_BOSS_FLOOR)
-        cleared = sum(1 for x in f if x >= ACT1_CLEARED_FLOOR)
+        reached = sum(1 for r in self.runs if _reached_act_1_boss(r))
+        cleared = sum(1 for r in self.runs if _cleared_act_1(r))
+        died_on_boss = reached - cleared
         act3 = sum(1 for x in f if x >= ACT3_START_FLOOR)
         results: dict[str, int] = {}
         for r in self.runs:
@@ -112,9 +135,11 @@ class LiveEvalRecorder:
             f"floors    mean {statistics.mean(f):.1f}   "
             f"median {statistics.median(f):.0f}   min {min(f)}   max {max(f)}",
             "",
-            f"  reached the act 1 boss (f>={ACT1_BOSS_FLOOR})   "
+            f"  reached the act 1 boss      "
             f"{reached:>3}/{n}  {reached / n:5.1%}",
-            f"  CLEARED act 1          (f>={ACT1_CLEARED_FLOOR})   "
+            f"  ... and died to it          "
+            f"{died_on_boss:>3}/{n}  {died_on_boss / n:5.1%}",
+            f"  CLEARED act 1 (reached act 2)"
             f"{cleared:>3}/{n}  {cleared / n:5.1%}",
             f"  reached act 3          (f>={ACT3_START_FLOOR})   "
             f"{act3:>3}/{n}  {act3 / n:5.1%}",
@@ -168,6 +193,19 @@ def main() -> None:
                         help="Sample actions instead of taking the argmax. Live "
                              "runs are few, and a deterministic policy replays "
                              "the same mistake on the same state every time.")
+    parser.add_argument("--journal", default="output/live_journal.jsonl",
+                        help="JSONL recording every room, fight, card played and "
+                             "reward taken. The run log says a run reached floor "
+                             "11; this says what happened on the way. Pass an "
+                             "empty string to turn it off.")
+    parser.add_argument("--capture-raw", default=None,
+                        help="JSONL of the raw states the mod sends, verbatim. The "
+                             "journal records decisions and drops the state behind "
+                             "them; this keeps whole states so the bridge parsers "
+                             "can be replayed offline against real payloads. One "
+                             "short --runs 1 session is enough to pin the protocol.")
+    parser.add_argument("--capture-raw-per-type", type=int, default=25,
+                        help="States kept per message type (default 25).")
     parser.add_argument("--tell-cyra", action="store_true",
                         help="Publish run milestones to cyra_brain over RabbitMQ. "
                              "Needs cyra_game reachable (CYRA_GAME_PATH) and a "
@@ -180,6 +218,18 @@ def main() -> None:
             "Optional separate combat policy (.zip). When the main model is a full-run "
             "model, this overrides combat decisions so the main model only handles "
             "map, rewards, shop, rest, and events."
+        ),
+    )
+    parser.add_argument(
+        "--live-search",
+        action="store_true",
+        help=(
+            "Use the SearchAgent turn planner for combat decisions instead of "
+            "the trained model's argmax. Lifts boss win rate from 6.7%% to ~20%% "
+            "on the harvested benchmark (docs/MODELS.md:120). Requires the "
+            "Phase 1.1 mod patch from PR #6 to send encounter/seed fields; "
+            "without it, the runner logs and falls back to END_TURN every "
+            "combat step."
         ),
     )
     parser.add_argument(
@@ -210,7 +260,11 @@ def main() -> None:
             max_runs=args.runs,
             on_run_end=recorder,
             tell_cyra=args.tell_cyra,
+            journal_path=args.journal or None,
             combat_policy_path=args.combat_policy,
+            live_search=args.live_search,
+            capture_raw_path=args.capture_raw or None,
+            capture_raw_per_type=args.capture_raw_per_type,
         )
     except KeyboardInterrupt:
         logger.info("Interrupted.")
