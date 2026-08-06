@@ -546,7 +546,7 @@ The roadmap lists "replace `HeuristicCombatSolver` default with `FrozenRLCombatS
 
 ### 10.6 — Phase 3.3 is not an overnight run
 
-The decompile gate **passes on this machine** (`check_decompile_matches_installed()` → `True`, build `9f6869d1f4e27dc4`), so the trainer does not refuse. Measured throughput fine-tuning from `combat_v3_overnight` on the 2000-situation pool is ~1600 fps, which puts 2M steps at roughly **30 minutes**, not the overnight the plan assumed. The estimate in Phase 3 should be read down accordingly — and it means the Phase 3.3 → 3.4 loop is a same-sitting iteration, not a next-day one.
+The decompile gate **passes on this machine** (`check_decompile_matches_installed()` → `True`, build `9f6869d1f4e27dc4`), so the trainer does not refuse. Bare training throughput fine-tuning from `combat_v3_overnight` on the 2000-situation pool is ~1600 fps; with the held-out eval callback firing every 10k steps the observed end-to-end rate puts 2M steps at roughly **1–1.5 hours** on 8 envs, not the overnight the plan assumed. The estimate in Phase 3 should be read down accordingly — it means the Phase 3.3 → 3.4 loop is a same-sitting iteration rather than a next-day one, and that eval frequency, not gradient steps, is the thing to trade if it needs to be faster.
 
 ### Cleanup applied to PR #9's code before commit
 
