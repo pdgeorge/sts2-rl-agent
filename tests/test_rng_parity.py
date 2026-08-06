@@ -80,3 +80,40 @@ def test_shuffle_uses_csharp_fisher_yates_sequence():
 
     assert values == [3, 2, 5, 1, 4]
     assert rng.counter == 4
+
+
+# --- the bridge's (long) seed cast -----------------------------------------
+#
+# The C# mod serialises encounter_seed as `(long)seed` (RlCombatHandler.cs).
+# A seed above int32's range arrives in the JSON as a negative number, and
+# `docs/GLM_ROADMAP_50P_ACT1.md` (PR #6) flagged the open question: if
+# `Rng.__init__` masked a negative seed to a different 32-bit pattern than
+# the game used, the monster HP rolls would silently diverge and the live
+# searcher would plan against a fight that isn't on screen.
+#
+# It does not. `Rng.__init__` does `_to_uint32(seed)` then `_to_int32(...)`,
+# which round-trips any int32 bit pattern regardless of the sign it arrived
+# with, and masks a wider value exactly the way C# int arithmetic wraps.
+
+
+def test_a_negative_bridge_seed_matches_its_unsigned_twin():
+    """The sign the seed arrives with cannot change the stream.
+
+    Pins the PR #6 concern closed: whatever sign the JSON carries, the same
+    32 bits produce the same rolls.
+    """
+    for signed in (-1, -5, -123_456_789, -2_147_483_648):
+        unsigned = signed & 0xFFFFFFFF
+        from_signed = [Rng(signed).next_int(0, 1000) for _ in range(5)]
+        from_unsigned = [Rng(unsigned).next_int(0, 1000) for _ in range(5)]
+        assert from_signed == from_unsigned, (
+            f"seed {signed} and {unsigned} are the same 32 bits but rolled "
+            f"differently: {from_signed} vs {from_unsigned}"
+        )
+
+
+def test_a_seed_wider_than_int32_masks_like_csharp_overflow():
+    """A genuine long truncates to its low 32 bits, as C# int arithmetic does."""
+    assert [Rng(0x1_0000_0000 + 7).next_int(0, 1000) for _ in range(3)] == [
+        Rng(7).next_int(0, 1000) for _ in range(3)
+    ]
