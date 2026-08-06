@@ -120,9 +120,18 @@ def test_potions_are_rebuilt_into_their_slots() -> None:
     assert slots[2] == "BlockPotion"
 
 
-def test_an_unknown_potion_is_a_clear_error() -> None:
-    with pytest.raises(KeyError, match="No potion named"):
-        _situation(potions=("APotionThisBuildRemoved",)).to_combat()
+def test_an_unknown_potion_is_dropped_with_a_warning_not_a_crash() -> None:
+    """The previous behaviour was a KeyError that crashed `to_combat` -- and
+    when the bridge sent a potion id the simulator did not know, every step
+    of the live fight raised in LiveSearch, the runner fell back to END_TURN
+    for every combat action, and the player died on the first encounter
+    without playing a card. Tests for potions the simulator does not yet
+    know now drop the slot to None with a log line rather than raising,
+    because the searcher running against a fight missing one potion is
+    useful; the searcher crashing is not.
+    """
+    combat = _situation(potions=("APotionThisBuildRemoved",)).to_combat()
+    assert combat.potions[0] is None
 
 
 def test_the_run_level_rng_streams_are_wired() -> None:

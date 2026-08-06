@@ -253,3 +253,56 @@ def test_running_the_simulator_from_a_bridge_state_does_not_raise() -> None:
     mask = get_action_mask(combat)
     # The starter deck always has at least one playable card on turn 1.
     assert mask.any(), "no legal actions on the first turn of a fresh fight"
+
+
+# -- potions: bridge sends UPPER_SNAKE, simulator holds PascalCase ---------
+
+def test_an_upper_snake_potion_id_resolves_to_pascalcase() -> None:
+    """The C# mod sends `Id.Entry` which is Slugify(ClassName) -- so
+    `StrengthPotion` lands on the wire as `STRENGTH_POTION`. The simulator's
+    `_POTION_MODELS` keys on PascalCase; `coerce_potion_id` bridges the two.
+
+    This is the bug that crashed Phase 2.4's first live session: a Strength
+    Potion in the bridge payload raised KeyError('STRENGTH_POTION') in
+    `to_combat()`, every subsequent combat step raised LiveSearch.decide,
+    the runner's END_TURN fallback fired every step, and the player did
+    nothing but end turn until they died on the first encounter.
+    """
+    from sts2_env.potions.base import coerce_potion_id, create_potion
+
+    assert coerce_potion_id("STRENGTH_POTION") == "StrengthPotion"
+    assert coerce_potion_id("StrengthPotion") == "StrengthPotion"
+
+    # Round-trip through create_potion: both forms produce a working instance.
+    p1 = create_potion("STRENGTH_POTION", slot=0)
+    p2 = create_potion("StrengthPotion", slot=0)
+    assert p1.potion_id == p2.potion_id == "StrengthPotion"
+
+
+def test_a_bridge_state_with_upper_snake_potion_ids_rebuilds_without_raising() -> None:
+    """End-to-end on the bridge path: a combat_state with an UPPER_SNAKE
+    potion in slot 0 must build the local sim without crashing. The
+    previous behaviour was a KeyError that bounced every combat step to
+    END_TURN and killed the player on the first encounter.
+    """
+    situation = CombatSituation.from_bridge_state(
+        _bridge_state(potion_slots=["STRENGTH_POTION", None, None])
+    )
+    combat = situation.to_combat()
+    # The potion is in the player's slot 0, as a PotionInstance.
+    assert combat.potions[0] is not None
+    assert combat.potions[0].potion_id == "StrengthPotion"
+
+
+def test_a_genuinely_unknown_potion_drops_with_a_warning_not_a_crash() -> None:
+    """A potion the simulator does not know (new game patch, parity gap) is
+    dropped from the clone with a log line, not a raise. The searcher running
+    against a fight missing one potion is still useful; the searcher crashing
+    is not, and the crash used to tank every combat step of the live run.
+    """
+    situation = CombatSituation.from_bridge_state(
+        _bridge_state(potion_slots=["TOTTALLY_NOT_A_REAL_POTION", None, None])
+    )
+    combat = situation.to_combat()
+    # The unknown potion is dropped to None -- the fight still builds.
+    assert combat.potions[0] is None

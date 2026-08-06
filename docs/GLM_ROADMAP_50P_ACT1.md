@@ -443,3 +443,28 @@ bbcf294  PR #5  hierarchical_env: combat solver routes through step() (Phase 4.1
 **What's safe to skip on first live iteration:** Phase 5 (LLM decision router). It's a 1-2 week conditional piece that only matters if Phase 4 alone doesn't close the milestone. Try the simpler stack first.
 
 The next decision the user makes — whether to ship Phase 2.4 first or jump to Phase 3.3 first — depends on which question they want to answer first: "does live search help on its own?" (Phase 2.4) or "does training on real situations help?" (Phase 3.3). Both feed into the same Phase 3.4 session where the answer to "is 50% achievable?" lands.
+
+## PR #8 changelog — Phase 2.4 hotfix: potion naming + non-catastrophic fallback
+
+Landed on `glm52` after the first live Phase 2.4 session regressed badly. The "live search dying on the first encounter repeatedly" symptom from the user's first `--live-search` session was **not** the search being bad — it was the search never running.
+
+**Root cause.** The C# mod sends every model `Id.Entry` as `StringHelper.Slugify(type.Name)` — CamelCase → UPPER_SNAKE (`ModelDb.cs:537`). Cards already match the simulator's enum names; relics have `coerce_relic_id` that handles both forms; encounters got `_setup_name_for_encounter_id` in PR #6. **Potions had no normalizer.** `_POTION_MODELS` keys on PascalCase (`StrengthPotion`); the bridge sent `STRENGTH_POTION`; `create_potion` raised `KeyError('STRENGTH_POTION')` inside `to_combat()`; `LiveSearch.decide` raised; the runner's fallback fired `END_TURN` every combat step; the player did nothing but end turn until dying on the first encounter.
+
+**Two fixes:**
+
+1. `sts2_env/potions/base.py` — new `coerce_potion_id(potion_id)` mirror of `coerce_relic_id`. Accepts the simulator's PascalCase id (`"StrengthPotion"`) and the bridge's UPPER_SNAKE slug (`"STRENGTH_POTION"`); falls back to the input unchanged when neither resolves so the caller's KeyError-at-lookup behaviour for genuinely unknown ids is preserved.
+
+2. `sts2_env/search/situation.py:_instantiate_potion` — an id that does not resolve after coercion now drops the slot to `None` with a `WARNING` log line instead of raising. A searcher running against a fight missing one potion is still useful; a searcher crashing tank every combat step of a live run via the END_TURN fallback, which is the regression the user saw. A future patch wants to keep the loud failure for a brand-new potion the simulator should support, and the warning is loud — it just doesn't kill the run.
+
+**Plus a runner resilience fix** independent of potions:
+
+`sts2_env/bridge/agent_runner.py` — the `--live-search` fallback when `LiveSearch.decide` raises now uses a two-strike policy: the first raise in a combat logs loudly and replies END_TURN once; the second switches the rest of that combat to the trained model so the run keeps playing rather than stalling on END_TURN until the player dies. `_live_search_disabled_for_combat` resets at the next `combat_start`, so search is re-enabled for every new fight.
+
+The previous one-strike policy was catastrophic: a single bad state — an unknown potion, a parity gap on a relic, a power the simulator silently no-ops — turned every combat step into END_TURN and guaranteed death on the first encounter. With two-strike the worst case is "live_search got one turn wrong, the model finishes the fight, the run continues."
+
+**Tests:**
+
+- `tests/test_combat_situation_from_bridge.py` — 3 new tests: `STRENGTH_POTION` resolves to `StrengthPotion`; a bridge state with UPPER_SNAKE potion ids rebuilds without raising; a genuinely unknown potion drops with a warning rather than crashing.
+- `tests/test_search_situation.py:test_an_unknown_potion_is_dropped_with_a_warning_not_a_crash` replaces the old `test_an_unknown_potion_is_a_clear_error` which pinned the prior crash behaviour.
+
+**Phase 2.4 post-fix expectation:** re-run the same `live_eval --live-search` command. Boss win rate should now move from 0% toward 10%+ across 20 runs (per `MODELS.md:120`). If it still dies on the first encounter, the new failure mode will be a per-step log line rather than a class of state the simulator cannot reconstruct — easier to diagnose and to fix piecewise.

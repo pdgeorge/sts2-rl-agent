@@ -269,6 +269,12 @@ def run_agent(
         # The action we last returned from live_search; mirrors into the local
         # sim on the next decide call. Reset on each combat_start.
         _live_search_last_action: int | None = None
+        # Two-strike policy for live_search failures: the first exception in a
+        # combat is logged; the second switches the rest of that combat to the
+        # trained model so the run keeps playing. Re-enabled at the next
+        # combat_start by reset_for_new_fight clearing these.
+        _live_search_failures = 0
+        _live_search_disabled_for_combat = False
         run_index = 0
         run_started = time.monotonic()
         # Last run-level fields seen. game_over does not always carry them, so
@@ -390,10 +396,14 @@ def run_agent(
                 if phase in Phase.COMBAT_PHASES and not _was_in_combat:
                     combat_count += 1
                     # A new fight has started: reset the live-search mirror so
-                    # the next decide call rebuilds the local sim fresh.
+                    # the next decide call rebuilds the local sim fresh, and
+                    # re-enable live_search in case it was disabled near the
+                    # end of the previous fight by the two-strike fallback.
                     if live_search_agent is not None:
                         live_search_agent.reset_for_new_fight()
                         _live_search_last_action = None
+                        _live_search_failures = 0
+                        _live_search_disabled_for_combat = False
                 _was_in_combat = phase in Phase.COMBAT_PHASES
 
                 # Track the enemy the run is currently fighting, so the run-end
@@ -473,6 +483,8 @@ def run_agent(
                     _was_in_combat = False
                     last_enemy_id = None
                     _live_search_last_action = None
+                    _live_search_failures = 0
+                    _live_search_disabled_for_combat = False
                     if live_search_agent is not None:
                         live_search_agent.reset_for_new_fight()
                     progress = {}
@@ -521,54 +533,69 @@ def run_agent(
                     # The action returned is in the same Discrete(115) layout
                     # the model uses, so the existing decode + send path is
                     # reused.
-                    if live_search_agent is not None:
+                    if live_search_agent is not None and not _live_search_disabled_for_combat:
                         # Build/mirror the local sim, ask the SearchAgent.
                         try:
                             action_int = live_search_agent.decide(
                                 state, prev_action=_live_search_last_action,
                             )
                         except Exception:
-                            # The most likely cause is the mod missing the
-                            # Phase 1.1 fields (encounter, encounter_seed),
-                            # which from_bridge_state raises on. Log once
-                            # per occurrence and fall back to END_TURN so the
-                            # live game advances; the next combat_start will
-                            # get a fresh build.
-                            logger.exception(
-                                "LiveSearch.decide raised; falling back to "
-                                "END_TURN. Likely cause: the mod has not been "
-                                "patched to send encounter/encounter_seed "
-                                "(PR #6 / Phase 1.1). If so, every combat step "
-                                "will log this until the mod is rebuilt."
-                            )
-                            client.end_turn()
-                            _live_search_last_action = 0
-                            continue
-
-                        # If the bridge just sent the first state of a fight,
-                        # the runner's _was_in_combat will transition here:
-                        # reset the local mirror so the next call builds fresh.
-                        # (Done below in the combat-enter branch, but kept here
-                        # for clarity -- the construction path already detects
-                        # `self._local is None` and builds.)
-
-                        decoded = adapter.decode_action(action_int, state)
-                        if verbose:
-                            logger.info("LIVE_SEARCH: chose %s", decoded)
-                        _live_search_last_action = action_int
-                        if decoded["type"] == ActionType.END_TURN:
-                            client.end_turn()
-                        elif decoded.get("out_of_hand"):
-                            client.use_potion(
-                                decoded.get("slot", decoded.get("potion_slot", -1)),
-                                decoded.get("target_index", -1),
-                            )
+                            # Once-per-combat escalation. The first raise logs
+                            # loudly; the second switches this combat to the
+                            # trained model. Repeated END_TURN firings would
+                            # have the player do nothing and die on the first
+                            # encounter (the regression observed 2026-08-06 --
+                            # an unnormalised potion id raised every step, the
+                            # fallback to END_TURN was the actual cause of
+                            # death, not the search being bad). Disable for
+                            # this combat only; the combat_start transition
+                            # will re-enable.
+                            _live_search_failures += 1
+                            if _live_search_failures == 1:
+                                logger.exception(
+                                    "LiveSearch.decide raised once; this "
+                                    "combat will switch to the trained model "
+                                    "if it raises again. Likely cause: the "
+                                    "bridge sends a state the simulator "
+                                    "cannot reconstruct (unknown potion, "
+                                    "unmodelled power, mismatched Id.Entry). "
+                                    "The model path is unaffected and plays "
+                                    "the fight instead."
+                                )
+                            elif _live_search_failures >= 2:
+                                logger.error(
+                                    "LiveSearch.decide raised %d times in "
+                                    "this combat; switching to the trained "
+                                    "model for the rest of the fight.",
+                                    _live_search_failures,
+                                )
+                                _live_search_disabled_for_combat = True
+                                _live_search_last_action = None
+                                # Fall through to the model branch below.
+                            else:
+                                # First failure: bounce to END_TURN once, the
+                                # next step is the second-chance model switch.
+                                client.end_turn()
+                                _live_search_last_action = 0
+                                continue
                         else:
-                            client.play_card(
-                                decoded["card_index"],
-                                decoded.get("target_index", -1),
-                            )
-                        continue
+                            decoded = adapter.decode_action(action_int, state)
+                            if verbose:
+                                logger.info("LIVE_SEARCH: chose %s", decoded)
+                            _live_search_last_action = action_int
+                            if decoded["type"] == ActionType.END_TURN:
+                                client.end_turn()
+                            elif decoded.get("out_of_hand"):
+                                client.use_potion(
+                                    decoded.get("slot", decoded.get("potion_slot", -1)),
+                                    decoded.get("target_index", -1),
+                                )
+                            else:
+                                client.play_card(
+                                    decoded["card_index"],
+                                    decoded.get("target_index", -1),
+                                )
+                            continue
 
                     # ---- Combat: use trained model ----
                     # Hierarchical models may delegate combat to a separate policy.

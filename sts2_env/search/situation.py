@@ -431,16 +431,31 @@ class CombatSituation:
 
 def _instantiate_potion(potion_id: str | None, slot: int):
     """Same contract as cards and encounters: a name this build does not have
-    fails here, saying so, rather than further in as a missing effect."""
+    fails here, saying so, rather than further in as a missing effect.
+
+    Returns ``None`` for an empty slot or an unknown potion id. A potion the
+    bridge reports that the simulator does not know (a new game-patch potion
+    the simulator has not caught up to, or a transient id we cannot coerce)
+    is dropped rather than crashing the whole ``to_combat`` build -- a
+    searcher that clones a fight missing one potion is still useful; a
+    searcher that crashes is not, and the crash used to tank every combat
+    step of a live run via the LiveSearch fallback to END_TURN.
+    """
     if not potion_id:
         return None
     try:
         return create_potion(potion_id, slot=slot)
     except KeyError as exc:
-        raise KeyError(
-            f"No potion named {potion_id!r} in this build. Regenerate the "
-            f"fixture against the current game build."
-        ) from exc
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "No potion named %r in this build; dropping it from the "
+            "situation clone. Update sts2_env/potions/all.py to support "
+            "the new potion; until then the search clone has one fewer "
+            "potion slot than the live game, which is wrong but playable.",
+            potion_id,
+        )
+        return None
 
 
 def _parse_deck_entry(entry: Any) -> CardRef:
