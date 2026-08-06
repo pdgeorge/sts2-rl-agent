@@ -246,12 +246,25 @@ flows. `tests/test_bridge_autoslay_coverage.py` guards that wiring, but this is
 still weaker than a live-game smoke test that exercises those paths in the
 running client.
 
-Local bridge build validation is currently blocked. On 2026-05-22, this
+~~Local bridge build validation is currently blocked. On 2026-05-22, this
 machine still did not have `dotnet` on `PATH`, so the C# bridge mod could not be
-compiled here.
+compiled here.~~
 
-Until a C# build and live-game smoke pass are available, bridge support should
-be considered implemented and Python-tested, but not fully field-verified.
+**Resolved 2026-08-06.** The mod builds here: `dotnet build` in `bridge_mod/`,
+0 errors (125 nullable-analysis warnings, all pre-existing). It was never a
+missing SDK — .NET 9.0.316 was installed at `~/.dotnet` the whole time, and the
+`PATH` export had been added to `~/.bashrc` while the login shell is zsh, which
+never reads that file. Moved to `~/.zshrc`; verified with `zsh -lic 'dotnet
+--version'`.
+
+The build emits `warning: GodotPath is not configured; skipping .pck export.
+The existing .pck will be reused.` That is benign for C#-only changes — the
+`.pck` carries Godot resources, not the compiled handler code, and the freshly
+built `STS2BridgeMod.dll` is what deploys to the game's `mods/` directory. It
+would matter only for a change touching scenes or assets.
+
+A live-game smoke pass is still outstanding, so bridge support remains
+Python-tested and now build-verified, but not yet field-verified.
 
 ### 4. Reachability / semantic audit backlog
 

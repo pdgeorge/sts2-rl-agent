@@ -592,3 +592,35 @@ This is worth fixing before any further boss claims are made, and it is cheap: t
 ### Operational note
 
 The 2M run was killed at 1.19M steps because a backgrounded shell does not outlive the agent process that started it. Long runs want `setsid nohup … &` so they survive; the benchmark that produced the numbers above was launched that way and did.
+
+## PR #12 — the mod compiles, and always could have
+
+Every "needs the user's machine" note above rests on one claim, first written on 2026-05-22 in `docs/PARITY_GAPS.md:249` and repeated at `:352`, `:422`, `:429` and `:559` of this document: that the C# cannot be built here. **It is wrong, and it was wrong when it was written.**
+
+.NET 9.0.316 has been installed at `~/.dotnet` the whole time. The `PATH` export was added to `~/.bashrc`; the login shell is zsh, which never reads that file. So `dotnet` was "not found" in exactly the way an installed toolchain is not found when it is configured for a shell you do not use. Fixed by moving the export to `~/.zshrc`, verified with `zsh -lic 'dotnet --version'`.
+
+**PR #6's C# patch compiles: 0 errors.** The 125 warnings are all nullable-reference analysis and all pre-existing. The build deploys `STS2BridgeMod.dll` straight into the game's `mods/` directory, and the deployed binary carries the Phase 1.1 fields — `encounter`, `encounter_seed`, `combat_seed` and `upgraded` are present as UTF-16 literals in the DLL, which is the check worth doing because plain `strings` reads ASCII and finds none of them.
+
+One warning is worth understanding rather than ignoring: `GodotPath is not configured; skipping .pck export. The existing .pck will be reused.` That is benign here. The `.pck` carries Godot resources; the handler code lives in the DLL, which did rebuild. It would matter for a change touching scenes or assets, and PR #6 touches neither.
+
+### What this means for the plan
+
+The item at the top of every "deferred to the user" list for the last two sessions is done. The only genuinely remaining external dependency is **the game being launched** — `live_eval` connects to the mod over port 9002, and nothing on this side can start Steam.
+
+So the sequence, once STS2 is running:
+
+```bash
+# 1. Capture the protocol first -- one run, before anything else.
+.venv/bin/python -m sts2_env.bridge.live_eval \
+    --model-path output/combat_v3_overnight/final_model.zip \
+    --capture-raw output/bridge_protocol_sample.jsonl \
+    --runs 1 --verbose
+```
+
+This is the step that has been skipped twice and cost two bug-fix rounds. The capture makes `from_bridge_state` and `to_combat_mid_fight` checkable offline against real payloads — and given PR #6 has now changed the wire format, the odds that the first live session hits a shape mismatch are higher than usual, not lower.
+
+Only then the 20-run session with `--live-search`.
+
+### A note on the estimate
+
+Three items this session were listed as blocked on hardware and were not: the Phase 3.2 harvest, the Phase 3.3 training, and now the mod build. In each case the block was a configuration detail or an unchecked assumption rather than a real constraint. The lesson is cheap to state and was expensive to learn twice: **verify the blocker before planning around it.**
