@@ -313,7 +313,7 @@ Also propagates `truncated` from internal steps (the step cap can fire mid-fast-
 
 **What's not in this PR.**
 
-- A full meta-policy training run to verify the model now learns. That's Phase 4.2+3 with `FrozenRLCombatSolver` (defaults to `combat_v3_overnight`); the user can pull the trigger:
+- ~~A full meta-policy training run to verify the model now learns.~~ **Done 2026-08-06** — the eval curve is non-flat for the first time (see PR #14). Note the command below is wrong: `--act-count` is not a flag `train_meta_policy.py` has. That's Phase 4.2+3 with `FrozenRLCombatSolver` (defaults to `combat_v3_overnight`):
 
 ```bash
 python scripts/train_meta_policy.py \
@@ -349,7 +349,7 @@ Landed on `glm52`. C# changes to the bridge mod. **Not compiled or tested agains
 
 **What's NOT verified on this branch:**
 
-- The C# does not compile on this machine (no dotnet / Godot SDK setup; per `docs/PARITY_GAPS.md:249`, dotnet was not on PATH as of 2026-05-22). The patches compile in the head, against the `decompiled/` reference, but the user must build the mod and validate against a live session.
+- ~~The C# does not compile on this machine (no dotnet / Godot SDK setup; per `docs/PARITY_GAPS.md:249`, dotnet was not on PATH as of 2026-05-22).~~ **Wrong, and wrong when written** — .NET 9 was installed at `~/.dotnet` the whole time, with the `PATH` export in a file the login shell never reads. It compiles with 0 errors. See PR #12.
 - Seed parity is asserted structurally (same formula as `EncounterModel.cs:263`) but not bit-verified against the live game. A `scripts/check_card_parity.py`-style audit for monster HP would close this gap and is a candidate Phase 1.1.1 task.
 - The `(long)seed` cast for JSON may overflow to negative for very large `ulong` seeds; Python's `int()` accepts negative values faithfully, but if the simulator's `Rng.__init__` masks negative to positive, the stream diverges. Verify by reading `sts2_env/core/rng.py` before live iteration.
 
@@ -433,6 +433,11 @@ bbcf294  PR #5  hierarchical_env: combat solver routes through step() (Phase 4.1
 **302 bridge/search/gym-env tests pass**; 3387 across the wider suite pass. The 97 pre-existing `test_regent_*` parity failures (documented in PR #1's changelog) are unchanged by these commits — verified by stashing the edits and re-running.
 
 **What's deferred to the user:**
+
+> **Status as of 2026-08-06:** 1, 2, 3 and 5 are done. Only **4 (Phase 3.4)**
+> remains. The `(long)seed` worry in item 1 turned out to be a non-issue for the
+> reason stated — but the seeds diverged anyway, for a different and larger
+> reason: the generator itself was not the game's. See PR #14.
 
 1. **Compile PR #6** — `dotnet build bridge_mod/STS2BridgeMod.csproj`. Validate the combat_action JSON includes `encounter` / `encounter_seed` / `combat_seed` and that deck entries are now `{id, upgraded}` dicts. The `(long)seed` cast may overflow for very large `ulong` seeds — if the simulator's `Rng` masks negatives, the streams diverge; check `sts2_env/core/rng.py` before iterating.
 2. **Phase 2.4 live session** — run `live_eval --live-search` for 20 runs and compare to Phase 0.3 baseline. Same command shape as Phase 0.3 but with `--live-search`.
@@ -554,13 +559,15 @@ Hoisted the mid-file `PowerId` import and three function-local imports in `situa
 
 ### What still genuinely needs the user's machine
 
-Only the C# and the live game:
+> **Superseded — all three of these were done on 2026-08-06.** The mod compiles
+> (the block was a `PATH` export in `~/.bashrc` while the login shell is fish),
+> the protocol was captured, and the Phase 2.4 session ran and passed. See
+> "PHASE 2.4 — PASSED" below. Kept as written because the reasoning about what
+> was blocked, and how wrong it turned out to be, is the useful part.
 
-1. **Compile PR #6** — `dotnet build bridge_mod/STS2BridgeMod.csproj`. Still the one true external dependency, and still uncompiled.
-2. **Capture the protocol** (10.2 above) — one run, before anything else.
-3. **Phase 2.4 / 3.4 live sessions** — 20 runs each, with `--live-search`.
-
-Everything else in the plan through Phase 4 is runnable here.
+1. ~~**Compile PR #6**~~ — done; 0 errors.
+2. ~~**Capture the protocol**~~ — done; it found a live bug on its first run.
+3. ~~**Phase 2.4 live session**~~ — done and passed. **3.4 is still outstanding.**
 
 ## PR #11 — Phase 3.3 ran, and the answer is no
 
