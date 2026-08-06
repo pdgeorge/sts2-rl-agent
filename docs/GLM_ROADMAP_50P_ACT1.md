@@ -668,3 +668,42 @@ The RNG change means every fixture seed rolls different enemy HP, so all pre-202
 `v1..v7` had a flat eval curve because of the reward leak PR #5 fixed. **The first non-flat eval is the Phase 5 gate**, and nothing before it justifies starting Phase 5.
 
 ### Phase 5 — untouched, as instructed
+
+## PR #14 — the loaded die, and Phase 4's answer
+
+### The RNG is now in line with the game, and here is exactly what that means
+
+Four things were wrong. Three are fixed; the fourth cannot be fixed and did not need to be.
+
+1. **The generator.** A `System.Random` clone where the game runs xoshiro256\*\* seeded by Splitmix64. Fixed.
+2. **The seed width.** Masked to 32 bits, discarding half of every 64-bit live seed. Fixed.
+3. **The stream-name hash.** The game's *deprecated* 32-bit hash instead of XxHash64. Fixed, and anchored to published reference vectors.
+4. **Monster HP uniqueness.** `SetUniqueMonsterHpValue` picks from the HP range *minus the totals siblings already hold*, so the game cannot deal two enemies on a side the same HP. This simulator rolled each monster independently and collided in **11.4% of multi-enemy fights** — measured over 600 harvested Act 1 situations. Now 0%.
+
+### The distinction that matters for "training on a loaded die"
+
+Exact stream parity for monster HP is **unreachable, permanently**. The game rolls it from `RunState.Rng.Niche`, a run-level stream whose position depends on every draw earlier in the run. No generator work recovers a specific fight's HP from a seed.
+
+That is fine, because **training needs the same distribution, not the same sequence.** An agent learns nothing from which particular seed produced a 43-HP Nibbit; it learns from facing Nibbits whose HP is distributed as the game distributes it. The loaded die was real and was items 1–4 above — a wrong generator and a missing uniqueness rule genuinely skew what the agent trains against. Those are closed.
+
+Where a *specific* fight must be reproduced — a live bridge state, a harvested fixture — the answer is not derivation but recording. Both paths now store the enemies' actual HP and replay it. `to_combat()` reads it instead of re-rolling. Which is the same rule as everywhere else: if the game says 43, it is 43.
+
+That also makes fixtures stable across future generator work. They were not: correcting the generator silently changed every enemy in both fixtures on 2026-08-06. The two on disk predate the field and still fall back to rolling, so **re-harvesting is worth doing before the next measured comparison** — they are internally consistent but no longer faithful to the runs they came from.
+
+### Two things the fallout taught
+
+**Decimillipede segments have their own uniqueness rule** — step HP by 2 until no teammate matches — and a random re-draw lands between its rungs. Exempted.
+
+**Uniqueness is enforced across the whole enemy list, not per species.** `CombatState.cs:496` passes `_enemies`. A Zapbot holding 24 really does stop a Stabbot being 24. Two ascension tests asserted an exact fixed roll a sibling had already taken; they assert the range now, which is what they were actually about.
+
+### Phase 4 — the gate is open
+
+`meta_ppo_v8_rewarded`, 27 evaluations through 540k steps:
+
+```
+min +0.770   max +7.890   -> NON-FLAT
+```
+
+`v1..v7` were flat across every evaluation, which is what the reward leak PR #5 fixed produced. **This is the first non-flat meta-policy eval curve in the project**, and it is the condition Phase 5 was gated on. The run is still going; the curve is noisy and not yet obviously climbing, so "the signal exists" is the claim, not "the meta-policy is good".
+
+Phase 5 is now unblocked. It is still not started, and should not start on 27 noisy evals — let the run finish and look at the shape.
