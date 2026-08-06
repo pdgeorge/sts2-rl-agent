@@ -20,6 +20,7 @@ drift to "tolerate."
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from sts2_env.bridge.live_search import LiveSearch
@@ -225,3 +226,58 @@ def test_decide_sees_bridge_reported_hp_and_energy_in_the_clone() -> None:
     # would pick END_TURN against an HP the simulator's natural build
     # doesn't start with. The action's validity is the smoke check.
     assert 0 <= action < ACTION_SPACE_SIZE
+
+# --- Phase 2.3: a pluggable rollout policy ---------------------------------
+
+
+def test_a_playout_policy_is_consulted_during_lookahead():
+    """The hook exists so a trained model can replace the heuristic playout."""
+    from sts2_env.search.turn_search import SearchAgent
+    from sts2_env.search.situation import CombatSituation
+
+    calls = []
+
+    def policy(combat, mask):
+        calls.append(1)
+        return None  # defer to the heuristic, but prove we were asked
+
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    agent = SearchAgent(time_budget=1.0, lookahead_turns=2, playout_policy=policy)
+    agent.act(situation.to_combat())
+
+    assert calls, "playout policy was never consulted"
+
+
+def test_an_illegal_action_from_the_policy_falls_back_to_the_heuristic():
+    """A model handed an unfamiliar state can return a masked action.
+
+    Applying that would corrupt the rollout silently, so it is checked against
+    the mask and discarded.
+    """
+    from sts2_env.search.turn_search import SearchAgent
+    from sts2_env.search.situation import CombatSituation
+
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    agent = SearchAgent(
+        time_budget=1.0,
+        lookahead_turns=2,
+        playout_policy=lambda combat, mask: 9_999,
+    )
+
+    action = agent.act(situation.to_combat())
+
+    assert isinstance(action, (int, np.integer))
+
+
+def test_a_raising_policy_does_not_take_down_the_search():
+    """A rollout policy is an optimisation, never a reason to lose the answer."""
+    from sts2_env.search.turn_search import SearchAgent
+    from sts2_env.search.situation import CombatSituation
+
+    def boom(combat, mask):
+        raise RuntimeError("model exploded")
+
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    agent = SearchAgent(time_budget=1.0, lookahead_turns=2, playout_policy=boom)
+
+    assert isinstance(agent.act(situation.to_combat()), (int, np.integer))

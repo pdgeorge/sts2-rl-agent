@@ -214,7 +214,46 @@ def _incoming_damage(combat: "CombatState") -> int:
     return total
 
 
-def _playout(combat: "CombatState", turns: int) -> None:
+#: A rollout policy: given a combat and its legal action mask, return the action
+#: to play, or None to fall back to the built-in heuristic for that step.
+#: `SearchAgent(playout_policy=...)` threads one through to the playouts.
+PlayoutPolicy = "Callable[[CombatState, np.ndarray], int | None]"
+
+
+def _heuristic_playout_action(combat: "CombatState", actions: list[int]) -> int | None:
+    """Block when a hit is coming and there is block to be had, else hit back.
+
+    Split out of `_playout` so a pluggable policy can fall back to it per step
+    rather than per playout -- a trained model that declines to act on one
+    state should not cost the whole rollout its continuation.
+    """
+    from sts2_env.gym_env.action_space import action_to_card_and_target
+
+    need_block = _incoming_damage(combat) > combat.player.block
+    best_action, best_value = None, -1.0
+    for action in actions:
+        hand_index, _ = action_to_card_and_target(action)
+        if hand_index is None or hand_index >= len(combat.hand):
+            continue
+        card = combat.hand[hand_index]
+        block = card.base_block or 0
+        damage = card.base_damage or 0
+        value = float(block if need_block and block else damage)
+        # A Power has neither damage nor block, so scoring it on those alone
+        # rates it zero -- and stopping the playout there hid the very payoff
+        # this lookahead exists to reveal. Ranked last, but played rather than
+        # treated as a reason to stop.
+        if value <= 0 and _is_power_card(card):
+            value = 0.5
+        if value > best_value:
+            best_action, best_value = action, value
+
+    if best_action is None or best_value <= 0:
+        return None
+    return best_action
+
+
+def _playout(combat: "CombatState", turns: int, policy=None) -> None:
     """Play `turns` more turns quickly, in place, to see past this one.
 
     A Power costs energy now and pays for it over the turns that follow, and a
@@ -227,9 +266,14 @@ def _playout(combat: "CombatState", turns: int) -> None:
     and there is block to be had, otherwise hit the thing in front. It exists to
     make a scaling card's payoff visible, not to play well -- the searcher is
     already doing that for the turn it can see.
-    """
-    from sts2_env.gym_env.action_space import action_to_card_and_target
 
+    `policy` (Phase 2.3) replaces that heuristic with a callable -- a trained
+    combat model, typically -- taking `(combat, mask)` and returning an action
+    index, or None to defer to the heuristic for that step. Optional because
+    `MODELS.md:97` found that lengthening the horizon with a *dumb* playout
+    does not help; whether a *trained* one does is the open question this hook
+    exists to let someone answer.
+    """
     for _ in range(turns):
         if combat.is_over:
             return
@@ -242,26 +286,26 @@ def _playout(combat: "CombatState", turns: int) -> None:
             if not actions or combat.pending_choice is not None:
                 break
 
-            need_block = _incoming_damage(combat) > combat.player.block
-            best_action, best_value = None, -1.0
-            for action in actions:
-                hand_index, _ = action_to_card_and_target(action)
-                if hand_index is None or hand_index >= len(combat.hand):
-                    continue
-                card = combat.hand[hand_index]
-                block = card.base_block or 0
-                damage = card.base_damage or 0
-                value = float(block if need_block and block else damage)
-                # A Power has neither damage nor block, so scoring it on those
-                # alone rates it zero -- and stopping the playout there hid the
-                # very payoff this lookahead exists to reveal. Ranked last, but
-                # played rather than treated as a reason to stop.
-                if value <= 0 and _is_power_card(card):
-                    value = 0.5
-                if value > best_value:
-                    best_action, best_value = action, value
+            best_action = None
+            if policy is not None:
+                try:
+                    chosen = policy(combat, mask)
+                except Exception:
+                    # A rollout policy is an optimisation, never a reason to
+                    # take down a search that would otherwise have answered.
+                    logger.debug("playout policy raised; using the heuristic",
+                                 exc_info=True)
+                    chosen = None
+                # Trust it only if it is actually legal here -- a model handed
+                # a state it was not trained on can return a masked action, and
+                # applying that would corrupt the rollout silently.
+                if chosen is not None and int(chosen) in actions:
+                    best_action = int(chosen)
 
-            if best_action is None or best_value <= 0:
+            if best_action is None:
+                best_action = _heuristic_playout_action(combat, actions)
+
+            if best_action is None:
                 break
             if not apply_combat_action(combat, best_action):
                 break
@@ -296,6 +340,7 @@ def search_turn(
     lookahead_turns: int = DEFAULT_LOOKAHEAD_TURNS,
     top_k: int = DEFAULT_TOP_K,
     rollout_turns: int = DEFAULT_ROLLOUT_TURNS,
+    playout_policy=None,
     rollout_samples: int = DEFAULT_ROLLOUT_SAMPLES,
 ) -> SearchResult:
     """Find the best sequence of plays for the turn `combat` is in.
@@ -337,7 +382,7 @@ def search_turn(
         score = evaluate(ended, weights)
         if lookahead_turns:
             future = clone_combat(ended)
-            _playout(future, lookahead_turns)
+            _playout(future, lookahead_turns, playout_policy)
             score += LOOKAHEAD_WEIGHT * evaluate(future, weights)
 
         shortlist.append((score, path))
@@ -394,6 +439,7 @@ def search_turn(
         best_actions, best_score, second_score, rollouts = _rescore_by_playing_to_the_end(
             combat, shortlist,
             weights=weights, top_k=top_k, rollout_turns=rollout_turns,
+            playout_policy=playout_policy,
             rollout_samples=rollout_samples,
             fallback=(best_actions, best_score, second_score),
             deadline=started + time_budget,
@@ -418,6 +464,7 @@ def _rescore_by_playing_to_the_end(
     weights: EvalWeights,
     top_k: int,
     rollout_turns: int,
+    playout_policy=None,
     rollout_samples: int,
     fallback: tuple[tuple[int, ...], float, float],
     deadline: float,
@@ -474,7 +521,7 @@ def _rescore_by_playing_to_the_end(
             future = clone_combat(state)
             if sample:
                 _reseed_futures(future, sample)
-            _playout(future, rollout_turns)
+            _playout(future, rollout_turns, playout_policy)
             outcomes.append(evaluate(future, weights))
             rollouts += 1
 
@@ -515,6 +562,7 @@ class SearchAgent:
         top_k: int = DEFAULT_TOP_K,
         rollout_turns: int = DEFAULT_ROLLOUT_TURNS,
         rollout_samples: int = DEFAULT_ROLLOUT_SAMPLES,
+        playout_policy=None,
         name: str | None = None,
     ):
         self.weights = weights
@@ -526,6 +574,10 @@ class SearchAgent:
         self.top_k = top_k
         self.rollout_turns = rollout_turns
         self.rollout_samples = rollout_samples
+        # Phase 2.3: an optional trained rollout policy for the playouts. None
+        # keeps the block-then-damage heuristic that every measured number in
+        # MODELS.md was produced with.
+        self.playout_policy = playout_policy
         self.name = name or (
             f"search(t<={time_budget}s, lookahead={lookahead_turns}, "
             f"top_k={top_k})")
@@ -553,6 +605,7 @@ class SearchAgent:
             lookahead_turns=self.lookahead_turns,
             top_k=self.top_k,
             rollout_turns=self.rollout_turns,
+            playout_policy=self.playout_policy,
             rollout_samples=self.rollout_samples,
         )
         self._plan = list(result.actions)
@@ -580,6 +633,7 @@ class SearchAgent:
                 lookahead_turns=self.lookahead_turns,
                 top_k=self.top_k,
                 rollout_turns=self.rollout_turns,
+            playout_policy=self.playout_policy,
                 rollout_samples=self.rollout_samples,
             )
             self._last_gap = result.gap
@@ -612,3 +666,30 @@ class SearchAgent:
             "seconds_per_search": self.total_seconds / self.searches if self.searches else 0.0,
             "budget_exhausted": self.budget_exhausted_count,
         }
+
+
+def model_playout_policy(model):
+    """Wrap a trained MaskablePPO as a rollout policy for `SearchAgent`.
+
+    Phase 2.3. `MODELS.md:97` showed that lengthening the horizon with the
+    block-then-damage heuristic does not help, and the diagnosis recorded in
+    `DEFAULT_TOP_K` above is that the playout, not the depth, is the limit: a
+    rollout inherits every blind spot of the policy playing it, and the
+    heuristic ranks Powers last, so playing a fight to its end still never
+    shows a Power used well.
+
+    This is the seam for testing that diagnosis rather than arguing it. Whether
+    a trained playout actually helps is unmeasured -- use
+    `score_combat_benchmark.py --search` with and without.
+
+    Returns None on any failure, which the playout reads as "use the
+    heuristic for this step".
+    """
+    from sts2_env.gym_env.observation import encode_observation
+
+    def policy(combat, mask):
+        obs = encode_observation(combat)
+        action, _ = model.predict(obs, action_masks=mask, deterministic=True)
+        return int(action)
+
+    return policy
