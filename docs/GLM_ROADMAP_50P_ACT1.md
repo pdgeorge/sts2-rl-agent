@@ -468,3 +468,35 @@ The previous one-strike policy was catastrophic: a single bad state — an unkno
 - `tests/test_search_situation.py:test_an_unknown_potion_is_dropped_with_a_warning_not_a_crash` replaces the old `test_an_unknown_potion_is_a_clear_error` which pinned the prior crash behaviour.
 
 **Phase 2.4 post-fix expectation:** re-run the same `live_eval --live-search` command. Boss win rate should now move from 0% toward 10%+ across 20 runs (per `MODELS.md:120`). If it still dies on the first encounter, the new failure mode will be a per-step log line rather than a class of state the simulator cannot reconstruct — easier to diagnose and to fix piecewise.
+
+## PR #9 changelog — Phase 2.1 (actual fix): rebuild from bridge on every decide
+
+Landed on `glm52` after PR #8's potion coercion got `--live-search` past the first crash, but the next session exposed the real design bug: the local sim kept across `decide` calls **drifted to a frozen fiction** and the search planned against it instead of the live game. The user's log shows the symptom clearly — 11 turns of the search replaying `END_TURN` against a state it thought had energy 0 and a 3-card hand, while the live game reported energy 3 and 5 cards in hand on every step. The player died on a hallway fight at full HP.
+
+**The actual fix**, replacing the kept-sim model entirely:
+
+- `sts2_env/search/situation.py` — new `CombatSituation.to_combat_mid_fight(bridge_state)`. Builds a fresh `CombatState` via `to_combat()` (which sets up deck/relics/potions/encounter properly), then **overwrites mutable state** from the bridge's report:
+  - Player HP, block, energy, base_max_energy — direct assignments.
+  - Player powers — full reset, then applied verbatim from the bridge's powers list via a new `_coerce_power_id` (mirrors `coerce_relic_id`/`coerce_potion_id`, handles `STRENGTH_POWER` → `STRENGTH` and the reverse).
+  - Hand — cleared and rebuilt as fresh `CardInstance` objects from the bridge's hand list. The sim's own draw is discarded.
+  - Enemy HP / max_hp / block / powers — same direct assignments and full-reset-and-replace for powers.
+  - Enemy intent — bridge reports the live game's next move. `_override_enemy_intent` re-points the AI's current state to a `MoveState` that already exists in the simulator's state machine (installing the bridge's intent over the simulator's), so `roll_move` still works. If the bridge's `intent_move_id` is not in the simulator's state machine (a parity gap), the override is *skipped* rather than installing a follow-up-less synthetic that would crash `roll_move`.
+  - Combat round_number and turn_count — set from the bridge's `round` field.
+
+- `sts2_env/bridge/live_search.py` — rewritten **without any kept local sim**. `LiveSearch.decide` rebuilds from the bridge every single call: `CombatSituation.from_bridge_state(state).to_combat_mid_fight(state)` then `SearchAgent.act(combat)`. The previous design's `_local`, `_last_action`, `_last_round`, `_drift_count`, `_rebuild_count`, `_check_drift`, `_DriftException`, `DRIFT_TOLERANCE`, `DRIFT_DISABLE_THRESHOLD` all gone. The bridge is ground truth; the local sim matches it every step; no drift to "tolerate" because drift is the sim being wrong and the sim is thrown away per call.
+
+- `tests/test_live_search.py` — rewritten. The new contract is one method (`decide`), one stat block (`searches`, `budget_exhausted`). Six tests pin the contract: legal action in `Discrete(115)`, search invocation, no stale-state carry between calls, energy seen on every call, reset clears the search plan, action decodes via state_adapter, mid-fight overlay gets bridge-reported HP/block/energy into the sim.
+
+- `tests/test_combat_situation_from_bridge.py` — 7 new tests for `to_combat_mid_fight`: player HP/block/energy overlay, player powers overlay, hand overlay, enemy HP/block/powers overlay, dead-enemy handling, round/turn_count, end-to-end search invocation without raising.
+
+**Why the old code looked right and was wrong.** `_check_drift` logged the drift (HP 91 → 81, energy 0 → 3, hand 3 → 5) and the comment said "SearchAgent will replan if the mask diverges." But the SearchAgent was *never told the mask had diverged* — it was given the same `self._local` combat, whose mask naturally matched the (wrong) local state, so plans played out uneventfully. The bridge's ground truth was logged and ignored. The lesson, bluntly: **when the game tells you the state, you set the state to what the game told you.** There is no drift to tolerate; there is only being wrong, and the fix for being wrong is to stop being wrong.
+
+**Phase 2.4 (real) post-fix expectation:** re-run the same `live_eval --live-search` command. This time `LIVE_SEARCH` should run every combat step, plan against the bridge's reported hand+energy+enemy intents, and the death spiral should be gone. The first reachable bug after this is *not* "the search picks END_TURN forever" — that was the drift symptom, fixed — but "the search picks a card the live game rejects," which surfaces as a logged plan-divergence and a re-plan, not as a stuck state.
+
+**Cleanup pass before commit** (no behaviour change, tests unchanged and still passing):
+
+- `situation.py` — the mid-file `PowerId` import and the three function-local imports (`PowerInstance` ×2, `Intent`) hoisted to the module header; verified no circular-import risk (`powers.base`, `monsters.intents`, `monsters.state_machine` import standalone and none of them reach back into `search.situation`). `logger` moved below the imports where it belongs.
+- `situation.py` — two stale docstrings corrected. Both said `_override_enemy_intent` "synthesises a MoveState", which is exactly what the implementation deliberately refuses to do (a synthetic has no `follow_up_id` and would crash `roll_move`). They now describe the install-onto-the-real-MoveState path and the skip-on-unknown-move-id fallback that the code actually implements. `_override_enemy_intent` also now bails on `ai is None` / missing `move_id` before building the `Intent` rather than after.
+- `live_search.py` — dropped the unused `CombatState` / `get_action_mask` imports and the `try/except` around `from_bridge_state` whose only body was `raise`. The bare `return 0` for the END_TURN fallback now uses the imported `ACTION_END_TURN` constant (which is `0`, verified) so a future action-space renumber cannot silently turn the fallback into "play card 0".
+
+**Test state at commit:** 369 pass across the bridge/search/gym-env selection, 4832 pass suite-wide. The pre-existing parity failures are **149**, not the 97/123 quoted in the PR #1 and overnight-summary changelogs above — that count has grown with later content work and those earlier numbers should be read as historical. Verified pre-existing by stashing `sts2_env/` + `tests/` and re-running: identical 149 failures, 4825 passing. So this PR is +7 passing tests and zero regressions.

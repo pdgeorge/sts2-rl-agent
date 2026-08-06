@@ -306,3 +306,119 @@ def test_a_genuinely_unknown_potion_drops_with_a_warning_not_a_crash() -> None:
     combat = situation.to_combat()
     # The unknown potion is dropped to None -- the fight still builds.
     assert combat.potions[0] is None
+
+
+# -- to_combat_mid_fight: the overlay that fixes the drift regressions -------
+
+def test_to_combat_mid_fight_overlays_player_hp_block_energy() -> None:
+    """The bridge is ground truth. A bridge state reporting HP=67, block=12,
+    energy=2 lands on the sim's primary player exactly, not whatever the
+    fresh to_combat() build would have started the player at."""
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    state = _bridge_state(run_hp=67)
+    state["combat_state"]["player"]["hp"] = 67
+    state["combat_state"]["player"]["block"] = 12
+    state["combat_state"]["player"]["energy"] = 2
+    combat = situation.to_combat_mid_fight(state)
+    assert combat.primary_player.current_hp == 67
+    assert combat.primary_player.block == 12
+    assert combat.current_player_state.energy == 2
+
+
+def test_to_combat_mid_fight_overlays_player_powers() -> None:
+    """A bridge report of STRENGTH+2 sets the player's Strength power to 2
+    in the clone, replacing whatever powers from_run_manager set during the
+    fresh to_combat() build."""
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    state = _bridge_state()
+    state["combat_state"]["player"]["powers"] = [
+        {"id": "STRENGTH", "amount": 3},
+        {"id": "DEXTERITY", "amount": 2},
+    ]
+    combat = situation.to_combat_mid_fight(state)
+    from sts2_env.core.enums import PowerId
+    assert combat.primary_player.powers[PowerId.STRENGTH].amount == 3
+    assert combat.primary_player.powers[PowerId.DEXTERITY].amount == 2
+
+
+def test_to_combat_mid_fight_overlays_the_hand_from_the_bridge() -> None:
+    """The bridge's hand list replaces the simulator's freshly-drawn hand.
+
+    The previous design's drift bug, exactly: the local sim drew a different
+    opening hand than the live game, and after ~2 turns got stuck on a
+    fictional 3-card hand while the live game had a 5-card hand. The mid-fight
+    overlay takes the bridge's hand as the new state's hand, so the search
+    plans against the actual cards the player is holding right now.
+    """
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    state = _bridge_state()
+    # Override the hand with three specific cards.
+    state["combat_state"]["hand"] = [
+        {"id": "BASH", "cost": 2, "type": "Attack", "target": "AnyEnemy",
+         "playable": True, "upgraded": True},
+        {"id": "STRIKE_IRONCLAD", "cost": 1, "type": "Attack", "target": "AnyEnemy",
+         "playable": True},
+        {"id": "DEFEND_IRONCLAD", "cost": 1, "type": "Skill", "target": "Self",
+         "playable": True},
+    ]
+    combat = situation.to_combat_mid_fight(state)
+    assert len(combat.hand) == 3
+    assert combat.hand[0].card_id.name == "BASH"
+    assert combat.hand[0].upgraded is True
+
+
+def test_to_combat_mid_fight_overlays_enemy_hp_and_block() -> None:
+    """A boss with 20 HP / 5 block lands on the sim's enemy exactly."""
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    state = _bridge_state()
+    state["combat_state"]["enemies"] = [
+        {"id": "NIBBIT", "hp": 12, "max_hp": 30, "block": 5,
+         "is_alive": True, "intent": "ATTACK", "intent_damage": 7,
+         "intent_hits": 1, "powers": [{"id": "VULNERABLE", "amount": 1}]},
+    ]
+    combat = situation.to_combat_mid_fight(state)
+    enemy = combat.enemies[0]
+    assert enemy.current_hp == 12
+    assert enemy.block == 5
+    from sts2_env.core.enums import PowerId
+    assert enemy.powers[PowerId.VULNERABLE].amount == 1
+
+
+def test_to_combat_mid_fight_marks_dead_enemies_as_dead() -> None:
+    """The bridge says is_alive=false; the sim's enemy should be at 0 HP
+    (which is how Creature checks liveness)."""
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    state = _bridge_state()
+    state["combat_state"]["enemies"] = [
+        {"id": "NIBBIT", "hp": 0, "max_hp": 30, "block": 0,
+         "is_alive": False, "intent": "UNKNOWN"},
+    ]
+    combat = situation.to_combat_mid_fight(state)
+    assert combat.enemies[0].current_hp == 0
+    assert not combat.enemies[0].is_alive
+
+
+def test_to_combat_mid_fight_sets_round_and_turn_count() -> None:
+    """The bridge's round=3 sets the sim's round_number to 3 and turn_count
+    to 2 (turn_count advances when the player turn ends)."""
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    state = _bridge_state()
+    state["combat_state"]["round"] = 3
+    combat = situation.to_combat_mid_fight(state)
+    assert combat.round_number == 3
+
+
+def test_to_combat_mid_fight_runs_a_search_step_without_raising() -> None:
+    """The end-to-end smoke: a bridge-built mid-fight state must be plannable
+    by the SearchAgent without exceptions."""
+    from sts2_env.search.turn_search import SearchAgent
+
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    state = _bridge_state()
+    state["combat_state"]["player"]["hp"] = 80
+    state["combat_state"]["player"]["energy"] = 3
+    state["combat_state"]["round"] = 1
+    combat = situation.to_combat_mid_fight(state)
+    agent = SearchAgent(time_budget=0.5)
+    action = agent.act(combat)
+    assert 0 <= action < 115

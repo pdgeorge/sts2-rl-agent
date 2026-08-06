@@ -36,6 +36,7 @@ lucky opening into the fixture.
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -43,11 +44,16 @@ from typing import Any, Callable, Iterable
 from sts2_env.cards.base import CardInstance, reset_instance_counter
 from sts2_env.cards.factory import create_card
 from sts2_env.core.combat import CombatState
-from sts2_env.core.enums import CardId, RoomType
+from sts2_env.core.creature import Creature
+from sts2_env.core.enums import CardId, IntentType, PowerId, RoomType
 from sts2_env.core.rng import Rng
+from sts2_env.monsters.intents import Intent
 from sts2_env.potions.base import create_potion
+from sts2_env.powers.base import PowerInstance
 from sts2_env.run.rooms import create_room
 from sts2_env.run.run_state import RunState
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -241,6 +247,55 @@ class CombatSituation:
 
         resolve_encounter(self.encounter)(combat, Rng(self.encounter_seed))
         combat.start_combat()
+        return combat
+
+    def to_combat_mid_fight(self, bridge_state: dict[str, Any]) -> CombatState:
+        """Build a CombatState that matches the bridge's report of *now*.
+
+        The bridge is ground truth -- whatever HP, block, energy, powers, hand
+        and enemy state it reports is what the live game has, and the local
+        sim must agree. ``to_combat`` builds a fresh fight from the
+        situation's seed/encounter/deck, which matches the opening state but
+        diverges within a few turns (different shuffle, different enemy
+        intent rolls, relic trigger order). This method takes that fresh
+        build and **overwrites** the mutable state with the bridge's report,
+        so the SearchAgent plans against the position the player is actually
+        in rather than a frozen fiction that drifted two turns ago.
+
+        What is overwritten:
+
+        * Player HP, block, energy, max_energy -- direct assignments.
+        * Player powers -- the bridge's list replaces the player's powers
+          dict; amounts are set verbatim, no hook re-firing.
+        * Hand -- rebuilt from the bridge's hand list as fresh CardInstance
+          objects (the simulator's own draw is discarded). The draw and
+          discard piles are left as ``to_combat`` built them -- the search
+          does not look at piles beyond their counts, and the bridge sends
+          only counts, so we cannot do better without more protocol.
+        * Each enemy's HP, block, powers -- direct assignments, same as the
+          player. The enemy's monster id and the encounter setup are already
+          correct from ``to_combat``.
+        * Enemy intent -- the bridge sends the live game's next-move intent.
+          When the move id it names exists in the simulator's state machine,
+          we install the bridge's intent onto that ``MoveState`` and re-point
+          the AI at it, so the SearchAgent's _incoming_damage reads the right
+          telegraph *and* the move keeps its follow-up chain. When the move
+          id is unknown (a parity gap), the override is skipped rather than
+          synthesising a follow-up-less state that would crash ``roll_move``.
+
+        What is NOT overwritten (and why):
+
+        * Draw pile order -- the bridge sends only ``draw_pile_count``. We
+          leave whatever ``to_combat`` rolled. The search's lookahead uses
+          the simulator's draw, which is an approximation; that is the same
+          approximation the offline benchmark measured at 20% boss win rate
+          per ``MODELS.md:120``.
+        * Relics, potions, character -- set at combat_start, do not change
+          mid-fight.
+        * Encounter / encounter_seed / combat_seed -- already baked in.
+        """
+        combat = self.to_combat()
+        _sync_combat_from_bridge(combat, bridge_state)
         return combat
 
     # -- serialisation -----------------------------------------------------
@@ -472,6 +527,243 @@ def _parse_deck_entry(entry: Any) -> CardRef:
             upgraded=bool(entry.get("upgraded", False)),
         )
     return CardRef(card_id=str(entry), upgraded=False)
+
+
+# Powers worth coercing between the bridge's UPPER_SNAKE ids and the
+# simulator's PowerId enum. Built from the enum rather than hand-listed, so a
+# new PowerId lands here automatically; any power the bridge sends that is
+# not in the enum is dropped with a warning (the same drop-and-continue
+# pattern _instantiate_potion uses, so a single unmodelled power does not
+# tank the live fight).
+_POWER_ID_BY_NAME: dict[str, PowerId] = {p.name: p for p in PowerId}
+
+
+def _coerce_power_id(name: str) -> PowerId | None:
+    """Resolve a bridge power id to a PowerId enum member, or None.
+
+    The bridge sends ``power.Id.Entry`` which is ``Slugify(ClassName)`` --
+    so ``StrengthPower`` -> ``STRENGTH_POWER``. The simulator's ``PowerId``
+    enum members are UPPER_SNAKE of the class name; the mod's slug matches
+    on most powers (e.g. ``VULNERABLE``, ``WEAK``, ``STRENGTH``) because
+    the slugify strips the ``Power`` suffix sometimes and leaves it other
+    times. Try (a) the raw name, (b) with a trailing ``_POWER`` removed,
+    (c) with a trailing ``_POWER`` added.
+    """
+    if name in _POWER_ID_BY_NAME:
+        return _POWER_ID_BY_NAME[name]
+    if name.endswith("_POWER"):
+        stripped = name[:-len("_POWER")]
+        if stripped in _POWER_ID_BY_NAME:
+            return _POWER_ID_BY_NAME[stripped]
+    with_suffix = f"{name}_POWER" if not name.endswith("POWER") else name
+    if with_suffix in _POWER_ID_BY_NAME:
+        return _POWER_ID_BY_NAME[with_suffix]
+    return None
+
+
+def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None:
+    """Overwrite mutable combat state with the bridge's ground-truth report.
+
+    See ``CombatSituation.to_combat_mid_fight`` for the contract: the bridge
+    is the authority on the current position; the local sim matches it, the
+    search plans against the match, and any approximation (the draw pile
+    order, the enemy's next-next move) is what the search's horizon already
+    tolerated.
+    """
+    crash = state.get("combat_state") or state
+    if not isinstance(crash, dict):
+        return
+    player_json = crash.get("player") or {}
+    if not isinstance(player_json, dict):
+        return
+
+    # -- player HP / block / energy / powers / hand -------------------------
+    pcard = combat.primary_player
+    if "hp" in player_json:
+        pcard.current_hp = int(player_json["hp"])
+    if "block" in player_json:
+        pcard.block = int(player_json.get("block", 0))
+    if "energy" in player_json:
+        combat.current_player_state.energy = int(player_json["energy"])
+    if "max_energy" in player_json:
+        combat.current_player_state.base_max_energy = int(
+            player_json.get("max_energy", 3)
+        )
+
+    # Player powers: full reset, then apply the bridge's list verbatim.
+    # The bridge's report is the live game's authoritative state; the
+    # simulator's own power application (which would fire hooks and modify
+    # amounts) is bypassed -- we just set the dict, because the goal is to
+    # mirror what's on screen, not to re-derive it.
+    pcard.powers.clear()
+    for p in (player_json.get("powers") or []):
+        pid = _coerce_power_id(str(p.get("id", "")).upper())
+        if pid is None:
+            logger.warning(
+                "bridge powers: %r not in this build; dropping. The "
+                "search clone has one fewer player power than the live "
+                "game, which is wrong but playable.",
+                p.get("id"),
+            )
+            continue
+        amount = int(p.get("amount", 0))
+        pcard.powers[pid] = PowerInstance(power_id=pid, amount=amount)
+
+    # Hand: clear and rebuild from the bridge's list. Cards come back as
+    # fresh CardInstance objects via the factory; their internal counters do
+    # not matter for the search's plan (which only looks at damage/block/cost/
+    # type/target).
+    hand_json = crash.get("hand") or []
+    if isinstance(hand_json, list):
+        new_hand = []
+        for card_json in hand_json:
+            if not isinstance(card_json, dict):
+                continue
+            cid_str = card_json.get("id")
+            if not cid_str:
+                continue
+            try:
+                cid = CardId[cid_str]
+            except KeyError:
+                logger.warning(
+                    "bridge hand: card %r not in this build; dropping.",
+                    cid_str,
+                )
+                continue
+            upgraded = bool(card_json.get("upgraded", False))
+            new_hand.append(create_card(cid, upgraded=upgraded))
+        combat.current_player_state.hand[:] = new_hand
+
+    # -- enemies: HP, block, powers, intent ---------------------------------
+    enemies_json = crash.get("enemies") or []
+    if isinstance(enemies_json, list):
+        for i, enemy_json in enumerate(enemies_json):
+            if i >= len(combat.enemies):
+                break
+            if not isinstance(enemy_json, dict):
+                continue
+            enemy = combat.enemies[i]
+            if "hp" in enemy_json:
+                enemy.current_hp = int(enemy_json["hp"])
+            if "max_hp" in enemy_json:
+                enemy.max_hp = int(enemy_json["max_hp"])
+            if "block" in enemy_json:
+                enemy.block = int(enemy_json.get("block", 0))
+            if "is_alive" in enemy_json:
+                # The simulator's Creature has no is_alive setter -- alive
+                # is current_hp > 0. Set HP to 0 to mark dead if the bridge
+                # says so; otherwise trust the HP we just set.
+                if not enemy_json["is_alive"] and enemy.current_hp > 0:
+                    enemy.current_hp = 0
+
+            # Enemy powers: same reset-and-replace as the player.
+            enemy.powers.clear()
+            for p in (enemy_json.get("powers") or []):
+                pid = _coerce_power_id(str(p.get("id", "")).upper())
+                if pid is None:
+                    continue
+                amount = int(p.get("amount", 0))
+                enemy.powers[pid] = PowerInstance(power_id=pid, amount=amount)
+
+            # Intent: the bridge sends the next move's intent/damage/hits.
+            # Install it onto the simulator's own MoveState so the
+            # SearchAgent's _incoming_damage reads the right telegraphed hit
+            # while the move keeps its follow-up chain. See
+            # _override_enemy_intent for the unknown-move-id case.
+            intent_str = enemy_json.get("intent")
+            if intent_str:
+                _override_enemy_intent(combat, enemy, enemy_json)
+
+    # -- round number -------------------------------------------------------
+    if "round" in crash:
+        combat.round_number = int(crash["round"])
+        combat.turn_count = max(combat.turn_count, combat.round_number - 1)
+
+
+def _override_enemy_intent(
+    combat: CombatState, enemy: Creature, enemy_json: dict[str, Any],
+) -> None:
+    """Replace the enemy's current MoveState with one built from the bridge.
+
+    The intent override has one job: make ``ai.current_move.intents`` return
+    the bridge's telegraphed intent so the SearchAgent's _incoming_damage
+    reads the right incoming hit. The MoveState the bridge reports is the
+    live game's actual next move; if the simulator's state machine has that
+    state id, install the bridge's intent into it (replacing whatever intents
+    the simulator's encounter setup built) and re-point the AI at it -- so
+    the move has a follow-up, and the search's cloned enemy turns can
+    progress past the bridge-reported move.
+
+    If the bridge sends an intent_move_id the simulator does not have (a
+    move name the encounter setup did not register, or the simulator's
+    encounter has been refactored), we cannot install the override safely
+    -- the synthetic would have no follow_up_id and roll_move would raise.
+    In that case skip the intent override entirely, leave the AI as it was,
+    and the search falls back to the simulator's telegraphed intent. That is
+    wrong but not crashing -- the search will see the simulator's intent
+    rather than the bridge's, and in most cases the two agree on attack vs.
+    defend vs. buff; the damage/hits may differ, which only matters when
+    the enemy is *about* to hit, which is also when the search sees the
+    telegraphed intent the simulator built.
+    """
+    intent_str = str(enemy_json.get("intent", "UNKNOWN")).upper()
+    intent_type = _INTENT_NAME_TO_ENUM.get(intent_str)
+    if intent_type is None:
+        return  # unknown intent; leave the AI's current move as-is.
+
+    ai = combat.enemy_ais.get(enemy.combat_id)
+    move_id = enemy_json.get("intent_move_id")
+    if ai is None or not move_id:
+        return  # Nothing to override; leave the simulator's intent.
+
+    damage = int(enemy_json.get("intent_damage", 0) or 0)
+    hits = int(enemy_json.get("intent_hits", 1) or 1)
+    intent = Intent(intent_type=intent_type, damage=damage, hits=hits)
+
+    # Prefer the real MoveState in the AI's state dict -- it has a
+    # follow_up_id and the simulator's full effect; we override only its
+    # intents (the bridge's telegraphed hit is more current than whatever
+    # the encounter setup built).
+    existing = ai.states.get(str(move_id))
+    if existing is not None and hasattr(existing, "intents"):
+        existing.intents = [intent]
+        ai._current_state_id = str(move_id)
+        return
+
+    # If the move_id is not in the simulator's state machine, do NOT install
+    # a synthetic with no follow-up -- the search's cloned end_player_turn
+    # calls roll_move which calls current.get_next_state which would raise
+    # "no follow_up_id" and silently turn every search turn into a crash.
+    # Leave the AI as-is; the search sees the simulator's telegraph rather
+    # than the bridge's, which loses damage precision but keeps the run
+    # playable.
+    logger.debug(
+        "intent override for enemy %s: id %r not in simulator's state "
+        "machine; leaving simulator's intent as-is.",
+        getattr(enemy, "monster_id", "?"), move_id,
+    )
+
+
+# Intent name -> IntentType. The bridge sends the C# enum's ToString(), which
+# for the canonical intents is the same uppercase name we use in our IntentType.
+_INTENT_NAME_TO_ENUM = {
+    "ATTACK": IntentType.ATTACK,
+    "MULTI_ATTACK": IntentType.MULTI_ATTACK,
+    "MULTIATTACK": IntentType.MULTI_ATTACK,
+    "DEFEND": IntentType.DEFEND,
+    "BUFF": IntentType.BUFF,
+    "DEBUFF": IntentType.DEBUFF,
+    "DEBUFF_STRONG": IntentType.DEBUFF_STRONG,
+    "SLEEP": IntentType.SLEEP,
+    "SUMMON": IntentType.SUMMON,
+    "ESCAPE": IntentType.ESCAPE,
+    "UNKNOWN": IntentType.UNKNOWN,
+    "STATUS_CARD": IntentType.STATUS_CARD,
+    "STUN": IntentType.STUN,
+    "HEAL": IntentType.HEAL,
+    "DEATH_BLOW": IntentType.DEATH_BLOW,
+    "CARD_DEBUFF": IntentType.CARD_DEBUFF,
+}
 
 
 def _room_type_name(room_type: Any) -> str:
