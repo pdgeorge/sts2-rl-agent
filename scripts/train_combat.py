@@ -85,6 +85,19 @@ def train(args):
             print("  --resume-from: fine-tuning from a model that learned on "
                   "the starter-deck distribution; this re-fits it to the real one.")
 
+    # The eval pool is separate on purpose. best_model.zip is selected on the
+    # eval number, so if eval draws from the training situations the run picks
+    # whichever checkpoint memorised them best and reports that as skill.
+    eval_pool = None
+    if args.eval_situation_set:
+        eval_pool = load_situations(args.eval_situation_set)
+        print(f"Evaluating on {len(eval_pool)} held-out situations from "
+              f"{args.eval_situation_set}")
+    elif situation_pool is not None:
+        print("  NOTE: no --eval-situation-set, so eval draws from the training "
+              "situations. best_model is then selected on fights the model has "
+              "trained on; pass a held-out set for a number worth comparing.")
+
     print(f"Training MaskablePPO on STS2 combat")
     print(f"  n_envs:          {args.n_envs}")
     print(f"  total_timesteps: {args.total_timesteps}")
@@ -105,9 +118,9 @@ def train(args):
     def mask_fn(env):
         return env.action_masks()
 
-    def make_masked_env(seed: int):
+    def make_masked_env(seed: int, pool=None):
         def _init():
-            env = STS2CombatEnv(situation_pool=situation_pool)
+            env = STS2CombatEnv(situation_pool=pool)
             # The seed used to be accepted and then dropped on the floor, so every
             # env -- including the evaluation one, nominally seeded 9999 -- came up
             # unseeded and no run could be reproduced or compared to another.
@@ -120,12 +133,17 @@ def train(args):
 
     # Create vectorized envs
     if args.n_envs > 1:
-        train_env = SubprocVecEnv([make_masked_env(args.seed + i) for i in range(args.n_envs)])
+        train_env = SubprocVecEnv(
+            [make_masked_env(args.seed + i, situation_pool) for i in range(args.n_envs)]
+        )
     else:
-        train_env = DummyVecEnv([make_masked_env(args.seed)])
+        train_env = DummyVecEnv([make_masked_env(args.seed, situation_pool)])
 
-    # Eval env (always single)
-    eval_env = DummyVecEnv([make_masked_env(args.seed + 9999)])
+    # Eval env (always single). On its own pool when one is given: scoring the
+    # model on the situations it trained on measures memorisation and reports
+    # it as skill, and best_model.zip is selected on this number -- so a shared
+    # pool would pick the checkpoint that overfit hardest.
+    eval_env = DummyVecEnv([make_masked_env(args.seed + 9999, eval_pool or situation_pool)])
 
     # Create model
     if args.resume_from:
@@ -263,6 +281,12 @@ def main():
                              "act 1 encounters -- a 16-card deck at 40 HP, against "
                              "the encounter the map actually rolled. Breaks the "
                              "starter-deck plateau; see docs/GLM_ROADMAP_50P_ACT1.md.")
+    parser.add_argument("--eval-situation-set", type=str, default=None,
+                        help="Held-out fixture for the eval env. Without it, eval "
+                             "draws from --situation-set, so best_model is chosen "
+                             "on fights the model trained on and the eval reward "
+                             "measures memorisation. Point this at the held-out "
+                             "tests/fixtures/act1_combat_benchmark.json.")
     parser.add_argument("--seed", type=int, default=0,
                         help="Seed for envs, network init and sampling (default: 0)")
     parser.add_argument("--allow-stale-decompile", action="store_true",
