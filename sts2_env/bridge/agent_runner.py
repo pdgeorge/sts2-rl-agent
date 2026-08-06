@@ -28,6 +28,7 @@ from sts2_env.bridge.card_quality import SKIP_THRESHOLD, rank_cards
 from sts2_env.bridge.client import STS2GameClient
 from sts2_env.bridge.cyra_events import CyraPublisher
 from sts2_env.bridge.journal import RunJournal
+from sts2_env.bridge.raw_capture import RawCapture
 from sts2_env.bridge.milestones import MilestoneWatcher
 from sts2_env.bridge.protocol import (
     ActionType,
@@ -145,6 +146,8 @@ def run_agent(
     combat_policy_path: str | None = None,
     journal_path: str | None = None,
     live_search: bool = False,
+    capture_raw_path: str | None = None,
+    capture_raw_per_type: int = 25,
 ) -> None:
     """Main agent loop.
 
@@ -293,6 +296,13 @@ def run_agent(
         stuck_log = "output/stuck_states.jsonl"
         journal = RunJournal(journal_path, model=model_path)
         journal.start_run(1)
+        # The journal records decisions and drops the state behind them. This
+        # keeps whole states, verbatim, so the bridge parsers can be replayed
+        # against what the mod really sends rather than what we assumed.
+        raw_capture = (
+            RawCapture(capture_raw_path, per_type=capture_raw_per_type)
+            if capture_raw_path else None
+        )
         # Wrapped once, so every action the runner sends is recorded on the way
         # through rather than at each of the fourteen places that send one.
         client = journal.wrap(client)
@@ -315,6 +325,13 @@ def run_agent(
                     logger.error("Connection lost. Attempting reconnect...")
                     _reconnect_with_retry(client)
                     continue
+
+                # Captured here rather than beside journal.observe: this is the
+                # first line after the state arrives, so what lands in the file
+                # is the mod's own bytes, before any phase dispatch or early
+                # `continue` can filter a screen out of the sample.
+                if raw_capture is not None:
+                    raw_capture.observe(state)
 
                 msg_type = state.get("type", "")
                 phase = _phase_for_state(state)
@@ -717,6 +734,12 @@ def run_agent(
                 if step_count % 100 == 0:
                     logger.info("Step %d, combats seen: %d", step_count, combat_count)
         finally:
+            if raw_capture is not None:
+                # In the finally so a Ctrl-C or a lost connection still lands
+                # the trailer -- the counts of what was seen versus kept are
+                # how you tell a rare screen from a truncated one.
+                raw_capture.close()
+                logger.info("Raw protocol capture: %s", raw_capture.summary)
             cyra.close()
             if isinstance(client, BridgeReplayRecorder):
                 saved_path = client.save(record_replay_path)
@@ -1443,6 +1466,23 @@ def main() -> None:
         help="JSONL recording every room, fight, card played and reward taken.",
     )
     parser.add_argument(
+        "--capture-raw", default=None,
+        help=(
+            "JSONL of the raw states the mod sends, verbatim and unparsed. The "
+            "journal records decisions and drops the state behind them; this is "
+            "the other half, and it is what lets the bridge parsers be replayed "
+            "offline against real payloads instead of assumed ones."
+        ),
+    )
+    parser.add_argument(
+        "--capture-raw-per-type", type=int, default=25,
+        help=(
+            "How many states of each message type to keep (default 25). Quotas "
+            "rather than everything, so one short session yields every kind of "
+            "screen instead of ten thousand combat_actions from one long fight."
+        ),
+    )
+    parser.add_argument(
         "--combat-policy",
         default=None,
         help=(
@@ -1490,6 +1530,8 @@ def main() -> None:
         combat_policy_path=args.combat_policy,
         journal_path=args.journal or None,
         live_search=args.live_search,
+        capture_raw_path=args.capture_raw or None,
+        capture_raw_per_type=args.capture_raw_per_type,
     )
 
 

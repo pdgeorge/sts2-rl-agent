@@ -198,6 +198,14 @@ def main() -> None:
                              "reward taken. The run log says a run reached floor "
                              "11; this says what happened on the way. Pass an "
                              "empty string to turn it off.")
+    parser.add_argument("--capture-raw", default=None,
+                        help="JSONL of the raw states the mod sends, verbatim. The "
+                             "journal records decisions and drops the state behind "
+                             "them; this keeps whole states so the bridge parsers "
+                             "can be replayed offline against real payloads. One "
+                             "short --runs 1 session is enough to pin the protocol.")
+    parser.add_argument("--capture-raw-per-type", type=int, default=25,
+                        help="States kept per message type (default 25).")
     parser.add_argument("--tell-cyra", action="store_true",
                         help="Publish run milestones to cyra_brain over RabbitMQ. "
                              "Needs cyra_game reachable (CYRA_GAME_PATH) and a "
@@ -255,6 +263,8 @@ def main() -> None:
             journal_path=args.journal or None,
             combat_policy_path=args.combat_policy,
             live_search=args.live_search,
+            capture_raw_path=args.capture_raw or None,
+            capture_raw_per_type=args.capture_raw_per_type,
         )
     except KeyboardInterrupt:
         logger.info("Interrupted.")
