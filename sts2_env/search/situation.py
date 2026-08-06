@@ -690,11 +690,54 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
     # -- enemies: HP, block, powers, intent ---------------------------------
     enemies_json = crash.get("enemies") or []
     if isinstance(enemies_json, list):
-        for i, enemy_json in enumerate(enemies_json):
-            if i >= len(combat.enemies):
-                break
+        # Match by monster id, not by position. The game drops a dead enemy
+        # from its list; `to_combat` always rebuilds the full opening roster.
+        # Zipping those by index silently pairs the wrong monsters -- observed
+        # live on SLIMES_WEAK, where the sim's 3-slime roster met a 1-slime
+        # report and LEAF_SLIME_M's HP was written onto LEAF_SLIME_S, leaving
+        # two untouched full-HP phantoms the search could target. The runner
+        # then sent target_index 1 at an enemy that was not on screen, the game
+        # ignored it, and the same state came back until the stuck-detector
+        # stopped the session.
+        matched: dict[int, dict] = {}
+        unclaimed = list(range(len(combat.enemies)))
+        for enemy_json in enemies_json:
             if not isinstance(enemy_json, dict):
                 continue
+            wanted = str(enemy_json.get("id", "")).upper()
+            slot = next(
+                (
+                    i for i in unclaimed
+                    if str(combat.enemies[i].monster_id).upper() == wanted
+                ),
+                # No id match: fall back to the first free slot rather than
+                # dropping the enemy. A monster this build names differently is
+                # a parity gap, and playing it in the wrong slot beats not
+                # seeing it at all.
+                unclaimed[0] if unclaimed else None,
+            )
+            if slot is None:
+                continue
+            unclaimed.remove(slot)
+            matched[slot] = enemy_json
+
+        # Anything the bridge did not report is dead. Left alive it is a
+        # phantom: a target the search can pick and the game will refuse.
+        for i in unclaimed:
+            combat.enemies[i].current_hp = 0
+
+        # The live game compacts its enemy list as monsters die, so the sim's
+        # slot for a survivor is not the index the game expects in a PLAY.
+        # Record the translation; `LiveSearch` applies it to the action before
+        # it goes on the wire. Without it the fix above merely moves the bug:
+        # the search stops targeting phantoms and starts naming a live index
+        # that points at the wrong monster, or at nothing.
+        combat.bridge_enemy_index = {
+            sim_slot: bridge_slot
+            for bridge_slot, (sim_slot, _) in enumerate(sorted(matched.items()))
+        }
+
+        for i, enemy_json in matched.items():
             enemy = combat.enemies[i]
             if "hp" in enemy_json:
                 enemy.current_hp = int(enemy_json["hp"])

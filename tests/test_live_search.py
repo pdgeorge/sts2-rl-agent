@@ -281,3 +281,82 @@ def test_a_raising_policy_does_not_take_down_the_search():
     agent = SearchAgent(time_budget=1.0, lookahead_turns=2, playout_policy=boom)
 
     assert isinstance(agent.act(situation.to_combat()), (int, np.integer))
+
+
+# --- roster reconciliation: dead enemies, and the index the game expects ----
+#
+# The first live --live-search session stalled here. On a 3-slime SLIMES_WEAK
+# with two slimes already dead, the game reported one enemy while `to_combat`
+# rebuilt all three. The overlay matched by position, so the survivor's HP was
+# written onto the wrong slime and two full-HP phantoms stayed targetable; the
+# search picked one, the game ignored the play, and the same state came back
+# until the stuck-detector ended the run.
+
+
+def _slimes_state(**overrides):
+    state = _bridge_state(encounter="setup_slimes_weak", **overrides)
+    combat = state["combat_state"]
+    combat["enemies"] = [
+        {"id": "LEAF_SLIME_M", "hp": 12, "max_hp": 34, "block": 0,
+         "is_alive": True, "powers": [], "intent": "Attack"},
+    ]
+    combat["hand"] = [
+        {"id": "STRIKE_IRONCLAD", "cost": 1, "type": "Attack"},
+    ]
+    return state
+
+
+def test_enemies_the_bridge_does_not_report_are_dead_not_phantoms():
+    from sts2_env.search.situation import CombatSituation
+
+    state = _slimes_state()
+    combat = CombatSituation.from_bridge_state(state).to_combat_mid_fight(state)
+
+    alive = [e for e in combat.enemies if e.current_hp > 0]
+    assert len(alive) == 1, (
+        f"the game reported one enemy; the sim kept {len(alive)} alive: "
+        f"{[(str(e.monster_id), e.current_hp) for e in combat.enemies]}"
+    )
+    assert str(alive[0].monster_id) == "LEAF_SLIME_M"
+    assert alive[0].current_hp == 12
+
+
+def test_the_survivor_is_matched_by_id_not_by_position():
+    """Position-matching wrote the survivor's HP onto a different monster."""
+    from sts2_env.search.situation import CombatSituation
+
+    state = _slimes_state()
+    combat = CombatSituation.from_bridge_state(state).to_combat_mid_fight(state)
+
+    for enemy in combat.enemies:
+        if str(enemy.monster_id) != "LEAF_SLIME_M":
+            assert enemy.current_hp == 0, (
+                f"{enemy.monster_id} was given the survivor's state"
+            )
+
+
+def test_the_action_carries_the_index_the_game_uses_not_the_sim_slot():
+    """The game compacts its enemy list; the sim does not."""
+    from sts2_env.bridge.state_adapter import StateAdapter
+
+    state = _slimes_state()
+    action = LiveSearch(time_budget=1.0).decide(state)
+    command = StateAdapter().decode_action(action, state)
+
+    if command.get("type") == "PLAY" and command.get("target_index", -1) >= 0:
+        assert command["target_index"] == 0, (
+            f"the game has one enemy at index 0; got {command}"
+        )
+
+
+def test_a_target_the_bridge_never_reported_ends_the_turn_rather_than_stalling():
+    """Better to lose a turn than to send a play the game silently ignores."""
+    from sts2_env.bridge.live_search import _retarget_for_bridge
+    from sts2_env.core.constants import MAX_ENEMIES, MAX_HAND_SIZE
+
+    class _Combat:
+        bridge_enemy_index = {2: 0}
+
+    # hand 0 targeting sim slot 1, which is not in the mapping.
+    action = 1 + MAX_HAND_SIZE + 0 * MAX_ENEMIES + 1
+    assert _retarget_for_bridge(action, _Combat()) == ACTION_END_TURN

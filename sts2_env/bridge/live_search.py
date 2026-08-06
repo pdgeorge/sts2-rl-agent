@@ -133,7 +133,53 @@ class LiveSearch:
         combat = situation.to_combat_mid_fight(bridge_state)
 
         try:
-            return self._search.act(combat)
+            action = self._search.act(combat)
         except Exception:
             logger.exception("search agent raised; falling back to END_TURN")
             return ACTION_END_TURN
+
+        return _retarget_for_bridge(action, combat)
+
+
+def _retarget_for_bridge(action: int, combat) -> int:
+    """Rewrite a searched action's enemy index into the one the game uses.
+
+    The live game compacts its enemy list as monsters die; `to_combat` always
+    rebuilds the full opening roster, so a survivor sits in a different slot on
+    each side. `to_combat_mid_fight` records the translation on the combat as
+    `bridge_enemy_index` ({sim slot: bridge slot}), and this applies it to the
+    action just before the runner turns it into a PLAY.
+
+    Skipping this is what produced the first stuck live session: on a
+    3-slime SLIMES_WEAK where two slimes were already dead, the search named an
+    enemy index the game had nothing at, the game ignored the play, and the same
+    state came back until the stuck-detector ended the run.
+
+    Untargeted actions (end turn, self-target, potions) pass through unchanged.
+    """
+    from sts2_env.core.constants import MAX_ENEMIES, MAX_HAND_SIZE
+    from sts2_env.gym_env.action_space import action_to_card_and_target
+
+    mapping = getattr(combat, "bridge_enemy_index", None)
+    if not mapping:
+        return action
+
+    hand_index, enemy_index = action_to_card_and_target(action)
+    if hand_index is None or enemy_index is None:
+        return action
+
+    bridge_index = mapping.get(enemy_index)
+    if bridge_index is None:
+        # The search targeted a slot the bridge never reported -- a monster the
+        # game does not have. Nothing sensible to send, so end the turn rather
+        # than issue a play that will be silently ignored and stall the run.
+        logger.warning(
+            "search targeted sim enemy %d, which the bridge did not report "
+            "(mapping %s); ending the turn instead of stalling.",
+            enemy_index, mapping,
+        )
+        return ACTION_END_TURN
+
+    if bridge_index == enemy_index:
+        return action
+    return 1 + MAX_HAND_SIZE + hand_index * MAX_ENEMIES + bridge_index
