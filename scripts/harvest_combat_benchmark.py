@@ -42,6 +42,13 @@ DEFAULT_OUTPUT = "tests/fixtures/act1_combat_benchmark.json"
 FLOOR_BANDS = ((1, 4), (5, 8), (9, 12), (13, 16), (17, 99))
 
 
+def _room_name(mgr) -> str:
+    """The room type as CombatSituation records it, for the --room-types filter."""
+    from sts2_env.search.situation import _room_type_name
+
+    return _room_type_name(mgr._current_room_type)
+
+
 def _load_combat_policy(model_path: str | None):
     """The policy used to fight while walking runs. None means random.
 
@@ -151,6 +158,7 @@ def harvest(
     seed: int = 0,
     max_steps_per_run: int = 3000,
     max_runs: int = 2000,
+    room_types: set[str] | None = None,
 ) -> list[CombatSituation]:
     policy = _load_combat_policy(model_path)
     rng = np.random.default_rng(seed)
@@ -159,6 +167,10 @@ def harvest(
     # Harvesting without them gives a fixture that is half opening hallway fights,
     # which is the easy half -- an agent could look good on it while being no
     # better where runs actually end.
+    # A room-type filter turns the floor bands off: the point of harvesting
+    # BOSS-only is that every act 1 boss sits on floor 16, so banding by floor
+    # would fill one band and starve the rest forever. The quota then applies
+    # to the whole harvest rather than per band.
     bands = [b for b in FLOOR_BANDS if b[0] <= max_floor]
     per_band = max(1, count // len(bands))
     band_counts: Counter = Counter()
@@ -195,7 +207,8 @@ def harvest(
                 and floor not in seen_this_run
                 and floor <= max_floor
                 and band is not None
-                and band_counts[band] < per_band
+                and (room_types is None or _room_name(mgr) in room_types)
+                and (room_types is not None or band_counts[band] < per_band)
             ):
                 seen_this_run.add(floor)
                 band_counts[band] += 1
@@ -306,6 +319,16 @@ def main() -> None:
     parser.add_argument("--max-runs", type=int, default=2000,
                         help="Run budget. Deep floors are rare, so a balanced "
                              "fixture needs many runs to fill its top band.")
+    parser.add_argument("--room-types", default=None,
+                        help="Comma-separated room types to harvest (e.g. "
+                             "BOSS or BOSS,ELITE). Without it the harvest is "
+                             "quota'd by floor band. With it, floor-band "
+                             "quotas are off, because every act 1 boss is on "
+                             "floor 16 and would fill one band and starve the "
+                             "rest. Use for a boss-weighted held-out set: the "
+                             "default fixture holds 15 boss fights, which puts "
+                             "a ~12 point standard error on any boss win rate "
+                             "near 30% and cannot resolve the Phase 3.3 gate.")
     parser.add_argument("--output", default=DEFAULT_OUTPUT)
     args = parser.parse_args()
 
@@ -314,6 +337,10 @@ def main() -> None:
     situations = harvest(
         args.count, model_path=args.combat_model, max_floor=args.max_floor,
         seed=args.seed, max_runs=args.max_runs,
+        room_types=(
+            {t.strip().upper() for t in args.room_types.split(",")}
+            if args.room_types else None
+        ),
     )
     print(describe(situations))
     path = save_situations(situations, args.output)
