@@ -14,6 +14,8 @@ realistic bridge payload.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from sts2_env.search.situation import CombatSituation
@@ -422,3 +424,58 @@ def test_to_combat_mid_fight_runs_a_search_step_without_raising() -> None:
     agent = SearchAgent(time_budget=0.5)
     action = agent.act(combat)
     assert 0 <= action < 115
+
+# --- enemy HP comes from the game, not from a seed -------------------------
+#
+# `CombatState.cs:499` rolls monster HP from `RunState.Rng.Niche`, a run-level
+# stream whose position depends on everything earlier in the run. The encounter
+# seed cannot reproduce it, however faithful the generator is. So it is read
+# from the bridge rather than re-derived -- the same rule the mid-fight overlay
+# already followed, applied one level down where it was still being violated.
+
+
+def test_enemy_max_hp_is_taken_from_the_bridge_not_rolled_from_the_seed():
+    """The game said 43, so it is 43 -- whatever the encounter seed rolls."""
+    state = _bridge_state()
+    reported = [e["max_hp"] for e in state["combat_state"]["enemies"]]
+
+    situation = CombatSituation.from_bridge_state(state)
+    assert list(situation.enemy_max_hp) == reported
+
+    # The encounter may build fewer slots than the bridge reports (a parity
+    # gap); every slot it does build takes the game's number.
+    combat = situation.to_combat()
+    built = [e.max_hp for e in combat.enemies]
+    assert built == reported[: len(built)]
+
+
+def test_a_situation_without_reported_enemies_still_rolls_from_the_seed():
+    """A harvested situation has no bridge report and must keep working.
+
+    `enemy_max_hp` is empty there, and `to_combat` falls back to the encounter
+    setup's own roll, which is internally consistent and reproducible.
+    """
+    state = _bridge_state()
+    situation = CombatSituation.from_bridge_state(state)
+    without = replace(situation, enemy_max_hp=())
+
+    combat = without.to_combat()
+    again = without.to_combat()
+
+    assert combat.enemies, "encounter setup produced no enemies"
+    assert [e.max_hp for e in combat.enemies] == [e.max_hp for e in again.enemies]
+
+
+def test_more_reported_enemies_than_the_encounter_builds_does_not_raise():
+    """A roster mismatch is a parity gap, not a crash.
+
+    Better to run the fight with the enemies the simulator knows how to build
+    than to take down a live run over an extra slot.
+    """
+    state = _bridge_state()
+    situation = CombatSituation.from_bridge_state(state)
+    padded = replace(situation, enemy_max_hp=situation.enemy_max_hp + (99, 98, 97))
+
+    combat = padded.to_combat()
+
+    assert combat.enemies

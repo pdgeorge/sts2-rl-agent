@@ -12,30 +12,28 @@ seed and the answer, so this is a closed-book check with no room to argue.
 
 Why this exists
 ---------------
-The first capture ever taken (2026-08-06) failed it 25 times out of 25. The
-cause is not the monster HP tables -- a seed sweep shows the simulator can
-produce the live value, it just does not produce it for the seed the game
-used. It is the generator itself:
+The first capture ever taken (2026-08-06) failed it 25 times out of 25, which
+turned out to be two separate bugs wearing one symptom.
 
-* The game's `Rng(ulong seed)` wraps `MegaRandom`, which is **xoshiro256\\*\\***
-  with state seeded by four **Splitmix64** draws from the full 64-bit seed
-  (`MegaRandom.cs:69,99,168`).
-* The simulator's `Rng.__init__` masks the seed to 32 bits (`_to_uint32` then
-  `_to_int32`) and feeds `_DotNetCompatRandom`, a `System.Random` clone --
-  a subtractive lagged-Fibonacci generator. A different algorithm entirely.
+**The generator was not the game's.** The game's `Rng(ulong seed)` wraps
+`MegaRandom` -- xoshiro256\\*\\* seeded by four Splitmix64 draws from the full
+64-bit seed. The simulator masked the seed to 32 bits and ran a `System.Random`
+clone. Fixed in `sts2_env/core/rng.py`; `MegaRandomShim` below is retained so
+`--fixed` can still demonstrate the difference against an old checkout.
 
-Those agree on nothing. The 32-bit truncation is the more visible half (live
-encounter seeds are 64-bit values like -5080831859460911205), but even an
-in-range seed would diverge, because the streams are unrelated.
+**Monster HP was never reconstructable from the encounter seed at all.**
+`CombatState.cs:499` rolls it from `RunState.Rng.Niche`, a run-level stream
+whose position depends on everything earlier in the run -- not from the
+encounter's own RNG. No amount of generator parity recovers that. So
+`from_bridge_state` now records the `max_hp` the game reported and `to_combat`
+applies it: read, not re-derived.
 
-`MegaRandomShim` below is the game's generator, transcribed from the decompile
-and verified against captured live data. Passing `--fixed` swaps it in and
-re-runs the same comparison, which is how the 0/25 -> 18/25 result in
-`docs/PARITY_GAPS.md` was produced.
+Both fixes are in. This check should read 100% of comparable states; if it
+does not, something regressed or the mod's payload changed shape.
 
-**This script does not modify the simulator.** Replacing the core RNG changes
-every seeded behaviour in ~50,000 LoC and is a decision to take deliberately;
-see the writeup in `docs/PARITY_GAPS.md` before doing it.
+Mid-fight states where an enemy has already died are skipped, not scored: the
+game drops dead enemies from its list while `to_combat` rebuilds the opening
+roster, so comparing the two says nothing.
 """
 
 from __future__ import annotations
@@ -145,6 +143,8 @@ def main() -> int:
         collections.Counter
     )
     matches = 0
+    comparable = 0
+    skipped = 0
     for state in combat_states:
         encounter = state.get("encounter", "?")
         live = [e.get("max_hp") for e in state.get("enemies", [])]
@@ -153,7 +153,21 @@ def main() -> int:
             sim = [e.max_hp for e in combat.enemies]
         except Exception as exc:  # a raise is itself a parity answer
             per_encounter[encounter][f"RAISED {type(exc).__name__}"] += 1
+            comparable += 1
             continue
+
+        # The game drops a dead enemy from its list; `to_combat` rebuilds the
+        # full opening roster. Comparing those is comparing a mid-fight
+        # screenshot to a fresh fight, which says nothing about parity, so it
+        # is skipped and counted rather than scored as a mismatch.
+        if len(live) != len(sim):
+            skipped += 1
+            per_encounter[encounter][
+                f"skipped: {len(sim) - len(live)} enemy already dead"
+            ] += 1
+            continue
+
+        comparable += 1
         agreed = live == sim
         matches += agreed
         per_encounter[encounter][
@@ -165,8 +179,9 @@ def main() -> int:
         for outcome, n in outcomes.most_common():
             print(f"      {n:>3}x  {outcome}")
 
-    print(f"\nmax_hp parity: {matches}/{len(combat_states)}")
-    if not args.fixed and matches < len(combat_states):
+    print(f"\nmax_hp parity: {matches}/{comparable} comparable"
+          f"  ({skipped} skipped as mid-fight roster changes)")
+    if not args.fixed and matches < comparable:
         print("\nRe-run with --fixed to see the same check under the game's own "
               "generator.")
     return 0

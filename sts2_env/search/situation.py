@@ -186,6 +186,17 @@ class CombatSituation:
     act_floor: int = 1
     total_floor: int = 1
     ascension_level: int = 0
+    #: Enemy max HP as the game reported it, in slot order, when this situation
+    #: came from a live bridge state. Empty for a harvested situation, which
+    #: rolls its enemies from `encounter_seed` and is internally consistent.
+    #:
+    #: This exists because monster HP *cannot* be reconstructed from the
+    #: encounter seed. `CombatState.cs:499` rolls it from
+    #: `RunState.Rng.Niche` -- a run-level stream whose position depends on
+    #: everything that happened earlier in the run -- not from the encounter's
+    #: own RNG. No amount of generator parity recovers it; the only way to know
+    #: a live fight's enemy HP is that the game says so.
+    enemy_max_hp: tuple[int, ...] = ()
 
     # -- construction ------------------------------------------------------
 
@@ -246,6 +257,21 @@ class CombatSituation:
         )
 
         resolve_encounter(self.encounter)(combat, Rng(self.encounter_seed))
+
+        # If the game told us the enemies' HP, use it. The encounter setup just
+        # rolled its own from `encounter_seed`, and for a live fight that roll
+        # is unrecoverable by construction (see `enemy_max_hp`). Overwriting it
+        # here rather than only in `to_combat_mid_fight` means a bridge-built
+        # situation cannot quietly produce a fight with the wrong enemy HP --
+        # which it did, by 1-2 HP per enemy, for every fight in the first live
+        # capture taken.
+        for index, reported in enumerate(self.enemy_max_hp):
+            if index >= len(combat.enemies):
+                break
+            enemy = combat.enemies[index]
+            enemy.max_hp = int(reported)
+            enemy.current_hp = int(reported)
+
         combat.start_combat()
         return combat
 
@@ -460,6 +486,17 @@ class CombatSituation:
         # `_room_type_name`, which is what from_run_manager produces.
         room_type = str(state.get("room_type") or "MONSTER").upper()
 
+        # Enemy max HP, straight from the game. Not reconstructable: the game
+        # rolls it from the run-level Niche stream (`CombatState.cs:499`), so
+        # the encounter seed cannot produce it no matter how faithful the
+        # generator is. Read rather than re-derived -- if the game says 43, it
+        # is 43.
+        enemy_max_hp = tuple(
+            int(enemy.get("max_hp", 0) or 0)
+            for enemy in (combat.get("enemies") or state.get("enemies") or [])
+            if isinstance(enemy, dict) and enemy.get("max_hp")
+        )
+
         return cls(
             situation_id=sid,
             character_id=(
@@ -481,6 +518,7 @@ class CombatSituation:
             act_floor=int(state.get("act_floor") or 1),
             total_floor=floor,
             ascension_level=int(state.get("ascension") or 0),
+            enemy_max_hp=enemy_max_hp,
         )
 
 
