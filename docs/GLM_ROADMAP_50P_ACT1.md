@@ -828,3 +828,33 @@ Cheap, offline, no live time:
 4. Check peakedness actually separates Barricade from Feast.
 
 If 3 or 4 fail, the approach is wrong and we have spent an afternoon rather than two weeks.
+
+### Validation result — the approach survives, with one essential caveat
+
+Run `scripts/validate_card_embeddings.py <embeddings.parquet>` to reproduce.
+
+**Coverage: 574/600** simulator cards have an embedding, once the simulator's `_CARD` suffix is stripped (it names some cards `BARRICADE_CARD` where the dataset says `BARRICADE`). The 26 stragglers include non-cards like `DEPRECATED` and `GENERIC`.
+
+**THE CAVEAT, and it is not optional: mean-centre the embeddings.** Raw cosine does not work on this dataset. Every STS2 card is ~0.9 similar to every other one — they are all short mechanics JSON from a single game, so the vectors share an enormous common "this is a card" component that swamps the differences that matter. Measured on real decks: raw archetype spread **0.09**, with one deck flipping label on a **0.007** margin. That is a coin toss wearing a classifier's hat.
+
+Subtracting the pool mean removes the shared component. Spread goes to **0.475** and leave-one-out accuracy to **11/11**. Same vectors, same cosine, one subtraction. Anyone building on this who skips it will get a classifier that always says the same thing and will not obviously notice.
+
+**Leave-one-out: 11/11.** Rebuild each archetype vector with one seed removed, and the held-out card still finds its own archetype. So the archetypes generalise rather than merely memorising their seeds.
+
+**Peakedness works, and separates exactly what it was meant to:**
+
+```
+deck-defining                 generically good
+  PERFECTED_STRIKE  +0.568      POMMEL_STRIKE  +0.445
+  DEMON_FORM        +0.539      SHRUG_IT_OFF   +0.228
+  BARRICADE         +0.514      IRON_WAVE      +0.197
+  CORRUPTION        +0.478
+```
+
+A clean ~2.5× gap. `max(sims) − mean(sims)` is a usable "does this card commit you to something" score, which is the signal early picks need and card quality alone cannot provide. (Feast is not in the dataset — not an Ironclad card in this build.)
+
+**No model is downloaded or run.** Archetypes are defined by *seed cards*, not prose, so the archetype vector is a mean of embeddings the dataset already ships. Qwen3-Embedding-0.6B never executes — not in validation, not at decision time. Defining archetypes by cards is also better grounded than by sentences: it says "like these", not "like how I described these".
+
+**What this does NOT show.** Harvested decks classify 61→80% strike-synergy as floors deepen, which looks alarming until you notice those decks were assembled by a walker making **random** card picks, and the Ironclad pool is itself 41% strike-synergy by this measure. A random deck should skew that way. The distribution is therefore evidence of nothing, in either direction — the test was weak, not the classifier.
+
+**Still unproven, and the next real experiment:** that archetype-guided picking builds *better decks*. That needs an A/B of full simulated runs — `card_quality.py` alone versus quality × fit — compared on floors reached. Everything above says only that the signal is real enough to be worth building on.
