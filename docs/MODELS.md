@@ -46,6 +46,38 @@ starter-deck numbers measuring a different thing.
 
 ---
 
+## LIVE — 2026-08-06 — turn search transfers to the real game
+
+The first 20-run live session to finish all 20, and the first live evidence that
+the searcher does what the benchmark says it does. Raw data and the full writeup
+are kept in `docs/milestones/2026-08-06-live-search-works/` -- `output/` is
+gitignored and this session is not reproducible.
+
+Same model both sides (`combat_v3_overnight`), 20 live runs each:
+
+```
+                            baseline      --live-search
+mean floor                     9.1            14.7
+median floor                     8              17
+reached the act 1 boss     2/20  10%      10/20  50%     +40 pts +/-13.0  (~3 se)
+cleared act 1              0/20   0%       2/20  10%     +/-6.7 -- two runs
+boss win rate               0/2            2/10  20%     +/-12.6
+```
+
+**The benchmark predicted the live result.** Turn search v2 scores 20% boss win
+rate on the offline 200-fight benchmark (below); live it came in at 2/10 = 20%.
+A change can therefore be pre-screened offline in minutes rather than in an hour
+of live runs. One corroboration at n=10, not a law -- but it is the first time
+an offline number here has been checked against the game and held.
+
+**The wall moved.** 8 of the 20 died *to the act 1 boss* (Waterfall Giant x3,
+Vantom x2, Kin Follower, Lagavulin Matriarch); only 6 died in hallways. Arriving
+is close to solved; surviving is not.
+
+Read the clear rate as "not zero", not as 10%. It is two runs.
+
+---
+
 ## RNG corrected — 2026-08-06 — every number above this line is a different measurement
 
 `sts2_env/core/rng.py` now uses the game's generator: xoshiro256\*\* seeded by

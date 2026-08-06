@@ -707,3 +707,49 @@ min +0.770   max +7.890   -> NON-FLAT
 `v1..v7` were flat across every evaluation, which is what the reward leak PR #5 fixed produced. **This is the first non-flat meta-policy eval curve in the project**, and it is the condition Phase 5 was gated on. The run is still going; the curve is noisy and not yet obviously climbing, so "the signal exists" is the claim, not "the meta-policy is good".
 
 Phase 5 is now unblocked. It is still not started, and should not start on 27 noisy evals — let the run finish and look at the shape.
+
+## PHASE 2.4 — PASSED. Live search works. 2026-08-06
+
+**The reference point for this project.** Raw data in `docs/milestones/2026-08-06-live-search-works/`.
+
+Twenty live runs, all twenty finished — the first session that neither stalled nor crashed.
+
+```
+                            baseline      --live-search
+mean floor                     9.1            14.7
+median floor                     8              17
+reached the act 1 boss     2/20  10%      10/20  50%     +40 pts +/-13.0  (~3 se)
+cleared act 1              0/20   0%       2/20  10%     +/-6.7 -- two runs
+boss win rate               0/2            2/10  20%     +/-12.6
+deepest run                    --          floor 33 (act 3)
+```
+
+**Exit criterion met:** the live agent uses real lookahead in combat, and it is worth 40 points of boss-reach rate at roughly 3 standard errors.
+
+**Decision point resolved — continue.** The plan said: *"if boss win rate moves from 0% to ≥10% across 20 runs, continue. If still 0%, the deckbuilding phase is the gating failure."* It moved 0% → 20%, and act 1 clears 0% → 10%. Deckbuilding is **not** the sole gate; search alone bought most of the run.
+
+### The result that changes how to work
+
+`MODELS.md` puts turn search v2 at **20% boss win rate** on the offline benchmark. Live: **2/10 = 20%**.
+
+The offline benchmark predicts live performance. Every future change should be screened against the 200-fight fixture *before* spending an hour of live runs — this project has repeatedly discovered in a live session what a benchmark run would have caught in minutes. One corroboration at n=10, so treat it as a working assumption rather than proven, but act on it.
+
+### Where the remaining Act 1 gap actually is
+
+8 of 20 died **to the act 1 boss**; 6 died in hallways. Arriving is close to solved at 50%. Beating it is not, at 20% of arrivals.
+
+That reframes the rest of the plan. The gap is one fight, not the whole run, and it is measurable offline — which is exactly what the new boss/elite-weighted fixture (`act1_boss_elite_benchmark.json`, 27 boss / 123 elite) was built for.
+
+### What it cost to get here
+
+Three stalls across three sessions, one mistake each time, and it is the same mistake: **the game was sending the truth and this side was computing its own instead.**
+
+1. A local sim kept across calls, drifting into a frozen fiction (PR #9).
+2. Enemy HP re-derived from a seed that cannot produce it — plus phantom dead enemies and mismatched enemy indices.
+3. Playability re-derived while the game was marking every card `playable: false` under RINGING.
+
+The durable fix is the fourth one: the stuck detector now escalates to end-turn before abandoning, so the *next* unmodelled rule costs a turn rather than a session.
+
+### Against the goal
+
+Target is 50% Act 1 over 20 consecutive runs. This is **10% ± 6.7%** — two runs, which establishes "not zero" and nothing more.
