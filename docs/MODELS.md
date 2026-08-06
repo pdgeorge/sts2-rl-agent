@@ -46,6 +46,44 @@ starter-deck numbers measuring a different thing.
 
 ---
 
+## RNG corrected — 2026-08-06 — every number above this line is a different measurement
+
+`sts2_env/core/rng.py` now uses the game's generator: xoshiro256\*\* seeded by
+Splitmix64 from the full 64-bit seed, with XxHash64 for named streams. It
+previously ran a `System.Random` clone from a 32-bit-truncated seed with the
+game's deprecated string hash. See `docs/PARITY_GAPS.md`.
+
+Enemy HP rolls therefore resolve differently for every fixture seed, so the
+benchmark presents *different fights* than it did before. The fixture is the
+same 200 situations -- same decks, same HP, same relics, same encounters -- but
+the monsters inside them roll different HP.
+
+**`combat_v3_overnight/final_model.zip`, re-measured on the same fixture:**
+
+```
+             win rate      hp lost        (was, pre-RNG-fix)
+overall      71.0% +/-3.2     24.7        74.0%   24.5
+MONSTER      84.9%           18.2         85.5%   19.1
+ELITE        23.1%           47.4         42.3%   41.0
+BOSS          6.7%           53.7          6.7%   53.1
+floors 13-16 50.0%           34.1         54.0%   32.9
+```
+
+The headline moves 3 points and the boss row does not move at all. The elite
+row halves, 42.3% -> 23.1%, which is the one worth noting: 26 fights at
+roughly +/-10%, so a 19-point drop is around two standard errors and probably
+real rather than noise. The likely cause is not the generator as such but
+`SetUniqueMonsterHpValue` (`CombatState.cs:499`), which excludes HP values
+already taken by siblings on the same side -- a rule this simulator does not
+implement, and which matters most in the multi-monster fights elites tend to
+be.
+
+**Use these numbers, not the ones above them,** for anything measured after
+2026-08-06. The pre-fix figures are kept because they are what the earlier
+entries were written against, not because they are comparable.
+
+---
+
 ## combat_real_situations — 2026-08-06 — trained on real situations, a null result
 
 The Phase 3.3 experiment from `docs/GLM_ROADMAP_50P_ACT1.md`: fine-tune
