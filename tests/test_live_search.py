@@ -360,3 +360,72 @@ def test_a_target_the_bridge_never_reported_ends_the_turn_rather_than_stalling()
     # hand 0 targeting sim slot 1, which is not in the mapping.
     action = 1 + MAX_HAND_SIZE + 0 * MAX_ENEMIES + 1
     assert _retarget_for_bridge(action, _Combat()) == ACTION_END_TURN
+
+
+# --- the game's own playability verdict -------------------------------------
+#
+# Second live stall, Ceremonial Beast round 8: the player held RINGING (one
+# card a turn) and had spent it, so the game marked all four cards unplayable.
+# The simulator models RINGING but its mask does not enforce the limit, so it
+# offered plays the game refused, and the run stalled. The game had already
+# computed the answer and sent it on every card.
+
+
+def _unplayable_hand_state():
+    state = _bridge_state()
+    combat = state["combat_state"]
+    combat["player"]["powers"] = [{"id": "RINGING_POWER", "amount": 1}]
+    combat["hand"] = [
+        {"id": "STRIKE_IRONCLAD", "cost": 1, "type": "Attack", "playable": False},
+        {"id": "DEFEND_IRONCLAD", "cost": 1, "type": "Skill", "playable": False},
+    ]
+    return state
+
+
+def test_a_card_the_game_calls_unplayable_is_not_offered():
+    from sts2_env.gym_env.action_space import (
+        action_to_card_and_target,
+        get_action_mask,
+    )
+    from sts2_env.search.situation import CombatSituation
+
+    state = _unplayable_hand_state()
+    combat = CombatSituation.from_bridge_state(state).to_combat_mid_fight(state)
+
+    mask = get_action_mask(combat)
+    plays = [
+        int(a) for a in np.where(mask == 1)[0]
+        if action_to_card_and_target(int(a))[0] is not None
+    ]
+    assert plays == [], f"offered {len(plays)} plays the game had refused"
+
+
+def test_an_all_unplayable_hand_ends_the_turn_instead_of_stalling():
+    from sts2_env.bridge.state_adapter import StateAdapter
+
+    state = _unplayable_hand_state()
+    action = LiveSearch(time_budget=1.0).decide(state)
+
+    assert StateAdapter().decode_action(action, state)["type"] == "END_TURN"
+
+
+def test_a_missing_playable_field_means_no_opinion_not_unplayable():
+    """A mod that does not send the flag must behave exactly as before."""
+    from sts2_env.gym_env.action_space import (
+        action_to_card_and_target,
+        get_action_mask,
+    )
+    from sts2_env.search.situation import CombatSituation
+
+    state = _bridge_state()
+    state["combat_state"]["hand"] = [
+        {"id": "STRIKE_IRONCLAD", "cost": 1, "type": "Attack"},
+    ]
+    combat = CombatSituation.from_bridge_state(state).to_combat_mid_fight(state)
+
+    mask = get_action_mask(combat)
+    plays = [
+        int(a) for a in np.where(mask == 1)[0]
+        if action_to_card_and_target(int(a))[0] is not None
+    ]
+    assert plays, "a card with no playable flag should still be offered"

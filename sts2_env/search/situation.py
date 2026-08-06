@@ -684,7 +684,15 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
                 )
                 continue
             upgraded = bool(card_json.get("upgraded", False))
-            new_hand.append(create_card(cid, upgraded=upgraded))
+            instance = create_card(cid, upgraded=upgraded)
+            # Carry the game's own playability verdict. It accounts for every
+            # rule the game has -- energy, curses, statuses, RINGING's one-card
+            # limit, relics this simulator may not model -- and `can_play_card`
+            # treats it as final. Absent means "no opinion", not "unplayable",
+            # so a mod that does not send the field changes nothing.
+            if "playable" in card_json:
+                instance.bridge_playable = bool(card_json.get("playable"))
+            new_hand.append(instance)
         combat.current_player_state.hand[:] = new_hand
 
     # -- enemies: HP, block, powers, intent ---------------------------------

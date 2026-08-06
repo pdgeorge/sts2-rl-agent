@@ -97,11 +97,26 @@ CRYSTAL_SPHERE_CELL_ACTION = "divine_cell"
 REST_HEAL_OPTION_ID = "heal"
 REST_SMITH_OPTION_ID = "smith"
 STUCK_WARN_AFTER = 4
-STUCK_ABANDON_AFTER = 12
-"""How many identical states before the runner says something, and before it
-stops. A screen the game cannot act on re-presents itself unchanged, and a
+STUCK_ESCALATE_AFTER = 12
+STUCK_ABANDON_AFTER = 24
+"""Give up only after trying the one action that is always available.
+
+The first threshold means "whatever we keep sending, the game is refusing".
+That is not the same as "there is nothing to do": end-turn is legal in every
+combat, and the usual cause of a refused play is a rule this side does not
+model -- RINGING's one-card-a-turn limit, an unplayable status, a relic the
+simulator has not learned. Ending the turn clears exactly that class of
+stall, because next turn deals a new hand.
+
+So `STUCK_ESCALATE_AFTER` switches to forcing end-turn, and only if *that*
+is also refused for as many states again does the session stop. Abandoning
+at the first threshold threw away a run that a single end-turn would have
+rescued.
+
+A screen the game cannot act on re-presents itself unchanged, and a
 deterministic policy answers it the same way every time -- no exception, no
-timeout, just a session that quietly stops making progress."""
+timeout, just a session that quietly stops making progress. These counters are
+the only thing that notices."""
 
 TREASURE_COLLECT_ACTION = "collect"
 BOSS_RELIC_PICK_ACTION = "pick_relic"
@@ -396,16 +411,39 @@ def run_agent(
                     # its summary and every finished run is kept, instead of the
                     # session hanging until someone notices.
                     logger.error(
-                        "Still stuck after %d identical states. There is no "
-                        "abandon command on this side, so stopping here; the "
-                        "runs already finished are kept and summarised. The "
-                        "screen is in %s.",
-                        identical_states, stuck_log,
+                        "Still stuck after %d identical states, including %d "
+                        "with end-turn forced. There is no abandon command on "
+                        "this side, so stopping here; the runs already finished "
+                        "are kept and summarised. The screen is in %s.",
+                        identical_states,
+                        identical_states - STUCK_ESCALATE_AFTER,
+                        stuck_log,
                     )
                     journal.write("stuck", states=identical_states,
                                   screen=state.get("type"),
+                                  escalated=True,
                                   ended_session=True)
                     break
+
+                if identical_states >= STUCK_ESCALATE_AFTER and phase in Phase.COMBAT_PHASES:
+                    # Whatever we keep choosing, the game will not take it. End
+                    # the turn instead: it is always legal, and it clears the
+                    # whole class of "a rule this side does not model makes the
+                    # card unplayable" -- next turn deals a new hand.
+                    if identical_states == STUCK_ESCALATE_AFTER:
+                        logger.error(
+                            "Refused %d times; forcing end-turn rather than "
+                            "abandoning. If the game takes it, the run "
+                            "continues and the screen in %s is worth reading "
+                            "for what it would not let us play.",
+                            identical_states, stuck_log,
+                        )
+                        journal.write("stuck", states=identical_states,
+                                      screen=state.get("type"),
+                                      escalated=True,
+                                      ended_session=False)
+                    client.end_turn()
+                    continue
 
                 # Counted here rather than never: this was initialised, reset and
                 # reported without ever being incremented, so every live record

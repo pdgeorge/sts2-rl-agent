@@ -1203,6 +1203,20 @@ class CombatState:
         """Check whether a card can be played right now."""
         from sts2_env.core.hooks import should_play
 
+        # The live game already answered this, for every rule it has and this
+        # simulator may not. `to_combat_mid_fight` copies the bridge's
+        # `playable` flag onto the card, and it wins outright.
+        #
+        # Found the hard way on a Ceremonial Beast fight: the player held
+        # RINGING (one card a turn), had spent it, and the game marked all four
+        # cards unplayable. The simulator models RINGING but its mask does not
+        # enforce the limit, so it offered two plays, the runner sent one, the
+        # game ignored it, and the run stalled. Re-deriving an answer the game
+        # has already given is the same mistake as the drifting sim and the
+        # re-rolled enemy HP: when the game says no, it is no.
+        if getattr(card, "bridge_playable", True) is False:
+            return False
+
         owner = getattr(card, "owner", None) or self.player
         if getattr(card, "owner", None) is None:
             card.owner = owner
