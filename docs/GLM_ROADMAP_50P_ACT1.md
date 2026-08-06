@@ -500,3 +500,64 @@ Landed on `glm52` after PR #8's potion coercion got `--live-search` past the fir
 - `live_search.py` — dropped the unused `CombatState` / `get_action_mask` imports and the `try/except` around `from_bridge_state` whose only body was `raise`. The bare `return 0` for the END_TURN fallback now uses the imported `ACTION_END_TURN` constant (which is `0`, verified) so a future action-space renumber cannot silently turn the fallback into "play card 0".
 
 **Test state at commit:** 369 pass across the bridge/search/gym-env selection, 4832 pass suite-wide. The pre-existing parity failures are **149**, not the 97/123 quoted in the PR #1 and overnight-summary changelogs above — that count has grown with later content work and those earlier numbers should be read as historical. Verified pre-existing by stashing `sts2_env/` + `tests/` and re-running: identical 149 failures, 4825 passing. So this PR is +7 passing tests and zero regressions.
+
+## PR #10 changelog — closing three open questions, and the harvest that wasn't blocked
+
+Landed on `glm52`. Picks up where the overnight session stopped. The theme: three of the items the overnight summary handed to the user turned out **not to need the user's machine at all**, and one open risk turned out to be a non-issue.
+
+### 10.1 — PR #9's seed question, closed (`tests/test_rng_parity.py`)
+
+PR #6 flagged this and PR #9 inherited it: the C# mod serialises `encounter_seed` as `(long)seed`, so a seed above int32's range arrives in the JSON negative, and if `Rng.__init__` masked that to a different 32-bit pattern than the game used, the monster HP rolls would diverge silently. The searcher would then plan against a fight that is not the one on screen — the worst class of bug, because every individual piece looks correct.
+
+**It does not diverge.** `Rng.__init__` does `_to_uint32(seed)` then `_to_int32(...)`, which round-trips any int32 bit pattern whatever sign it arrived with, and masks a wider value the way C# int arithmetic wraps. Verified across `-1`, `-5`, `-123456789` and `int.MinValue`, plus a genuine long. Two tests pin it. No production change — this closes a question, it does not fix a bug.
+
+### 10.2 — Phase 0.1, finally (`sts2_env/bridge/raw_capture.py`)
+
+Phase 0.1 asked for a recorded protocol sample *before* any C# was touched. It was never done, and the cost is on the record: every parser on the bridge path was written against a guessed payload shape, and two needed a live session plus a bug-fix round to correct — PR #8's UPPER_SNAKE potion ids, PR #9's drift. Neither was reachable from the unit tests, **because the unit tests were built from the same guess as the code**. A recorded payload is what breaks that circle: it is the mod's answer rather than ours.
+
+`--capture-raw PATH` on both `agent_runner` and `live_eval` writes whole states verbatim to JSONL. Quota'd per message type (default 25) so one short session yields every *kind* of screen rather than ten thousand `combat_action`s from the longest fight; the trailer carries seen-vs-kept counts so a truncated type does not read as a rare one. Captured on the first line after `receive_state`, before any phase dispatch can filter a screen out; flushed per state and closed in a `finally`, so a Ctrl-C or a lost connection still leaves a usable file. Never raises — a diagnostic that can end a 20-run session is worse than no diagnostic.
+
+**This is the highest-value thing to run first when the mod compiles**, ahead of the 20-run session:
+
+```bash
+.venv/bin/python -m sts2_env.bridge.live_eval \
+    --model-path output/combat_v3_overnight/final_model.zip \
+    --capture-raw output/bridge_protocol_sample.jsonl \
+    --runs 1 --verbose
+```
+
+One run is enough. The resulting file makes `from_bridge_state` and `to_combat_mid_fight` checkable offline against real payloads, with no game running — which is how the PR #8 and PR #9 classes of bug get found before a session is spent on them, rather than after.
+
+### 10.3 — Phase 3.2 harvest: never actually blocked
+
+The overnight summary listed the 2000-situation harvest as needing the user's machine. It does not — `harvest_combat_benchmark.py` walks the simulator and touches neither the game nor the decompile gate. Run here: 1240 runs, all four floor bands filled to their 500 quota, **2000 situations** — 1575 MONSTER / 260 ELITE / 165 BOSS across 22 distinct encounters, deck size mean 13.6 (max 21), HP fraction mean 0.69 (min 0.16). 1797 of 2000 hold a deck that is not the 10-card starter, which is the entire point.
+
+Written to `tests/fixtures/act1_combat_train_2000.json`, **not** the script's default path — the default is `act1_combat_benchmark.json`, the held-out 200 that `score_combat_benchmark` reads and that every number in `MODELS.md` is measured against. Harvesting over it would have destroyed the ability to compare this model to the last one. Harvested at seed 1234 against the eval set's seed; verified zero leakage, on full identity (encounter + both seeds + deck + HP) and on the weaker encounter+seed pair.
+
+### 10.4 — the eval set was the training set (`scripts/train_combat.py`)
+
+Found while setting up Phase 3.3. PR #4 passed `--situation-set` to *every* env, eval included. `best_model.zip` is selected on the eval number, so a run would have picked whichever checkpoint memorised the training fights hardest and reported it as skill — and the Phase 3.3 pass bar (≥80% overall / ≥30% boss) would have been measured against the same situations the gradient steps came from.
+
+New `--eval-situation-set` flag. Phase 3.3 is now train-on-2000 / eval-on-the-held-out-200, which are verified-disjoint, so the eval number is comparable to the `combat_v3_overnight` figures in `MODELS.md` measured on that same 200. Omitting the flag keeps the old behaviour rather than erroring, but now says out loud that eval is drawing from the training pool.
+
+### 10.5 — Phase 4.2 needs no change
+
+The roadmap lists "replace `HeuristicCombatSolver` default with `FrozenRLCombatSolver`" as Phase 4.2 work. It is already wired: `train_meta_policy.py:86-93` selects `FrozenRLCombatSolver(args.combat_policy)` whenever `--combat-policy` is passed, which PR #5's own suggested command already does. The library-level default stays `HeuristicCombatSolver` deliberately — it is the sensible fallback for a caller with no model, and hardcoding a checkpoint path into the env would be worse. **Nothing to do; the flag is the mechanism.**
+
+### 10.6 — Phase 3.3 is not an overnight run
+
+The decompile gate **passes on this machine** (`check_decompile_matches_installed()` → `True`, build `9f6869d1f4e27dc4`), so the trainer does not refuse. Measured throughput fine-tuning from `combat_v3_overnight` on the 2000-situation pool is ~1600 fps, which puts 2M steps at roughly **30 minutes**, not the overnight the plan assumed. The estimate in Phase 3 should be read down accordingly — and it means the Phase 3.3 → 3.4 loop is a same-sitting iteration, not a next-day one.
+
+### Cleanup applied to PR #9's code before commit
+
+Hoisted the mid-file `PowerId` import and three function-local imports in `situation.py` to the module header (verified no circular-import risk); moved `logger` below the imports. Corrected two docstrings that described `_override_enemy_intent` as "synthesising a MoveState" — exactly what the implementation deliberately refuses to do, since a synthetic has no `follow_up_id` and would crash `roll_move`. Dropped `live_search.py`'s unused imports and a `try/except` whose only body was `raise`; its END_TURN fallback now uses the `ACTION_END_TURN` constant rather than a bare `0`.
+
+### What still genuinely needs the user's machine
+
+Only the C# and the live game:
+
+1. **Compile PR #6** — `dotnet build bridge_mod/STS2BridgeMod.csproj`. Still the one true external dependency, and still uncompiled.
+2. **Capture the protocol** (10.2 above) — one run, before anything else.
+3. **Phase 2.4 / 3.4 live sessions** — 20 runs each, with `--live-search`.
+
+Everything else in the plan through Phase 4 is runnable here.
