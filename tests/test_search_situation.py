@@ -251,3 +251,85 @@ def test_the_benchmark_covers_the_fights_that_end_runs() -> None:
 
     hurt = [s for s in situations if s.current_hp < 0.6 * s.max_hp]
     assert len(hurt) >= 25, "every fight starting near full HP is not a real run"
+
+
+# --- sibling HP uniqueness (SetUniqueMonsterHpValue) ------------------------
+
+
+def test_two_siblings_never_share_an_hp_total():
+    """`Creature.cs:371` picks from the range MINUS what siblings already hold.
+
+    This simulator rolled each monster independently and produced colliding
+    totals in 11.4% of multi-enemy fights, which the game cannot do.
+    """
+    import sts2_env.cards  # resolve package import order
+    from sts2_env.search.situation import load_situations
+
+    situations = load_situations("tests/fixtures/act1_combat_train_2000.json")
+    checked = collisions = 0
+    for situation in situations[:400]:
+        try:
+            combat = situation.to_combat()
+        except Exception:
+            continue
+        totals = [e.max_hp for e in combat.enemies]
+        if len(totals) < 2:
+            continue
+        checked += 1
+        if len(set(totals)) != len(totals):
+            collisions += 1
+
+    assert checked > 50, "fixture produced too few multi-enemy fights to test"
+    assert collisions == 0, f"{collisions}/{checked} multi-enemy fights collided"
+
+
+def test_uniqueness_is_enforced_across_species_not_just_within_one():
+    """`CombatState.cs:496` passes the whole `_enemies` list, not same-species.
+
+    So a Zapbot at 24 stops a Stabbot being 24, odd as that reads.
+    """
+    import sts2_env.cards
+    from sts2_env.core.combat import CombatState
+    from sts2_env.core.creature import Creature
+    from sts2_env.monsters.state_machine import MonsterAI, MoveState
+
+    combat = CombatState(player_hp=80, player_max_hp=80, deck=[], rng_seed=3)
+
+    def bot(monster_id, hp):
+        creature = Creature(max_hp=hp, monster_id=monster_id,
+                            min_initial_hp=hp, max_initial_hp=hp + 6)
+        ai = MonsterAI(
+            states={"M": MoveState(state_id="M", intents=[],
+                                   effect_fn=lambda combat: None)},
+            initial_state_id="M",
+        )
+        return creature, ai
+
+    first, first_ai = bot("ALPHA", 24)
+    combat.add_enemy(first, first_ai)
+    second, second_ai = bot("BETA", 24)
+    combat.add_enemy(second, second_ai)
+
+    assert first.max_hp != second.max_hp
+    assert 24 <= second.max_hp <= 30
+
+
+def test_a_monster_with_a_unique_total_keeps_its_roll_untouched():
+    """No collision means no re-draw -- a deliberate HP must survive."""
+    import sts2_env.cards
+    from sts2_env.core.combat import CombatState
+    from sts2_env.core.creature import Creature
+    from sts2_env.monsters.state_machine import MonsterAI, MoveState
+
+    combat = CombatState(player_hp=80, player_max_hp=80, deck=[], rng_seed=3)
+    creature = Creature(max_hp=37, monster_id="ALPHA",
+                        min_initial_hp=30, max_initial_hp=40)
+    ai = MonsterAI(
+        states={"M": MoveState(state_id="M", intents=[],
+                               effect_fn=lambda combat: None)},
+        initial_state_id="M",
+    )
+    combat.add_enemy(creature, ai)
+
+    assert creature.max_hp == 37
+    assert creature.current_hp == 37

@@ -490,6 +490,72 @@ class CombatState:
     def monster_ai_rng(self) -> Rng:
         return self._run_rng("monster_ai")
 
+    @property
+    def niche_rng(self) -> Rng:
+        return self._run_rng("niche")
+
+    #: Monsters that define their own HP-uniqueness rule and must not be
+    #: second-guessed by the generic collision fix below.
+    _OWN_HP_UNIQUENESS_RULE = frozenset({"DECIMILLIPEDE_SEGMENT"})
+
+    def _resolve_sibling_hp_collision(self, creature: Creature) -> None:
+        """Move this monster off an HP total a sibling already has.
+
+        `Creature.SetUniqueMonsterHpValue` (`Creature.cs:371`), called from
+        `CombatState.cs:499` with `RunState.Rng.Niche`, picks each monster's HP
+        from its range *minus the totals its siblings already hold*, so the game
+        cannot produce two same-species siblings with equal HP. This simulator
+        rolled each monster independently and produced exactly that in 11.4% of
+        multi-enemy fights.
+
+        ON NOT COPYING THE GAME EXACTLY. The faithful port would stop rolling HP
+        in each `create_*` and assign it here from `Niche`. That is deliberately
+        not what this does, for two reasons:
+
+        1. **The stream is unreachable anyway.** `Niche` is run-level; its
+           position depends on every draw earlier in the run. Replaying a
+           specific fight's HP from a seed is impossible in principle, which is
+           why a captured or harvested situation records the HP instead (see
+           `CombatSituation.enemy_max_hp`). Chasing exact parity here buys
+           nothing that recording does not already give.
+        2. **Re-rolling clobbers deliberate values.** A caller that sets a
+           monster's HP on purpose -- a test driving a fixed RNG, a scripted
+           summon, `apply_decimillipede_segment_room_setup`'s +1 -- would have
+           it silently overwritten, and the HP would be drawn twice, consuming
+           an encounter-stream draw the game never spends.
+
+        What matters for training is that the simulator samples the same
+        *distribution* the game does, not the same sequence. So the roll stays
+        where it is and only the collision is corrected, from the same range,
+        excluding the same taken values. Untouched when there is no collision.
+        """
+        if creature.monster_id in self._OWN_HP_UNIQUENESS_RULE:
+            # Some monsters carry a bespoke rule and must be left to it. The
+            # Decimillipede's segments step their HP by 2 until no teammate
+            # matches (`apply_decimillipede_segment_room_setup`), which is a
+            # deterministic ladder the game defines for that monster; a random
+            # re-draw here lands between its rungs and breaks the pattern.
+            return
+
+        low = getattr(creature, "min_initial_hp", None)
+        high = getattr(creature, "max_initial_hp", None)
+        if low is None or high is None or low >= high:
+            return  # fixed-HP monster: nothing to choose
+
+        taken = {other.max_hp for other in self.enemies if other is not creature}
+        if creature.max_hp not in taken:
+            return  # already unique -- leave the roll, and the stream, alone
+
+        candidates = [hp for hp in range(low, high + 1) if hp not in taken]
+        if not candidates:
+            # `hashSet.Count <= 0` in the C#: when siblings hold every value in
+            # the range, the game gives up on uniqueness rather than failing.
+            return
+
+        chosen = self.niche_rng.choice(candidates)
+        creature.max_hp = chosen
+        creature.current_hp = chosen
+
     def _push_attack_context(self, attack: AttackContext) -> None:
         from sts2_env.core.hooks import fire_before_attack
 
@@ -694,6 +760,9 @@ class CombatState:
         creature.combat_id = len(self.enemies)
         creature.side = CombatSide.ENEMY
         creature.combat_state = self
+        # Before the multiplayer scaling, matching the game's order: HP is
+        # settled on entry to combat, then scaled.
+        self._resolve_sibling_hp_collision(creature)
         scaled_max_hp = scaled_multiplayer_enemy_max_hp(creature, self)
         if scaled_max_hp != creature.max_hp:
             creature.max_hp = scaled_max_hp

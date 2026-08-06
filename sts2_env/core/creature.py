@@ -42,6 +42,7 @@ class Creature:
         "max_hp", "current_hp", "block", "powers", "side",
         "is_player", "monster_id", "combat_id", "stars",
         "is_pet", "pet_owner", "is_osty", "owner", "combat_state", "escaped", "_death_processed",
+        "min_initial_hp", "max_initial_hp",
     )
 
     def __init__(
@@ -52,8 +53,18 @@ class Creature:
         is_player: bool = False,
         monster_id: str | None = None,
         combat_id: int = 0,
+        min_initial_hp: int | None = None,
+        max_initial_hp: int | None = None,
     ):
         self.max_hp = max_hp
+        # The monster's HP *range*, kept because the game assigns HP from it at
+        # combat-entry time rather than at creation: `SetUniqueMonsterHpValue`
+        # excludes values already taken by siblings on the same side, so two
+        # Nibbits never share a total. Reconstructing that needs the range, not
+        # just the roll. Defaults to a one-value range so a creature built
+        # without one (the player, a summon) is simply left alone.
+        self.min_initial_hp = min_initial_hp if min_initial_hp is not None else max_hp
+        self.max_initial_hp = max_initial_hp if max_initial_hp is not None else max_hp
         self.current_hp = current_hp if current_hp is not None else max_hp
         self.block: int = 0
         self.powers: dict[PowerId, PowerInstance] = {}

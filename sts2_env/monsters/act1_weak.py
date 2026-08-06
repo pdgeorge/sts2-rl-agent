@@ -88,7 +88,7 @@ def create_shrinker_beetle(rng: Rng, ascension_level: int = 0) -> tuple[Creature
         SHRINKER_BEETLE_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id="SHRINKER_BEETLE")
+    creature = Creature(max_hp=hp, monster_id="SHRINKER_BEETLE", min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def shrink(combat: CombatState) -> None:
         apply_power_to_living_player_targets(
@@ -181,7 +181,7 @@ def create_fuzzy_wurm_crawler(rng: Rng, ascension_level: int = 0) -> tuple[Creat
         FUZZY_WURM_CRAWLER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id="FUZZY_WURM_CRAWLER")
+    creature = Creature(max_hp=hp, monster_id="FUZZY_WURM_CRAWLER", min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def acid_goop(combat: CombatState) -> None:
         acid_goop_damage = _ascension_value(
@@ -263,7 +263,7 @@ def create_nibbit(
         NIBBIT_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id="NIBBIT")
+    creature = Creature(max_hp=hp, monster_id="NIBBIT", min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def butt(combat: CombatState) -> None:
         butt_damage = _ascension_value(
@@ -355,7 +355,7 @@ def create_leaf_slime_s(rng: Rng, ascension_level: int = 0) -> tuple[Creature, M
         LEAF_SLIME_S_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id="LEAF_SLIME_S")
+    creature = Creature(max_hp=hp, monster_id="LEAF_SLIME_S", min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def butt(combat: CombatState) -> None:
         tackle_damage = _ascension_value(
@@ -424,7 +424,7 @@ def create_twig_slime_s(rng: Rng, ascension_level: int = 0) -> tuple[Creature, M
         TWIG_SLIME_S_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id="TWIG_SLIME_S")
+    creature = Creature(max_hp=hp, monster_id="TWIG_SLIME_S", min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def butt(combat: CombatState) -> None:
         tackle_damage = _ascension_value(
@@ -481,7 +481,7 @@ def create_leaf_slime_m(rng: Rng, ascension_level: int = 0) -> tuple[Creature, M
         LEAF_SLIME_M_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id="LEAF_SLIME_M")
+    creature = Creature(max_hp=hp, monster_id="LEAF_SLIME_M", min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def sticky_shot(combat: CombatState) -> None:
         add_generated_cards_to_living_player_discards(combat, make_slimed, LEAF_SLIME_M_STICKY_AMOUNT)
@@ -549,7 +549,7 @@ def create_twig_slime_m(rng: Rng, ascension_level: int = 0) -> tuple[Creature, M
         TWIG_SLIME_M_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id="TWIG_SLIME_M")
+    creature = Creature(max_hp=hp, monster_id="TWIG_SLIME_M", min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def sticky_shot(combat: CombatState) -> None:
         add_generated_cards_to_living_player_discards(combat, make_slimed, TWIG_SLIME_M_STICKY_AMOUNT)

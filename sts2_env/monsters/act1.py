@@ -221,7 +221,7 @@ def create_flyconid(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Monst
         FLYCONID_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id="FLYCONID")
+    creature = Creature(max_hp=hp, monster_id="FLYCONID", min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def vulnerable_spores(combat: CombatState) -> None:
         apply_power_to_living_player_targets(
@@ -458,7 +458,7 @@ def create_inklet(
         INKLET_BASE_MAX_HP,
     )
     hp = rng.next_int(min_initial_hp, max_initial_hp)
-    creature = Creature(max_hp=hp, monster_id="INKLET")
+    creature = Creature(max_hp=hp, monster_id="INKLET", min_initial_hp=min_initial_hp, max_initial_hp=max_initial_hp)
 
     def jab(combat: CombatState) -> None:
         jab_dmg = _ascension_value(
@@ -754,7 +754,7 @@ def create_slithering_strangler(rng: Rng, ascension_level: int = 0) -> tuple[Cre
         SLITHERING_STRANGLER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id="SLITHERING_STRANGLER")
+    creature = Creature(max_hp=hp, monster_id="SLITHERING_STRANGLER", min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def constrict(combat: CombatState) -> None:
         apply_power_to_living_player_targets(
@@ -851,7 +851,7 @@ def create_snapping_jaxfruit(rng: Rng, ascension_level: int = 0) -> tuple[Creatu
         SNAPPING_JAXFRUIT_BASE_MAX_HP,
     )
     hp = rng.next_int(min_initial_hp, max_initial_hp)
-    creature = Creature(max_hp=hp, monster_id="SNAPPING_JAXFRUIT")
+    creature = Creature(max_hp=hp, monster_id="SNAPPING_JAXFRUIT", min_initial_hp=min_initial_hp, max_initial_hp=max_initial_hp)
 
     def energy_orb(combat: CombatState) -> None:
         energy_dmg = _ascension_value(
@@ -957,7 +957,7 @@ def create_assassin_ruby_raider(rng: Rng, ascension_level: int = 0) -> tuple[Cre
         ASSASSIN_RUBY_RAIDER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=ASSASSIN_RUBY_RAIDER_ID)
+    creature = Creature(max_hp=hp, monster_id=ASSASSIN_RUBY_RAIDER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def killshot(combat: CombatState) -> None:
         killshot_dmg = _ascension_value(
@@ -1000,7 +1000,7 @@ def create_axe_ruby_raider(rng: Rng, ascension_level: int = 0) -> tuple[Creature
         AXE_RUBY_RAIDER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=AXE_RUBY_RAIDER_ID)
+    creature = Creature(max_hp=hp, monster_id=AXE_RUBY_RAIDER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def swing(combat: CombatState) -> None:
         swing_dmg = _ascension_value(
@@ -1077,7 +1077,7 @@ def create_brute_ruby_raider(rng: Rng, ascension_level: int = 0) -> tuple[Creatu
         BRUTE_RUBY_RAIDER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=BRUTE_RUBY_RAIDER_ID)
+    creature = Creature(max_hp=hp, monster_id=BRUTE_RUBY_RAIDER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def beat(combat: CombatState) -> None:
         beat_dmg = _ascension_value(
@@ -1129,7 +1129,7 @@ def create_crossbow_ruby_raider(rng: Rng, ascension_level: int = 0) -> tuple[Cre
         CROSSBOW_RUBY_RAIDER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=CROSSBOW_RUBY_RAIDER_ID)
+    creature = Creature(max_hp=hp, monster_id=CROSSBOW_RUBY_RAIDER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def fire(combat: CombatState) -> None:
         fire_dmg = _ascension_value(
@@ -1181,7 +1181,7 @@ def create_tracker_ruby_raider(rng: Rng, ascension_level: int = 0) -> tuple[Crea
         TRACKER_RUBY_RAIDER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=TRACKER_RUBY_RAIDER_ID)
+    creature = Creature(max_hp=hp, monster_id=TRACKER_RUBY_RAIDER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def track(combat: CombatState) -> None:
         apply_power_to_living_player_targets(combat, PowerId.FRAIL, TRACKER_RUBY_RAIDER_TRACK_FRAIL, applier=creature)
@@ -1336,7 +1336,7 @@ def create_byrdonis(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Monst
         BYRDONIS_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=BYRDONIS_ID)
+    creature = Creature(max_hp=hp, monster_id=BYRDONIS_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def peck(combat: CombatState) -> None:
         peck_dmg = _ascension_value(
@@ -1420,7 +1420,7 @@ def create_phrog_parasite(rng: Rng, ascension_level: int = 0) -> tuple[Creature,
         PHROG_PARASITE_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=PHROG_PARASITE_ID)
+    creature = Creature(max_hp=hp, monster_id=PHROG_PARASITE_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def infest(combat: CombatState) -> None:
         add_generated_cards_to_living_player_discards(
@@ -1917,7 +1917,7 @@ def create_kin_follower(
         KIN_FOLLOWER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_initial_hp, max_initial_hp)
-    creature = Creature(max_hp=hp, monster_id=KIN_FOLLOWER_ID)
+    creature = Creature(max_hp=hp, monster_id=KIN_FOLLOWER_ID, min_initial_hp=min_initial_hp, max_initial_hp=max_initial_hp)
 
     def quick_slash(combat: CombatState) -> None:
         _deal_damage_to_player(combat, creature, KIN_FOLLOWER_QUICK_SLASH_DAMAGE)

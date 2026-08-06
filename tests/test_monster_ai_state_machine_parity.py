@@ -5172,7 +5172,13 @@ class TestFixedRotation:
 
         stabbot, stabbot_ai = create_stabbot(_FixedIntsRng([STABBOT_A8_HP_RANGE[0]]), ascension_level=9)
         fabricator_combat.add_enemy(stabbot, stabbot_ai)
-        assert stabbot.max_hp == STABBOT_A8_HP_RANGE[0]
+        # Range, not the exact roll: the Zapbot added just above already holds
+        # STABBOT_A8_HP_RANGE[0], and `SetUniqueMonsterHpValue` excludes totals
+        # taken by *any* creature on the side, not just the same species
+        # (`CombatState.cs:496` passes the whole `_enemies` list). So the fixed
+        # roll is legitimately moved off the collision. The ascension scaling
+        # this test is about is the range itself.
+        assert STABBOT_A8_HP_RANGE[0] <= stabbot.max_hp <= STABBOT_A8_HP_RANGE[1]
         assert stabbot_ai.states[STABBOT_STAB_MOVE].intents[0].damage == STABBOT_STAB_DAMAGE_A9
         player_hp_before_stab = fabricator_combat.player.current_hp
         stabbot_ai.current_move.perform(fabricator_combat)
@@ -5187,7 +5193,10 @@ class TestFixedRotation:
 
         noisebot, noisebot_ai = create_noisebot(_FixedIntsRng([NOISEBOT_A8_HP_RANGE[0]]), ascension_level=9)
         fabricator_combat.add_enemy(noisebot, noisebot_ai)
-        assert noisebot.max_hp == NOISEBOT_A8_HP_RANGE[0]
+        # Range, for the same reason as the Stabbot above: a bot already on the
+        # side holds this total, and HP uniqueness is enforced across the whole
+        # enemy list rather than per species.
+        assert NOISEBOT_A8_HP_RANGE[0] <= noisebot.max_hp <= NOISEBOT_A8_HP_RANGE[1]
         assert noisebot_ai.current_move.state_id == NOISEBOT_NOISE_MOVE
 
         fabricator_encounter_combat = _make_combat(rng_seed)

@@ -104,7 +104,7 @@ def create_corpse_slug(
         CORPSE_SLUG_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=CORPSE_SLUG_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=CORPSE_SLUG_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def whip_slap(combat: CombatState) -> None:
         _deal_damage_to_player(
@@ -202,7 +202,7 @@ def create_seapunk(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Monste
         SEAPUNK_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=SEAPUNK_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=SEAPUNK_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def sea_kick(combat: CombatState) -> None:
         sea_kick_dmg = _ascension_value(
@@ -302,7 +302,7 @@ def create_sludge_spinner(rng: Rng, ascension_level: int = 0) -> tuple[Creature,
         SLUDGE_SPINNER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=SLUDGE_SPINNER_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=SLUDGE_SPINNER_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def oil_spray(combat: CombatState) -> None:
         oil_spray_dmg = _ascension_value(
@@ -423,7 +423,7 @@ def create_toadpole(
         TOADPOLE_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=TOADPOLE_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=TOADPOLE_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def spike_spit(combat: CombatState) -> None:
         if creature.has_power(PowerId.THORNS):
@@ -523,7 +523,7 @@ def create_calcified_cultist(rng: Rng, ascension_level: int = 0) -> tuple[Creatu
         CALCIFIED_CULTIST_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=CALCIFIED_CULTIST_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=CALCIFIED_CULTIST_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def incantation(combat: CombatState) -> None:
         creature.apply_power(PowerId.RITUAL, CALCIFIED_CULTIST_INCANTATION_RITUAL)
@@ -588,7 +588,7 @@ def create_damp_cultist(rng: Rng, ascension_level: int = 0) -> tuple[Creature, M
         DAMP_CULTIST_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=DAMP_CULTIST_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=DAMP_CULTIST_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def incantation(combat: CombatState) -> None:
         ritual = _ascension_value(
@@ -669,7 +669,7 @@ def create_fossil_stalker(rng: Rng, ascension_level: int = 0) -> tuple[Creature,
         FOSSIL_STALKER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=FOSSIL_STALKER_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=FOSSIL_STALKER_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def tackle(combat: CombatState) -> None:
         tackle_dmg = _ascension_value(
@@ -781,7 +781,7 @@ def create_sneaky_gremlin(rng: Rng, ascension_level: int = 0) -> tuple[Creature,
         SNEAKY_GREMLIN_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=SNEAKY_GREMLIN_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=SNEAKY_GREMLIN_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def spawned(combat: CombatState) -> None:
         pass
@@ -841,7 +841,7 @@ def create_fat_gremlin(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Mo
         FAT_GREMLIN_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=FAT_GREMLIN_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=FAT_GREMLIN_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def spawned(combat: CombatState) -> None:
         pass
@@ -902,7 +902,7 @@ def create_gremlin_merc(rng: Rng, ascension_level: int = 0) -> tuple[Creature, M
         GREMLIN_MERC_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=GREMLIN_MERC_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=GREMLIN_MERC_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def gimme(combat: CombatState) -> None:
         gimme_dmg = _ascension_value(
@@ -1487,7 +1487,7 @@ def create_two_tailed_rat(
         TWO_TAILED_RAT_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=TWO_TAILED_RAT_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=TWO_TAILED_RAT_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
     state = {
         TWO_TAILED_RAT_TURNS_UNTIL_SUMMONABLE_KEY: TWO_TAILED_RAT_INITIAL_TURNS_UNTIL_SUMMONABLE,
         TWO_TAILED_RAT_CALL_FOR_BACKUP_COUNT_KEY: 0,
@@ -1684,7 +1684,7 @@ def create_phantasmal_gardener(
         PHANTASMAL_GARDENER_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=PHANTASMAL_GARDENER_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=PHANTASMAL_GARDENER_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def bite(combat: CombatState) -> None:
         _deal_damage_to_player(combat, creature, PHANTASMAL_GARDENER_BITE_DAMAGE)

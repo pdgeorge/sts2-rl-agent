@@ -136,7 +136,7 @@ def create_devoted_sculptor(rng: Rng, ascension_level: int = 0) -> tuple[Creatur
 
 def create_scroll_of_biting(rng: Rng, starter_move_idx: int = 0) -> tuple[Creature, MonsterAI]:
     hp = rng.next_int(31, 38)
-    creature = Creature(max_hp=hp, monster_id="SCROLL_OF_BITING")
+    creature = Creature(max_hp=hp, monster_id="SCROLL_OF_BITING", min_initial_hp=31, max_initial_hp=38)
     chomp_dmg = 14
     chew_dmg = 5
 
@@ -241,7 +241,7 @@ def create_axebot(
     stock_amount: int | None = None,
 ) -> tuple[Creature, MonsterAI]:
     hp = rng.next_int(40, 44)
-    creature = Creature(max_hp=hp, monster_id="AXEBOT")
+    creature = Creature(max_hp=hp, monster_id="AXEBOT", min_initial_hp=40, max_initial_hp=44)
     one_two_dmg = 5
     hammer_uppercut_dmg = 8
     hammer_uppercut_debuff = 1
@@ -313,7 +313,7 @@ def create_zapbot(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Monster
         ZAPBOT_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=ZAPBOT_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=ZAPBOT_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def zap(combat: CombatState) -> None:
         zap_dmg = _ascension_value(
@@ -367,7 +367,7 @@ def create_stabbot(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Monste
         STABBOT_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=STABBOT_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=STABBOT_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def stab(combat: CombatState) -> None:
         stab_dmg = _ascension_value(
@@ -420,7 +420,7 @@ def create_guardbot(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Monst
         GUARDBOT_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=GUARDBOT_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=GUARDBOT_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def guard(combat: CombatState) -> None:
         for enemy in combat.alive_enemies:
@@ -462,7 +462,7 @@ def create_noisebot(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Monst
         NOISEBOT_BASE_MAX_HP,
     )
     hp = rng.next_int(min_hp, max_hp)
-    creature = Creature(max_hp=hp, monster_id=NOISEBOT_MONSTER_ID)
+    creature = Creature(max_hp=hp, monster_id=NOISEBOT_MONSTER_ID, min_initial_hp=min_hp, max_initial_hp=max_hp)
 
     def noise(combat: CombatState) -> None:
         for target in living_player_targets(combat):
