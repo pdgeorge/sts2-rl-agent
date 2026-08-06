@@ -561,3 +561,34 @@ Only the C# and the live game:
 3. **Phase 2.4 / 3.4 live sessions** — 20 runs each, with `--live-search`.
 
 Everything else in the plan through Phase 4 is runnable here.
+
+## PR #11 — Phase 3.3 ran, and the answer is no
+
+The retrain from 10.6 completed 1.19M of its 2M steps before the run was killed, and was scored against `combat_v3_overnight` on the held-out 200. Full numbers in `docs/MODELS.md`; the summary is that **Phase 3.3's hypothesis did not survive its own measurement.**
+
+```
+                  v3_overnight   real_situations
+win rate             74.0%          72.5%     -1.5% +/- 1.5%   inside the noise
+BOSS                  6.7%           6.7%     (15 fights -- 1 fight either way)
+ELITE                42.3%          46.2%     (26 fights, +/-10%)
+```
+
+The boss row — the row the retrain existed for — did not move. And it is not a question of the missing 810k steps: the held-out eval reward is flat across the entire 1.19M, first quarter +0.397 against last quarter +0.428, oscillating around +0.45 from the first evaluation onward. The curve never climbed. A fine-tune from an already-converged model began at its ceiling and stayed.
+
+### What this changes in the plan
+
+The "What 'never blocks, never plays Powers' actually is" section above argues the failure is a distribution problem, and concludes the model "literally couldn't learn it". The first half of that is well-evidenced — the starter deck really does contain 0 Powers, and the model really was never shown a situation where one was right. **The second half is now disconfirmed.** Shown 2000 real situations for 1.19M steps, it still did not learn it. Being unable to learn from the old distribution did not imply being able to learn from the better one.
+
+Set that against the turn-search rows in `MODELS.md`: 83% overall and 20–26.7% boss on the *same* 200 fights, against this model's 72.5% / 6.7%. Lookahead moves bosses; combat training on a better distribution does not. That is the Phase 2.4 decision point — "if boss win rate is still 0%, the deckbuilding phase is the gating failure" — arrived at from the training side without needing the live session to tell us.
+
+**So Phase 3 is answered and should not be re-run bigger.** The remaining Act 1 gap is in search (Phase 2) and deckbuilding (Phase 4), not in the combat policy's training data. Phase 3.2's fixture keeps its value regardless: it is the situation set the *search* should be evaluated on, and `--situation-set` remains the right plumbing.
+
+### The pass bar was not measurable
+
+Phase 3.3 set "≥80% overall / ≥30% boss" as its gate. The benchmark holds 15 boss fights. A proportion near 30% on n=15 carries a standard error of roughly 12 points, so the bar and the observed 6.7% sit about one standard error apart — **no run could have cleared that gate on this fixture**, including a run that genuinely deserved to.
+
+This is worth fixing before any further boss claims are made, and it is cheap: the harvester already produces boss fights (the 2000-set contains 165), it just needs a boss-weighted held-out draw at a fresh seed. Until that exists, treat every boss percentage in this document — including the 20–26.7% attributed to turn search — as one or two fights of resolution.
+
+### Operational note
+
+The 2M run was killed at 1.19M steps because a backgrounded shell does not outlive the agent process that started it. Long runs want `setsid nohup … &` so they survive; the benchmark that produced the numbers above was launched that way and did.

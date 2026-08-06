@@ -46,6 +46,58 @@ starter-deck numbers measuring a different thing.
 
 ---
 
+## combat_real_situations — 2026-08-06 — trained on real situations, a null result
+
+The Phase 3.3 experiment from `docs/GLM_ROADMAP_50P_ACT1.md`: fine-tune
+`combat_v3_overnight` on 2000 harvested real situations rather than the starter
+deck, on the diagnosis that the model "literally couldn't learn" Powers and
+blocking because no training situation ever made them the right call.
+
+`--situation-set act1_combat_train_2000.json` (2000 fights, disjoint from the
+benchmark), `--eval-situation-set act1_combat_benchmark.json` (the held-out
+200), resumed from `combat_v3_overnight`, 8 envs. Reached 1.19M of 2M steps
+before the run was killed; `best_model.zip` is the checkpoint the held-out eval
+selected.
+
+Paired over the same 200 fights:
+
+```
+                  v3_overnight   real_situations
+win rate             74.0%          72.5%     -1.5% +/- 1.5%   inside the noise
+hp lost               24.5           24.7     +0.2  +/- 0.4    inside the noise
+MONSTER              85.5%          83.0%
+ELITE                42.3%          46.2%     (26 fights, +/-10%)
+BOSS                  6.7%           6.7%     (15 fights -- 1 fight either way)
+won only by real_situations: 3,  only by v3_overnight: 6
+```
+
+**The distribution hypothesis did not survive contact with the measurement.**
+Every headline number is inside the noise, and the boss row -- the one the
+retrain was for -- did not move at all. It is the same single won fight out of
+fifteen.
+
+Nor was it a matter of steps. The held-out eval reward is **flat across the
+whole 1.19M**: first quarter mean +0.397, last quarter +0.428, block means
+oscillating around +0.45 from the first evaluation onward. The curve never
+climbed, so the missing 810k steps are not where the improvement was hiding.
+The fine-tune began at its ceiling and stayed there.
+
+**What this rules in.** Compare the turn-search rows below: 83% overall and
+20-26.7% boss, against this model's 72.5% / 6.7%, on the same 200 fights.
+Lookahead moves bosses; more combat training on a better distribution does not.
+That points the remaining Act 1 gap at search and at deckbuilding rather than at
+the combat policy's training data, which is the Phase 2.4 decision point the
+roadmap already wrote down -- reached here from the training side instead.
+
+**A caveat on the pass bar.** Phase 3.3 set "≥30% boss" as its gate. The
+benchmark has 15 boss fights, so a proportion near 30% carries a standard error
+of about 12 points -- the bar and the current 6.7% are roughly one standard
+error apart, and no run can be said to have cleared it on this fixture. A
+boss-weighted held-out set is a prerequisite for asking the boss question at
+all, not a refinement of it.
+
+---
+
 ## turn search v3 — 2026-08-05 — terminal rollouts, a null result, kept off
 
 `--top-k 5 --rollout-samples 3`. Off by default; the code stays because the
