@@ -308,6 +308,7 @@ def run_agent(
         events_seen: dict[str, int] = {}
         last_fingerprint: tuple | None = None
         identical_states = 0
+        _pending_removal = False
         stuck_log = "output/stuck_states.jsonl"
         journal = RunJournal(journal_path, model=model_path)
         journal.start_run(1)
@@ -708,7 +709,12 @@ def run_agent(
                             logger.info("CARD_BUNDLE: choosing bundle %s", choice)
                         client.choose(choice)
                     elif msg_type == BridgeStateType.CARD_SELECT:
-                        indexes = _pick_card_select_indexes(state)
+                        indexes = _pick_card_select_indexes(
+                            state, removing=_pending_removal)
+                        # One screen per purchase: clear it however the screen
+                        # resolves, so a later transform is never mistaken for
+                        # a removal.
+                        _pending_removal = False
                         if verbose:
                             logger.info("CARD_SELECT: choosing indexes %s", indexes)
                         if not indexes:
@@ -735,8 +741,15 @@ def run_agent(
 
                 elif phase == Phase.SHOP:
                     choice = _pick_shop_option(state)
+                    # The card_select that follows a bought removal is the only
+                    # one we can identify, and identifying it is what lets that
+                    # screen target a curse instead of guessing. Set here rather
+                    # than inferred there, because this is where the knowledge
+                    # actually exists.
+                    _pending_removal = _is_removal_option(state, choice)
                     if verbose:
-                        logger.info("SHOP: choosing option %d", choice)
+                        logger.info("SHOP: choosing option %d%s", choice,
+                                    " (card removal)" if _pending_removal else "")
                     client.choose(choice)
 
                 elif phase == Phase.EVENT:
@@ -886,17 +899,48 @@ def _is_upgraded(card: Any) -> bool:
     return _card_name(card).endswith("+")
 
 
+def _is_curse(card: Any) -> bool:
+    """A curse, by the card `type` the mod already sends.
+
+    `RlCardSelector` writes `card.Type.ToString()` on every card, so this needs
+    no lookup and stays right when a card is added. Falls back to the id for
+    payloads that predate the field.
+    """
+    if isinstance(card, dict):
+        if str(card.get("type", "")).upper() == "CURSE":
+            return True
+    return "CURSE" in _card_label(card).upper()
+
+
+def _deck_has_curse(state: dict[str, Any]) -> bool:
+    return any(_is_curse(c) for c in (state.get("deck") or []))
+
+
 def _worth_upgrading(card: Any) -> bool:
     return not _is_basic_card(card) and not _is_upgraded(card)
 
 
-def _pick_card_select_indexes(state: dict[str, Any]) -> list[int]:
-    """Choose required card indexes for upgrade/transform/select screens.
+def _pick_card_select_indexes(state: dict[str, Any], *, removing: bool = False) -> list[int]:
+    """Choose required card indexes for upgrade/transform/removal screens.
 
-    Basics go last. This used to take the first cards in the list, and a deck is
-    listed Strike, Strike, Strike... so every upgrade at a rest site went into a
-    basic Strike -- the least valuable upgrade available and one that does
-    nothing for a deck's actual problems.
+    The mod cannot tell us which of those this is. `RlCardSelector` implements a
+    generic hook the *game* calls -- its own docstring lists "deck upgrade, deck
+    transform, deck enchant, hand selection, and various other card selection
+    prompts" -- so the payload carries only cards, min_select and max_select.
+    `removing` is therefore supplied by the caller, which knows: the runner sets
+    it after it has just bought a shop card-removal.
+
+    ON REMOVAL: curses only. Not "basics", which was the tempting answer and is
+    wrong twice over -- pulling Strikes out of a strike-synergy deck weakens it,
+    and a Defend may be the only block the deck owns, which a card-select screen
+    gives no way to know. A curse is unambiguously worth losing.
+
+    ON EVERYTHING ELSE: basics last, and never a curse. Basics-last is right for
+    upgrades -- a deck lists Strike, Strike, Strike, so taking the first card
+    put every rest-site upgrade into a basic Strike. Avoiding curses is right
+    for transforms, because transforming a curse yields another curse and
+    sometimes a worse one. Both hold for a screen we cannot identify, which is
+    why this is the default rather than the removal behaviour.
     """
     cards = list(state.get("cards", []))
     min_select = max(int(state.get("min_select", 1)), 0)
@@ -905,11 +949,23 @@ def _pick_card_select_indexes(state: dict[str, Any]) -> list[int]:
         return []
     count = min(min_select, max_select, len(cards))
 
-    # Stable ordering: real cards first, then basics, each keeping deck order so
-    # the choice stays reproducible.
+    if removing:
+        # Curses only. If the game opened a removal screen with no curse on it,
+        # take nothing rather than removing something the deck wants -- the
+        # runner should not have bought the removal in the first place.
+        curses = [i for i in range(len(cards)) if _is_curse(cards[i])]
+        if not curses:
+            logger.warning(
+                "CARD_SELECT: asked to remove from a deck with no curse; "
+                "declining rather than removing a card the deck may need.")
+            return []
+        return [_read_index(cards[i], i) for i in curses[:count]]
+
+    # Stable ordering: real cards first, then basics, and curses last of all,
+    # each keeping deck order so the choice stays reproducible.
     ranked = sorted(
         range(len(cards)),
-        key=lambda i: (not _worth_upgrading(cards[i]), i),
+        key=lambda i: (_is_curse(cards[i]), not _worth_upgrading(cards[i]), i),
     )
     chosen = ranked[:count]
     return [_read_index(cards[i], i) for i in chosen]
@@ -1058,12 +1114,26 @@ def _pick_rest_option(state: dict[str, Any]) -> int:
     return _read_index(option, DEFAULT_CHOICE_INDEX)
 
 
+def _is_removal_option(state: dict[str, Any], chosen_index: int) -> bool:
+    """Did the shop choice we just made buy a card removal?"""
+    for option in _enabled_options(state):
+        if _read_index(option, -1) == chosen_index:
+            return str(option.get("action", "")) == "remove_card"
+    return False
+
+
 def _pick_shop_option(state: dict[str, Any]) -> int:
     """Buy an enabled shop item when one exists; leave when only exit remains."""
     options = _enabled_options(state)
     if not options:
         return DEFAULT_CHOICE_INDEX
     for action in SHOP_PURCHASE_ACTION_PRIORITY:
+        if action == "remove_card" and not _deck_has_curse(state):
+            # Card removal is only ever bought to delete a curse. Without one
+            # the screen that follows can only take something the deck wants,
+            # and there is no way to tell from it whether that Defend was the
+            # deck's only block.
+            continue
         option = _first_matching_option(options, actions=(action,))
         if option is not None:
             return _read_index(option, DEFAULT_CHOICE_INDEX)
