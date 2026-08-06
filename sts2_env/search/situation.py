@@ -186,9 +186,10 @@ class CombatSituation:
     act_floor: int = 1
     total_floor: int = 1
     ascension_level: int = 0
-    #: Enemy max HP as the game reported it, in slot order, when this situation
-    #: came from a live bridge state. Empty for a harvested situation, which
-    #: rolls its enemies from `encounter_seed` and is internally consistent.
+    #: Enemy max HP as it actually was, in slot order -- reported by the bridge
+    #: for a live fight, read off the RunManager's combat for a harvested one.
+    #: Empty only for a fixture written before this field existed, which falls
+    #: back to rolling from `encounter_seed`.
     #:
     #: This exists because monster HP *cannot* be reconstructed from the
     #: encounter seed. `CombatState.cs:499` rolls it from
@@ -377,6 +378,19 @@ class CombatSituation:
         name, encounter_seed, combat_seed = encounter
 
         player = mgr.run_state.player
+
+        # Record the enemies this run actually rolled, for the same reason the
+        # bridge path does: monster HP comes from the run-level Niche stream
+        # (`CombatState.cs:496`), whose position depends on everything earlier
+        # in the run, so `encounter_seed` cannot reproduce it. Without this a
+        # fixture drifts away from the fight it was harvested from the moment
+        # anything about the RNG changes -- which is exactly what happened when
+        # the generator was corrected on 2026-08-06.
+        live_combat = getattr(mgr, "_combat", None)
+        enemy_max_hp = tuple(
+            int(enemy.max_hp) for enemy in getattr(live_combat, "enemies", ()) or ()
+        )
+
         return cls(
             situation_id=situation_id,
             character_id=player.character_id,
@@ -400,6 +414,7 @@ class CombatSituation:
             act_floor=mgr.run_state.act_floor,
             total_floor=mgr.run_state.total_floor,
             ascension_level=mgr.run_state.ascension_level,
+            enemy_max_hp=enemy_max_hp,
         )
 
     @classmethod
