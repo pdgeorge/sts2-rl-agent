@@ -80,10 +80,69 @@ def _effects_from_decompile(class_name: str) -> tuple[str, ...]:
     phrases: list[str] = []
     for power in dict.fromkeys(_APPLY.findall(source)):
         phrases.append(f"Applies {_spaced(power)}.")
-    # No "Uses: ..." line. It was built from every `XCmd.Y` in the source and
-    # produced things like "Sfx play" -- sound-effect calls, embedded as though
-    # they described the card.
+    phrases.extend(_commands_from_decompile(class_name))
     return tuple(phrases)
+
+
+#: Game commands worth describing, mapped to English. Everything absent from
+#: this table is ignored, which is the point -- the first version of this read
+#: every `XCmd.Y` in the source and produced "Sfx play", embedding sound-effect
+#: calls as though they described the card.
+#:
+#: This exists because 47 of 89 ironclad cards had a thin description and six
+#: had NONE: Body Slam, Entrench, Bloodletting, Burning Pact, Dual Wield and
+#: Expect A Fight are pure logic, applying no power and dealing no base damage,
+#: so there was nothing for the preview fields or the power docstrings to say.
+_COMMAND_PHRASES = {
+    ("CreatureCmd", "GainBlock"): "Gain Block",
+    ("CreatureCmd", "Heal"): "Heal HP",
+    ("CreatureCmd", "Damage"): "Lose HP",
+    ("DamageCmd", "Attack"): "Deal damage",
+    ("DamageCmd", "AttackAll"): "Deal damage to ALL enemies",
+    ("PlayerCmd", "GainEnergy"): "Gain Energy",
+    ("PlayerCmd", "Draw"): "Draw cards",
+    ("PlayerCmd", "DrawCards"): "Draw cards",
+    ("CardCmd", "Draw"): "Draw cards",
+    ("CardCmd", "Exhaust"): "Exhaust a card",
+    ("CardCmd", "Upgrade"): "Upgrade a card",
+    ("CardCmd", "Discard"): "Discard a card",
+    ("CardCmd", "AddToHand"): "Add a card to your hand",
+    ("CardCmd", "AddToDrawPile"): "Add a card to your draw pile",
+    ("CardCmd", "AddToDiscardPile"): "Add a card to your discard pile",
+    ("PotionCmd", "Obtain"): "Gain a potion",
+    ("RelicCmd", "Obtain"): "Gain a relic",
+}
+
+#: Argument fragments that say what a value scales with. `Owner.Creature.Block`
+#: as the amount is what makes Entrench "double your Block" rather than "gain
+#: some block", and it is the whole reason those cards belong to an archetype.
+_SCALES_WITH = (
+    ("Owner.Creature.Block", "equal to your Block"),
+    ("Owner.Creature.CurrentHp", "based on your current HP"),
+    ("Hand.Count", "for each card in your hand"),
+    ("ExhaustPile.Count", "for each Exhausted card"),
+    ("DrawPile.Count", "for each card in your draw pile"),
+)
+
+
+@functools.lru_cache(maxsize=None)
+def _commands_from_decompile(class_name: str) -> tuple[str, ...]:
+    """The card's own OnPlay, as English, for the commands worth naming."""
+    path = DECOMPILE_CARDS / f"{class_name}.cs"
+    try:
+        source = path.read_text(errors="ignore")
+    except OSError:
+        return ()
+
+    phrases: list[str] = []
+    for line in source.splitlines():
+        for (obj, action), phrase in _COMMAND_PHRASES.items():
+            if f"{obj}.{action}(" not in line:
+                continue
+            scale = next((text for frag, text in _SCALES_WITH if frag in line), "")
+            phrases.append(f"{phrase} {scale}.".replace(" .", "."))
+            break
+    return tuple(dict.fromkeys(phrases))
 
 
 _POWER_REF = re.compile(r"PowerId\.([A-Z_]+)")
