@@ -70,10 +70,28 @@ def _card_id(card: Any) -> CardId | None:
         return None
 
 
-def _metadata(card_id: CardId):
+def _metadata(card_id: CardId, upgraded: bool = False):
+    """Static metadata and a preview instance, at the requested upgrade state.
+
+    `upgraded` used to be absent entirely, so every card was scored as its base
+    version. That was tolerable while this only ranked card rewards -- the three
+    on offer are rarely upgraded -- and became load-bearing the moment
+    `upgrade_targets` asked "how much better would this card be upgraded?", a
+    question whose answer was structurally 0.0 for all 564 numeric upgrades.
+    """
     from sts2_env.cards.factory import card_metadata, card_preview
 
+    if upgraded:
+        from sts2_env.cards.factory import create_card
+
+        return card_metadata(card_id), create_card(card_id, upgraded=True)
     return card_metadata(card_id), card_preview(card_id)
+
+
+def _is_upgraded(card: Any) -> bool:
+    if isinstance(card, dict):
+        return bool(card.get("upgraded"))
+    return bool(getattr(card, "upgraded", False))
 
 
 def infer_character(deck: list[Any]) -> str | None:
@@ -143,7 +161,7 @@ def score_card(card: Any, deck: list[Any] | None = None) -> float:
         return CARD_RATINGS[card_id.name]
 
     try:
-        meta, preview = _metadata(card_id)
+        meta, preview = _metadata(card_id, _is_upgraded(card))
     except Exception:
         logger.debug("No metadata for %s", card_id, exc_info=True)
         return 0.0

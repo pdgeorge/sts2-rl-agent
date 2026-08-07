@@ -347,3 +347,28 @@ run took.
 what "a better card" means. Comparing card-pickers under a solver that loses 93%
 of bosses may pick a different winner than the live stack, which plays combat
 with search.
+
+### 7. Card quality reads only damage and block
+
+`card_quality.score_card` values a card by `(damage + block) / cost` plus
+rarity. It cannot see **draw, energy, debuff duration, or any conditional
+effect**, which shows up in three places found so far:
+
+- **Logic-only cards score 0.0.** Body Slam ("damage equal to your Block") and
+  Entrench ("double your Block") have no base damage or block. Worked around in
+  `score_card_for_deck`, where a zero is treated as *no opinion* and archetype
+  fit decides instead — but the underlying scorer is still blind.
+- **Upgrade gains are understated.** Pommel Strike gains a card of draw and
+  scores `+0.10`; Uppercut doubles Weak and Vulnerable duration and scores
+  `+0.00`. Both are cards the user cited as going from fine to excellent when
+  upgraded. The `upgrade_targets` delta is correct; what it differences is not.
+- **The card text generator had the same hole**, for the same reason, and was
+  fixed separately by reading effects out of the decompile.
+
+The pattern is worth stating on its own: **anything that reads base damage and
+block is blind to roughly a third of the Ironclad's cards.** Three components
+have now hit it independently.
+
+A real fix means scoring effects — draw, energy, scaling, debuff duration — not
+just the two numbers on the card face. `CARD_RATINGS` is the intended override
+hook and is currently empty.

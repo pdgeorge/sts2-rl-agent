@@ -41,6 +41,20 @@ from pathlib import Path
 
 import numpy as np
 
+DEFAULT_MODEL_PATH = str(
+    Path.home() / ".cache" / "sts2-models" / "qwen3-embedding-0.6b"
+)
+"""Where the encoder lives, and deliberately NOT the session scratchpad.
+
+It was downloaded to /tmp first, which on this machine is a tmpfs -- RAM-backed
+and cleared on reboot. That is 1.2GB of RAM held for a model used a few minutes
+per game patch, and it would have silently disappeared before the next one.
+
+Re-download with:
+
+    hf download Qwen/Qwen3-Embedding-0.6B --local-dir ~/.cache/sts2-models/qwen3-embedding-0.6b
+"""
+
 INSTRUCTION = (
     "Represent this Slay the Spire 2 card by its mechanics, so that cards which "
     "work together in the same deck are close together."
@@ -119,7 +133,9 @@ def encode(texts: list[str], model_path: str, batch_size: int = 32) -> np.ndarra
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", required=True, help="Path to Qwen3-Embedding-0.6B")
+    parser.add_argument(
+        "--model", default=DEFAULT_MODEL_PATH,
+        help=f"Path to Qwen3-Embedding-0.6B (default: {DEFAULT_MODEL_PATH})")
     parser.add_argument("--card-text", default="output/card_text.json")
     parser.add_argument("--out", default="sts2_env/data/card_embeddings.npz")
     parser.add_argument("--batch-size", type=int, default=32)
