@@ -46,6 +46,49 @@ starter-deck numbers measuring a different thing.
 
 ---
 
+## Archetype card picking — 2026-08-07 — a null result the experiment could not have avoided
+
+Step 10 of the Phase 5 build plan. 300 paired simulated runs, identical seeds,
+differing in exactly one place: `rank_cards(offered, deck)` against
+`rank_cards(offered, deck, direction)`.
+
+```
+control    mean floor 8.19   median 7
+archetype  mean floor 8.28   median 7
+
+difference +0.08 +/- 0.18   =  +0.5 se   INSIDE THE NOISE
+won 47, lost 45, tied 208
+```
+
+**Read the diagnostics, not the headline.** This experiment could not have
+detected an effect:
+
+- **44% of runs committed to no archetype at all.** The logic engages after
+  three non-starter cards with a clear margin, and most runs died first.
+- **208 of the 300 pairs tied** -- the two arms picked the same card throughout.
+  At `ARCHETYPE_WEIGHT = 0.6` only cards of similar quality reorder, which is
+  ~3% of pairs across the ironclad pool.
+- **The median run died on floor 7**, having made three picks.
+
+So this shows archetype picking does not help *in a regime where decks barely
+matter*. It is not evidence that it does not help.
+
+**The cause is the combat solver, the same one that caps the meta-policy.** The
+simulator fights with `combat_v3_overnight` -- 74% overall, 6.7% boss -- so runs
+end around floor 8. The live agent using turn search reaches a median of **17**.
+Deckbuilding decides runs at floor 17; at floor 7 you have made three picks and
+died.
+
+Pointedly, the first live run with archetype picking committed to strike-synergy
+on floor 3, drafted coherently for seven picks, and beat the act 1 boss at 18
+HP. That is precisely the regime this A/B has almost no data in.
+
+**What would answer it:** the same paired design with `SearchAgent` playing
+combat, so runs reach the depth where a deck exists. Roughly 50 pairs overnight
+rather than 300 in an hour, and measuring the agent that actually runs.
+
+---
+
 ## LIVE — 2026-08-06 — turn search transfers to the real game
 
 The first 20-run live session to finish all 20, and the first live evidence that
