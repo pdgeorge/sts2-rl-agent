@@ -267,7 +267,7 @@ Proposal (user's): scale the cap with progress rather than fixing it, e.g.
 floor-20 run gets room. Same reasoning as the live runner's end-turn escalation:
 the *next* unmodelled loop should cost a screen, not a run.
 
-### 4. Combat turn cost exactly cancels the win reward
+### 4. Stalling must be punished, not merely discounted
 
 ```
 COMBAT_TURN_COST = 0.005      COMBAT_WON = 1.0
@@ -275,16 +275,56 @@ COMBAT_TURN_COST = 0.005      COMBAT_WON = 1.0
 ```
 
 A 200-turn win nets **zero**. There is no gradient preferring an 8-turn win to
-an 80-turn one until the extreme, so stalling is close to free. Both terms exist
-(`COMBAT_HP_WEIGHT = 1.0` counts player HP double) — they are simply too weak to
-bite. Retuning, not a new mechanism, but it means retraining combat.
+an 80-turn one until the extreme, so stalling is close to free.
 
-### 5. `PHASE_BOSS_RELIC` may be a stale StS1 assumption
+**Requirement (user):** stalling for even ~20 turns should score worse than
+taking damage. So the turn cost has to be steep enough that a long fight is a
+real loss, not a small tax — which means an order of magnitude or two above
+0.005, and worth checking against `COMBAT_HP_WEIGHT` so the two are comparable
+at the intended crossover.
 
-Per the user, STS2 has no boss relic — it is an Ancient on the next floor.
-`RunManager.PHASE_BOSS_RELIC` and the `BOSS_RELIC` bridge state with
-`pick_relic` both exist. Either a misnamed phase or content the game does not
-have. Unverified; worth a look before anything is built on it.
+**This is not only a training concern.** Cyra is watched. Nobody wants to sit
+through 200 turns of a Defend loop, so a policy that stalls is a product
+failure as much as a scoring one — which is the argument for making it
+genuinely negative rather than merely unrewarding.
+
+Retuning, not a new mechanism, but it means retraining combat.
+
+### 5. `PHASE_BOSS_RELIC` is a mechanic STS2 does not have — CONFIRMED
+
+Checked against the decompile. **There is no boss-relic concept in the game.**
+No `BossRelic` type exists anywhere in `decompiled/`. What follows a boss is an
+**Ancient**, and `AncientEventModel : EventModel`
+(`MegaCrit.Sts2.Core.Models/AncientEventModel.cs:24`) — it is an *event*, run by
+`EventRoom`, with a dialogue set and generated options. Per the user it sits on
+the floor *after* the boss: you pick the next node, take the reward, then move
+on again.
+
+The simulator models the Ancients correctly — `Darv`, `Orobas`, `Tezcatara` and
+the rest are `EventModel` subclasses in `sts2_env/events/shared.py`.
+
+**And it also has a fabricated Slay the Spire 1 boss-relic phase**:
+
+```python
+# run_manager.py:731
+def _enter_boss_relic(self) -> None:
+    """Offer three boss relics after defeating a boss."""
+```
+
+`_BOSS_RELIC_POOL` (`run_manager.py:187`) holds 11 relics — `ASTROLABE`,
+`BLACK_STAR`, `CALLING_BELL`, `ECTOPLASM`, `PANDORAS_BOX`,
+`PHILOSOPHERS_STONE` … which are **StS1 boss relics**.
+
+So after every boss the simulator enters a phase the game does not have and
+awards relics that do not exist in STS2. `meta_ppo_v8_rewarded` spent 17 hours
+training partly on deciding it, and `PHASE_BOSS_RELIC` is one of the phases the
+meta-policy nominally learns.
+
+**Also worth investigating (user):** floor 16 has historically been slow, and
+the Ancient screen is much longer than a standard card reward. Whether that
+interacts with TODO 1 — the observed floor-16 stall was a
+`TransformCardsReward` multi-select — is unconfirmed but suspicious, and the
+two should be looked at together.
 
 ### 6. The meta-policy is capped by the combat solver beneath it
 
