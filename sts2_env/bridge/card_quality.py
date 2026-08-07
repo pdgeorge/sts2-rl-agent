@@ -174,10 +174,76 @@ def score_card(card: Any, deck: list[Any] | None = None) -> float:
     return score
 
 
-def rank_cards(cards: list[Any], deck: list[Any] | None = None) -> list[tuple[float, int, Any]]:
+ARCHETYPE_WEIGHT = 0.6
+"""How much the deck's plan is allowed to move a card's score.
+
+At 0.6 a perfectly on-plan card is worth 1.6x its raw quality and a perfectly
+off-plan one 0.4x, so direction reorders cards of similar quality without ever
+letting a weak on-theme card beat a strong off-theme one outright. That ordering
+matters: the reference implementation this design came from picks purely by
+similarity and its own description calls it "greedy similarity-based selection
+... not an optimization solver", which would happily draft a coherent bad deck.
+"""
+
+
+ABSTAINED_QUALITY_SCALE = 2.0
+"""What fit alone is worth when card quality abstains.
+
+Calibrated against the quality scale rather than chosen: an ordinary playable
+card scores 1.5-2.0, so a perfectly on-archetype card the quality scorer cannot
+read lands in the same band rather than dominating or disappearing."""
+
+
+def score_card_for_deck(
+    card: Any,
+    deck: list[Any] | None = None,
+    direction: Any | None = None,
+) -> float:
+    """Quality, scaled by how well the card fits the deck's plan.
+
+    `score_card` answers "is this a good card", which is most of the job and all
+    of it before a plan exists. `direction` answers "does it belong in THIS
+    deck" -- the thing card quality cannot see, and the reason a vulnerability
+    payoff should outrank raw damage in a deck built on Vulnerable.
+
+    Three regimes, because quality means three different things:
+
+    * **negative** -- a curse or status. Refused however well it fits; letting
+      fit soften a negative would make a well-themed curse look takeable.
+    * **positive** -- scaled by fit. Direction reorders cards of similar
+      quality without letting a weak on-theme card beat a strong off-theme one.
+    * **zero** -- *no opinion*, not "worthless". `score_card` reads base damage
+      and block, so a card whose effect is pure logic scores nothing: Body Slam
+      ("damage equal to your Block") and Entrench ("double your Block") both
+      come out 0.0 despite being core block-scaling cards. Multiplying that by
+      fit leaves 0 and the deck would never take its own payoffs. So when
+      quality abstains, fit decides.
+    """
+    quality = score_card(card, deck)
+    if direction is None or quality < 0:
+        return quality
+
+    card_id = _card_id(card)
+    if card_id is None:
+        return quality
+    try:
+        fit = direction.fit(card_id.name)
+    except Exception:  # noqa: BLE001 - a missing embedding is not a crash
+        logger.debug("no archetype fit for %s", card_id, exc_info=True)
+        return quality
+    if quality == 0.0:
+        return ABSTAINED_QUALITY_SCALE * fit
+    return quality * (1.0 + ARCHETYPE_WEIGHT * fit)
+
+
+def rank_cards(
+    cards: list[Any],
+    deck: list[Any] | None = None,
+    direction: Any | None = None,
+) -> list[tuple[float, int, Any]]:
     """(score, index, card), best first. Ties keep the offered order."""
     scored = [
-        (score_card(card, deck), index, card)
+        (score_card_for_deck(card, deck, direction), index, card)
         for index, card in enumerate(cards)
     ]
     return sorted(scored, key=lambda entry: (-entry[0], entry[1]))

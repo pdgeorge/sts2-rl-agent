@@ -971,6 +971,33 @@ def _pick_card_select_indexes(state: dict[str, Any], *, removing: bool = False) 
     return [_read_index(cards[i], i) for i in chosen]
 
 
+def _deck_direction(state: dict[str, Any]):
+    """Which deck this run is building, read from the deck the bridge sent.
+
+    Rebuilt per decision rather than carried across the run. The bridge sends
+    the whole deck every time, so accumulating over it is the same answer with
+    no state to drift -- the same reason live_search rebuilds its combat from
+    the bridge on every call instead of keeping one.
+
+    Returns None if the archetype data is unavailable, and every caller then
+    behaves exactly as it did before there was any.
+    """
+    try:
+        from sts2_env.search.archetypes import DeckDirection
+    except Exception:  # noqa: BLE001 - deckbuilding help is never worth a crash
+        return None
+    try:
+        direction = DeckDirection()
+        direction.observe_deck(
+            str(c.get("id") if isinstance(c, dict) else c)
+            for c in (state.get("deck") or [])
+        )
+        return direction
+    except Exception:  # noqa: BLE001
+        logger.debug("could not read a deck direction", exc_info=True)
+        return None
+
+
 def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
     """Choose a card reward, or return None when taking nothing is better.
 
@@ -993,8 +1020,12 @@ def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
         return None if can_skip else DEFAULT_CHOICE_INDEX
 
     deck = state.get("deck") or []
-    ranked = rank_cards(cards, deck)
+    direction = _deck_direction(state)
+    ranked = rank_cards(cards, deck, direction)
     best_score, best_index, best_card = ranked[0]
+    if direction is not None and direction.committed and verbose_choice_logging():
+        logger.info("CARD_REWARD: deck reads as %s; picking %s",
+                    direction.committed, _card_label(best_card))
 
     deck_is_bloated = _read_deck_size(state) > CARD_REWARD_LARGE_DECK_SIZE
     not_worth_it = best_score < SKIP_THRESHOLD
@@ -1054,6 +1085,12 @@ def _record_stuck_state(path: str, state: dict[str, Any], repeats: int) -> None:
                                  default=str) + "\n")
     except Exception:
         logger.debug("Could not write the stuck state", exc_info=True)
+
+
+def verbose_choice_logging() -> bool:
+    """Whether to narrate a pick. Cheap indirection so the log line above stays
+    one condition rather than threading `verbose` through four call sites."""
+    return logger.isEnabledFor(logging.INFO)
 
 
 def _card_label(card: Any) -> str:
