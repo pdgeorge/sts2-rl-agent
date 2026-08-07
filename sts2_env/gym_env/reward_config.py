@@ -84,9 +84,36 @@ weighted double because enemy HP resets every combat and yours does not."""
 
 COMBAT_TURN_COST = 0.005
 """Per turn, not per step -- a turn with ten card plays is not ten times worse
-than one with a single play. Calibrated against real combat length (~26 turns,
-so 0.13 against a win worth 1.0) rather than against the 200-turn cap, so setup
-turns stay affordable while running to the cap costs twice a loss. The rule is
-not "stalling is bad", it is "stalling has to be going somewhere"."""
+than one with a single play.
+
+Charged only for the first COMBAT_FREE_TURNS. Stalling to draw the card you
+need, to build block before a big hit, or to stack a power is real Slay the
+Spire and has to stay affordable, so an ordinary fight pays almost nothing."""
+
+COMBAT_FREE_TURNS = 12
+"""How long a fight may run at the cheap rate before the steep one applies.
+
+Chosen above a normal fight and below a stall. Turns beyond this are not setup
+-- they are a fight that is not going anywhere."""
+
+COMBAT_STALL_TURN_COST = 0.05
+"""Per turn beyond COMBAT_FREE_TURNS. Ten times the cheap rate.
+
+THE REQUIREMENT THIS EXISTS FOR: stalling ~20 turns must score worse than taking
+damage. It did not. At a flat 0.005 a 200-turn fight cost exactly 1.0 -- the
+same as COMBAT_WON -- so stalling to the cap and winning netted zero and there
+was no gradient preferring an 8-turn win to an 80-turn one until the extreme.
+
+With the progressive rate:
+
+    10 turns  0.05   trivial, a normal fight
+    20 turns  0.46   worse than losing 40% of your HP (HP_WEIGHT is 1.0 on the
+                     fraction), which is the bar that was asked for
+    30 turns  0.96   about a whole win
+    200 turns 9.5    unambiguous
+
+This is a watchability requirement as much as a scoring one. Cyra is watched,
+and nobody wants to sit through 200 turns of a Defend loop, so a policy that
+stalls is a product failure even when it eventually wins."""
 
 COMBAT_SHAPING_SCALE = 1.0

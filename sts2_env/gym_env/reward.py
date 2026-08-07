@@ -59,14 +59,22 @@ Three parts.
    per turn, a -1 arriving at turn 200 is discounted into invisibility. A cost
    felt now is what makes indefinite stalling unprofitable now.
 
-   TURN_COST is deliberately small, and was lowered once already. Stalling to draw
-   the card you need, to build block before a big hit, or to stack a power is real
-   Slay the Spire and has to stay affordable. Observed combats run around 26
-   turns, so the cost has to be trivial at that length and only bite well beyond
-   it: at 0.005 a 26-turn fight pays 0.13 against a win worth 1.0, while running
-   to the 200-turn cap pays 1.0 on top of the -1 for truncating -- twice as bad as
-   losing. The intent is not "stalling is bad", it is "stalling has to be going
-   somewhere".
+   The turn cost is progressive, and flat pricing could not serve both goals at
+   once. Stalling to draw the card you need, to build block before a big hit, or
+   to stack a power is real Slay the Spire and has to stay affordable -- but at a
+   rate cheap enough for that, a 200-turn fight cost exactly 1.0, the same as a
+   win, so stalling to the cap and winning netted zero.
+
+   So the first COMBAT_FREE_TURNS are cheap and everything after is ten times
+   dearer. A 10-turn fight pays 0.05; 20 turns pays 0.46, which is worse than
+   losing 40% of your HP; 200 turns pays 9.5. The intent is unchanged -- not
+   "stalling is bad" but "stalling has to be going somewhere" -- only the pricing
+   now says so at the length where it stops being true.
+
+   An earlier version of this note said observed combats run ~26 turns. The
+   benchmark reports 10-11, and 26 looks like a mean inflated by exactly the
+   stalls this is meant to price -- the same trap as a mean floor of 9.6 across a
+   bimodal distribution.
 """
 
 from __future__ import annotations
@@ -79,6 +87,8 @@ from sts2_env.gym_env.reward_config import (
     COMBAT_LOSS_REWARD,
     COMBAT_SHAPING_SCALE,
     COMBAT_TRUNCATION_REWARD,
+    COMBAT_FREE_TURNS,
+    COMBAT_STALL_TURN_COST,
     COMBAT_TURN_COST,
     COMBAT_WIN_REWARD,
 )
@@ -90,7 +100,22 @@ TRUNCATION_REWARD = COMBAT_TRUNCATION_REWARD
 HP_WEIGHT = COMBAT_HP_WEIGHT
 ENEMY_WEIGHT = COMBAT_ENEMY_WEIGHT
 TURN_COST = COMBAT_TURN_COST
+FREE_TURNS = COMBAT_FREE_TURNS
+STALL_TURN_COST = COMBAT_STALL_TURN_COST
 SHAPING_SCALE = COMBAT_SHAPING_SCALE
+
+
+def turn_penalty(turns_elapsed: int) -> float:
+    """What a fight of this length costs. Cheap, then steep.
+
+    Flat pricing could not serve both goals at once: low enough that setup turns
+    stay affordable meant a 200-turn stall cost the same as one win, and high
+    enough to punish stalling made building block before a boss hit unaffordable.
+    Charging the two regimes differently gets both -- see COMBAT_STALL_TURN_COST.
+    """
+    turns = max(0, int(turns_elapsed))
+    cheap = min(turns, FREE_TURNS) * TURN_COST
+    return cheap + max(0, turns - FREE_TURNS) * STALL_TURN_COST
 
 
 def potential(combat: CombatState) -> float:
@@ -124,10 +149,10 @@ def compute_reward(
         # No shaping term on a terminal transition: phi of a finished combat is
         # not a prediction of anything, and adding it would let a win that ended
         # at low HP score below a loss.
-        return terminal - TURN_COST * turns_elapsed
+        return terminal - turn_penalty(turns_elapsed)
 
     if truncated:
-        return TRUNCATION_REWARD - TURN_COST * turns_elapsed
+        return TRUNCATION_REWARD - turn_penalty(turns_elapsed)
 
     shaping = gamma * potential(combat) - prev_potential
-    return SHAPING_SCALE * shaping - TURN_COST * turns_elapsed
+    return SHAPING_SCALE * shaping - turn_penalty(turns_elapsed)

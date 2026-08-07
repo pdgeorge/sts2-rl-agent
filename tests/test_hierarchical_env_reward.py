@@ -198,3 +198,52 @@ def test_solver_loop_terminates_on_run_over(env):
         env._inner._mgr.phase != RunManager.PHASE_COMBAT
         or env._inner._mgr.is_over
     ), "solver did not fast-forward combat to completion"
+
+# --- stalling must cost more than taking damage ----------------------------
+#
+# At a flat 0.005/turn a 200-turn fight cost exactly 1.0 -- the same as
+# COMBAT_WON -- so stalling to the cap and winning netted zero, and nothing
+# preferred an 8-turn win to an 80-turn one until the extreme.
+
+
+def test_a_normal_fight_pays_almost_nothing():
+    """Setup turns have to stay affordable: block before a big hit, stacking a
+    power, drawing the card you need. Benchmarked fights run 10-11 turns."""
+    from sts2_env.gym_env.reward import turn_penalty
+
+    assert turn_penalty(10) < 0.1
+
+
+def test_stalling_twenty_turns_costs_more_than_losing_forty_percent_hp():
+    """The requirement this was built for.
+
+    HP_WEIGHT is 1.0 on the HP *fraction*, so losing 40% of your HP costs 0.4.
+    Twenty turns has to be worse than that.
+    """
+    from sts2_env.gym_env.reward import HP_WEIGHT, turn_penalty
+
+    assert turn_penalty(20) > 0.4 * HP_WEIGHT
+
+
+def test_running_to_the_cap_is_unambiguously_worse_than_losing():
+    from sts2_env.gym_env.reward import LOSS_REWARD, turn_penalty
+
+    assert turn_penalty(200) > abs(LOSS_REWARD) * 4
+
+
+def test_the_penalty_never_decreases_with_length():
+    from sts2_env.gym_env.reward import turn_penalty
+
+    values = [turn_penalty(t) for t in range(0, 60)]
+    assert values == sorted(values)
+    assert turn_penalty(0) == 0.0
+
+
+def test_a_stalled_win_scores_below_a_quick_one():
+    """The gradient that was missing entirely."""
+    from sts2_env.gym_env.reward import turn_penalty
+
+    quick = 1.0 - turn_penalty(8)
+    stalled = 1.0 - turn_penalty(40)
+    assert stalled < quick
+    assert stalled < 0, "a 40-turn win should not be worth having"
