@@ -799,6 +799,39 @@ def run_agent(
                 # Log progress periodically
                 if step_count % 100 == 0:
                     logger.info("Step %d, combats seen: %d", step_count, combat_count)
+        except KeyboardInterrupt:
+            # Ctrl-C mid-run used to throw the run away. The summary is only
+            # emitted when the bridge reports a terminal state, so interrupting
+            # after the player died but before the game-over screen arrived
+            # lost the whole run -- including, once, the first live boss kill
+            # this project ever recorded. The journal and the raw capture
+            # survived because they flush per event; the run record did not
+            # exist yet.
+            #
+            # So build it here from the progress tracked so far and mark it
+            # interrupted, rather than letting a keystroke decide whether a run
+            # counts.
+            logger.warning(
+                "Interrupted mid-run. Recording run %d from the progress so "
+                "far rather than discarding it.", run_index + 1)
+            if on_run_end is not None:
+                summary = dict(progress)
+                summary.update({
+                    "run": run_index + 1,
+                    "result": "interrupted",
+                    "steps": step_count,
+                    "combats": combat_count,
+                    "seconds": round(time.monotonic() - run_started, 1),
+                    "act_cleared": int(progress.get("act", 1) or 1) >= 2,
+                    "death_enemy_id": None,
+                    "interrupted": True,
+                })
+                try:
+                    journal.record_run_end(summary)
+                    on_run_end(summary)
+                except Exception:  # noqa: BLE001 - never mask the interrupt
+                    logger.exception("could not record the interrupted run")
+            raise
         finally:
             if raw_capture is not None:
                 # In the finally so a Ctrl-C or a lost connection still lands
