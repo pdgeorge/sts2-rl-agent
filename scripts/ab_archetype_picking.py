@@ -74,6 +74,27 @@ def _pick_card_reward(mgr, run_mask, rng, use_archetype: bool):
     return int(slot) if slot < len(run_mask) and run_mask[slot] else None
 
 
+def _search_combat_action(agent, mgr, run_mask):
+    """One combat action from the turn searcher, as a run-level action index.
+
+    Combat occupies indices 0..114 of the run action space, so a combat action
+    index is already a run action index. Checked against the run mask rather
+    than trusted, the same as the model path does.
+    """
+    import numpy as np
+
+    combat = getattr(mgr, "_combat", None)
+    if combat is None or combat.is_over:
+        return None
+    try:
+        action = int(agent.act(combat))
+    except Exception:  # noqa: BLE001 - a search failure should not end the walk
+        return None
+    if action < len(run_mask) and run_mask[action]:
+        return action
+    return None
+
+
 def walk(seed: int, use_archetype: bool, combat_policy) -> tuple[int, str | None]:
     """One full run. Returns (floor reached, committed archetype or None)."""
     from sts2_env.gym_env.run_env import STS2RunEnv
@@ -97,7 +118,9 @@ def walk(seed: int, use_archetype: bool, combat_policy) -> tuple[int, str | None
 
         action = None
         if mgr.phase == RunManager.PHASE_COMBAT:
-            if combat_policy is not None:
+            if hasattr(combat_policy, "act"):
+                action = _search_combat_action(combat_policy, mgr, mask)
+            elif combat_policy is not None:
                 action = _combat_action(combat_policy, mgr, mask)
         elif mgr.phase == RunManager.PHASE_CARD_REWARD:
             action = _pick_card_reward(mgr, mask, rng, use_archetype)
@@ -126,6 +149,20 @@ def main() -> int:
     parser.add_argument("--runs", type=int, default=200)
     parser.add_argument("--combat-model",
                         default="output/combat_v3_overnight/final_model.zip")
+    parser.add_argument(
+        "--combat", choices=("model", "search"), default="model",
+        help=(
+            "Who plays the fights. `model` is the frozen PPO and is fast; "
+            "`search` is the turn planner the live agent actually uses. The "
+            "first A/B ran with `model` and could not answer its own question: "
+            "runs died around floor 8, 44%% committed to no archetype at all, "
+            "and 208 of 300 pairs tied, because a deck barely exists by the "
+            "time the run is over. Search reaches a median floor of 17 live, "
+            "which is where deckbuilding decides anything -- at maybe a tenth "
+            "the speed."
+        ))
+    parser.add_argument("--time-budget", type=float, default=1.0,
+                        help="Seconds per turn for --combat search (live uses 3.0)")
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
@@ -133,8 +170,15 @@ def main() -> int:
     sys.path.insert(0, "scripts")
     from harvest_combat_benchmark import _load_combat_policy
 
-    policy = _load_combat_policy(args.combat_model)
-    print(f"{args.runs} paired runs per arm, combat by {args.combat_model}\n")
+    if args.combat == "search":
+        from sts2_env.search.turn_search import SearchAgent
+
+        policy = SearchAgent(time_budget=args.time_budget, lookahead_turns=2)
+        who = f"turn search (budget {args.time_budget}s/turn)"
+    else:
+        policy = _load_combat_policy(args.combat_model)
+        who = args.combat_model
+    print(f"{args.runs} paired runs per arm, combat by {who}\n")
 
     control, archetype, committed = [], [], []
     for i in range(args.runs):
