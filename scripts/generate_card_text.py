@@ -40,8 +40,64 @@ similarity is that mechanically alike cards read alike, and they do.
 from __future__ import annotations
 
 import argparse
+import functools
 import json
+import re
 import sys
+from pathlib import Path
+
+
+DECOMPILE_CARDS = Path("decompiled/MegaCrit.Sts2.Core.Models.Cards")
+
+_APPLY = re.compile(r"Apply<(\w+?)Power>")
+_CMD = re.compile(r"\b(\w+)Cmd\.(\w+)")
+
+
+@functools.lru_cache(maxsize=None)
+def _effects_from_decompile(class_name: str) -> tuple[str, ...]:
+    """What the card's own C# says it does, as short phrases.
+
+    The preview fields cannot distinguish two Powers that grant nothing
+    numeric: Barricade and Dark Embrace both reduce to "a Power with no damage
+    or block", so they encode identically and an archetype classifier cannot
+    tell a block deck from an exhaust deck. Measured: leave-one-out fell to
+    7/15 on text built from preview fields alone.
+
+    The decompile names them -- `Apply<BarricadePower>`, `Apply<DarkEmbracePower>`
+    -- which is exactly the discriminating signal. Read from the decompile
+    rather than hand-listed, so a rebalance patch updates it via on_update.sh
+    like everything else.
+
+    Returns () when the file is missing: the decompile is a symlink to a path
+    outside the repo, and a missing one should cost description quality, not
+    raise.
+    """
+    path = DECOMPILE_CARDS / f"{class_name}.cs"
+    try:
+        source = path.read_text(errors="ignore")
+    except OSError:
+        return ()
+    phrases: list[str] = []
+    for power in dict.fromkeys(_APPLY.findall(source)):
+        phrases.append(f"Applies {_spaced(power)}.")
+    verbs = dict.fromkeys(
+        f"{_spaced(obj)} {action.lower()}"
+        for obj, action in _CMD.findall(source)
+        if obj not in {"Card"} or action not in {"Upgrade"}
+    )
+    if verbs:
+        phrases.append("Uses: " + ", ".join(list(verbs)[:6]) + ".")
+    return tuple(phrases)
+
+
+def _spaced(camel: str) -> str:
+    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", camel)
+
+
+def _class_name(card_id) -> str:
+    """CardId.BARRICADE_CARD -> "Barricade", matching the decompiled file name."""
+    stem = card_id.name[:-5] if card_id.name.endswith("_CARD") else card_id.name
+    return "".join(part.title() for part in stem.split("_"))
 
 
 def _describe(preview) -> str:
@@ -91,8 +147,14 @@ def card_text(card_id) -> dict:
     meta, preview = _metadata(card_id)
     keywords = sorted(str(k).split(".")[-1] for k in (preview.keywords or ()))
     tags = sorted(str(t).split(".")[-1] for t in (preview.tags or ()))
+    effects = _effects_from_decompile(_class_name(card_id))
+    description = _describe(preview)
+    if effects:
+        description = description + "\n" + "\n".join(effects)
     return {
-        "name": card_id.name.replace("_", " ").title(),
+        # Strip the simulator's `_CARD` suffix: it named the card "Barricade
+        # Card", which is noise in an embedding and wrong on a screen.
+        "name": _spaced(_class_name(card_id)),
         "type": str(preview.card_type).split(".")[-1].title(),
         "rarity": str(preview.rarity).split(".")[-1].title(),
         "color": str(preview.visual_card_pool.value
@@ -100,7 +162,7 @@ def card_text(card_id) -> dict:
                      else preview.visual_card_pool).lower(),
         "cost": str(preview.cost),
         "target": str(preview.target_type).split(".")[-1],
-        "description": _describe(preview),
+        "description": description,
         "keywords": keywords,
         "tags": tags,
     }
@@ -129,8 +191,6 @@ def main() -> int:
         if args.pool and row["color"].lower() != args.pool.lower():
             continue
         rows[card_id.name] = row
-
-    from pathlib import Path
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

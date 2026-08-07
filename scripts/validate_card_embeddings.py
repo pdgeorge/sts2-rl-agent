@@ -41,6 +41,7 @@ import argparse
 import collections
 import json
 import sys
+from pathlib import Path
 
 import numpy as np
 
@@ -55,9 +56,13 @@ ARCHETYPE_SEEDS = {
         "POMMEL_STRIKE", "SETUP_STRIKE",
     ],
     "block-scaling": ["BARRICADE", "BODY_SLAM", "DEMONIC_SHIELD"],
-    "strength-scaling": ["DEMON_FORM", "INFLAME", "LIMIT_BREAK"],
+    "strength": ["DEMON_FORM", "INFLAME", "LIMIT_BREAK"],
     "exhaust": ["CORRUPTION", "DARK_EMBRACE", "FIEND_FIRE"],
+    "bloodletting": ["RUPTURE", "TEAR_ASUNDER", "SPITE", "INFERNO"],
 }
+"""Seeded on payoffs, not enablers, so `bloodletting` means "built to lose HP
+profitably" rather than "contains a card that costs HP". A seed absent from the
+build (LIMIT_BREAK is not in this one) is skipped, not fatal."""
 
 STARTER_CARDS = {"STRIKE_IRONCLAD", "DEFEND_IRONCLAD", "BASH"}
 MIN_PICKED_FOR_CENTROID = 3
@@ -75,8 +80,41 @@ def _strip_card_suffix(card_id: str) -> str:
     return card_id[:-5] if card_id.endswith("_CARD") else card_id
 
 
+def resolve(card_id: str, emb: dict) -> str | None:
+    """Find a card in whichever id convention this embedding set uses.
+
+    Our own vectors carry the simulator's ids (`BARRICADE_CARD`); the published
+    dataset drops the suffix (`BARRICADE`). Seeds are written in the short form
+    and resolved here, so the same seed list works against both.
+    """
+    if card_id in emb:
+        return card_id
+    if f"{card_id}_CARD" in emb:
+        return f"{card_id}_CARD"
+    stripped = _strip_card_suffix(card_id)
+    return stripped if stripped in emb else None
+
+
 def load_embeddings(path: str) -> tuple[dict[str, np.ndarray], dict[str, dict]]:
-    """Return {card_id: centred unit vector} and {card_id: parsed card_text}."""
+    """Return {card_id: centred unit vector} and {card_id: parsed card_text}.
+
+    Accepts our own `.npz` (from `generate_card_embeddings.py`) or the reference
+    `.parquet` from the published dataset, so the two can be compared directly.
+    """
+    if str(path).endswith(".npz"):
+        blob = np.load(path, allow_pickle=False)
+        ids = [str(x) for x in blob["ids"]]
+        raw = blob["vectors"].astype(np.float32)
+        meta: dict[str, dict] = {}
+        text_path = Path(path).parent.parent / "output" / "card_text.json"
+        if not text_path.exists():
+            text_path = Path("output/card_text.json")
+        if text_path.exists():
+            meta = {k: v for k, v in json.loads(text_path.read_text()).items()}
+        centred = raw - raw.mean(axis=0)
+        centred /= np.linalg.norm(centred, axis=1, keepdims=True)
+        return {cid: centred[i] for i, cid in enumerate(ids)}, meta
+
     import pyarrow.parquet as pq
 
     table = pq.read_table(path).to_pydict()
@@ -103,7 +141,7 @@ def _unit(vector: np.ndarray) -> np.ndarray:
 def archetype_matrix(emb: dict[str, np.ndarray], seeds=ARCHETYPE_SEEDS):
     names, rows = [], []
     for name, cards in seeds.items():
-        vectors = [emb[c] for c in cards if c in emb]
+        vectors = [emb[resolve(c, emb)] for c in cards if resolve(c, emb)]
         if not vectors:
             continue
         names.append(name)
@@ -114,9 +152,9 @@ def archetype_matrix(emb: dict[str, np.ndarray], seeds=ARCHETYPE_SEEDS):
 def classify(deck_card_ids, emb, names, matrix):
     """(label, similarities) for a deck, or None when there is too little signal."""
     vectors = [
-        emb[_strip_card_suffix(c)]
+        emb[resolve(c, emb)]
         for c in deck_card_ids
-        if _strip_card_suffix(c) in emb and c not in STARTER_CARDS
+        if resolve(c, emb) and c not in STARTER_CARDS
     ]
     if len(vectors) < MIN_PICKED_FOR_CENTROID:
         return None
@@ -132,8 +170,8 @@ def peakedness(card_id: str, emb, matrix) -> float | None:
     decides what deck you are building", which is the distinction early picks
     need and card quality alone cannot make.
     """
-    key = _strip_card_suffix(card_id)
-    if key not in emb:
+    key = resolve(card_id, emb)
+    if key is None:
         return None
     sims = matrix @ emb[key]
     return float(sims.max() - sims.mean())
@@ -161,17 +199,17 @@ def main() -> int:
     print("\n=== 2. leave-one-out: a held-out seed must still find its archetype ===")
     hits = total = 0
     for name, seeds in ARCHETYPE_SEEDS.items():
-        present = [c for c in seeds if c in emb]
+        present = [c for c in seeds if resolve(c, emb)]
         for held in present:
             rest = {
-                n: ([c for c in s if c != held and c in emb] if n == name
-                    else [c for c in s if c in emb])
+                n: ([c for c in s if c != held and resolve(c, emb)] if n == name
+                    else [c for c in s if resolve(c, emb)])
                 for n, s in ARCHETYPE_SEEDS.items()
             }
             if len(rest[name]) < 2:
                 continue
             loo_names, loo_matrix = archetype_matrix(emb, rest)
-            predicted = loo_names[int((loo_matrix @ emb[held]).argmax())]
+            predicted = loo_names[int((loo_matrix @ emb[resolve(held, emb)]).argmax())]
             hits += predicted == name
             total += 1
             if predicted != name:
