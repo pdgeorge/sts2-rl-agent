@@ -217,3 +217,93 @@ except Exception:
 **Fix:** The simulator now keeps those three pile-composition slots zeroed as well, so simulator and bridge observations match on that segment without changing observation size.
 
 **Location:** `sts2_env/gym_env/observation.py`, `sts2_env/bridge/state_adapter.py`
+
+---
+
+## TODO — found 2026-08-07, from the `meta_ppo_v8_rewarded` training run
+
+Ordered by how much they cost, not by effort.
+
+### 1. Multi-select selection state is not in the run observation — BLOCKING
+
+**The one that matters.** `PendingCardChoice` with `is_multi=True` (a
+`TransformCardsReward`, for instance) presents N cards to toggle before
+confirming. Toggling works — `selected` flips 0→1→0 — but **the observation is
+byte-identical whether a card is selected or not.** Verified: unchanged across 8
+consecutive steps while selection flipped on and off.
+
+So the policy cannot see the effect of its own action. A deterministic policy
+picks the same option every step, toggling one card on, off, on, off, until the
+episode hits a step cap.
+
+**Cost, measured on the v8 eval logs:** 61 of 2350 episodes (2.6%) ran to
+~1950-1988 steps against a median of 19. Those 61 consumed **~73% of all
+evaluation steps**.
+
+**Worse than the 2.6% suggests: it strikes the good runs.** The captured case
+was at **floor 16** — the run had reached the Act 1 boss. `TransformCardsReward`
+comes from later rewards, so this systematically burns budget on, and truncates,
+precisely the episodes worth learning from.
+
+**Fix:** encode selection state in the run observation. Probably a handful of
+dims. Reproduce with seed 9004 against `meta_ppo_v8_rewarded/best_model`.
+
+### 2. `can_confirm()` never becomes true on that screen
+
+Related and possibly the same root cause. With one card selected,
+`can_confirm()` stays `False`, so action 0 (confirm) is never unmasked and there
+is no legal way to finish the screen. If the transform requires exactly N cards,
+the policy must be able to *reach* N — which it cannot while blind to what it
+has already selected. Worth checking whether the min is satisfiable at all.
+
+### 3. Floor-scaled step cap, as a backstop
+
+Not the fix for 1 and 2 — with those fixed these episodes end in one step rather
+than two thousand. But a fixed cap should not be what kills the deepest run of a
+session, which is exactly what happened here.
+
+Proposal (user's): scale the cap with progress rather than fixing it, e.g.
+`max_steps = MULTIPLIER * floors_reached`, so a floor-1 loop dies quickly and a
+floor-20 run gets room. Same reasoning as the live runner's end-turn escalation:
+the *next* unmodelled loop should cost a screen, not a run.
+
+### 4. Combat turn cost exactly cancels the win reward
+
+```
+COMBAT_TURN_COST = 0.005      COMBAT_WON = 1.0
+0.005 * 200 turns = 1.0
+```
+
+A 200-turn win nets **zero**. There is no gradient preferring an 8-turn win to
+an 80-turn one until the extreme, so stalling is close to free. Both terms exist
+(`COMBAT_HP_WEIGHT = 1.0` counts player HP double) — they are simply too weak to
+bite. Retuning, not a new mechanism, but it means retraining combat.
+
+### 5. `PHASE_BOSS_RELIC` may be a stale StS1 assumption
+
+Per the user, STS2 has no boss relic — it is an Ancient on the next floor.
+`RunManager.PHASE_BOSS_RELIC` and the `BOSS_RELIC` bridge state with
+`pick_relic` both exist. Either a misnamed phase or content the game does not
+have. Unverified; worth a look before anything is built on it.
+
+### 6. The meta-policy is capped by the combat solver beneath it
+
+`meta_ppo_v8_rewarded` moved `mean_floor` 8.8 → 9.7 across 4.28M steps and
+plateaued after ~860k. It trains with combat fast-forwarded by
+`FrozenRLCombatSolver(combat_v3_overnight)` — 74% overall, 6.7% boss. Dying
+around floor 9-10 means losing hallway and elite fights, well before the boss at
+16. No routing decision saves a run from losing its fights.
+
+The floor distribution is **bimodal, not a bell curve** — 28% die by floor 5,
+25% reach the boss, 7% clear Act 1 — so the mean describes almost no run, and
+the two humps are different problems.
+
+Roadmap Phase 4.3 (`FrozenSearchCombatSolver`) was written as *"skip unless
+4.1+4.2 alone reach the milestone"*. They did not. The cost is that search is
+~3s/turn inside a fast-forward loop, so it is far slower than the 17 hours this
+run took.
+
+**Also affects any deckbuilding A/B:** whichever solver runs underneath defines
+what "a better card" means. Comparing card-pickers under a solver that loses 93%
+of bosses may pick a different winner than the live stack, which plays combat
+with search.
