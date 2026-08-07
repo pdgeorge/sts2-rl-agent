@@ -37,8 +37,16 @@ def _bridge_obs(**state):
 def test_the_block_is_where_both_sides_think_it_is():
     """Pinned: 131 combat + 1690 identity + 32 deck features + 20 run-level + 126 choices."""
     from sts2_env.gym_env.deck_features import DECK_FEATURE_SIZE
-    assert BLOCK_START == 1967 + DECK_FEATURE_SIZE
-    assert RUN_OBS_SIZE == 2383
+    # Derived, not hardcoded: the relic/potion block sits at the end, so its
+    # start moves whenever anything before it changes size -- as it did when
+    # CHOICE_OBS_SIZE grew for multi-select selection state.
+    assert BLOCK_START == RUN_OBS_SIZE - RELIC_POTION_OBS_SIZE
+    assert BLOCK_START > 0
+    # Deliberately a literal: this is the fingerprint that makes an ACCIDENTAL
+    # layout change fail loudly. Update it only when the change was intended.
+    # 2383 -> 2501 on 2026-08-07, when card option slots grew from 6 to 20 and
+    # gained a `selected` feature so the agent can see multi-select state.
+    assert RUN_OBS_SIZE == 2501
 
 
 def test_the_simulators_starting_relic_matches_the_bridge():

@@ -26,6 +26,7 @@ from sts2_env.gym_env.entity_encoding import (
     entities_from_combat,
 )
 from sts2_env.gym_env.observation import OBS_SIZE as COMBAT_OBS_SIZE
+from sts2_env.gym_env.choice_encoding import CHOICE_OBS_SIZE
 from sts2_env.gym_env.run_env import RUN_OBS_SIZE
 
 # The identity block sits immediately after the original combat dims.
@@ -48,8 +49,19 @@ def _bridge(**state):
 def test_the_layout_offsets_are_pinned():
     assert ENTITY_START == 131
     from sts2_env.gym_env.deck_features import DECK_FEATURE_SIZE
-    assert RUN_OBS_SIZE == COMBAT_OBS_SIZE + ENTITY_OBS_SIZE + DECK_FEATURE_SIZE + 20 + 126 + 384
-    assert RUN_OBS_SIZE == 2383
+    # CHOICE_OBS_SIZE rather than a literal: it grew from 126 to 244 when
+    # multi-select selection state was added to the card slots, and a hardcoded
+    # number turns a deliberate layout change into a puzzle. The relationship is
+    # what this pins.
+    assert RUN_OBS_SIZE == (
+        COMBAT_OBS_SIZE + ENTITY_OBS_SIZE + DECK_FEATURE_SIZE + 20
+        + CHOICE_OBS_SIZE + 384
+    )
+    # Deliberately a literal: this is the fingerprint that makes an ACCIDENTAL
+    # layout change fail loudly. Update it only when the change was intended.
+    # 2383 -> 2501 on 2026-08-07, when card option slots grew from 6 to 20 and
+    # gained a `selected` feature so the agent can see multi-select state.
+    assert RUN_OBS_SIZE == 2501
 
 
 def test_player_poison_is_visible_on_both_sides():

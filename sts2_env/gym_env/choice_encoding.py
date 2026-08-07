@@ -42,14 +42,26 @@ from sts2_env.core.enums import CardId, CardType, MapPointType
 
 CHOICE_SLOTS = 6
 
-CARD_FEATURES = 7
+CARD_SLOTS = 20
+"""Card option slots, separate from CHOICE_SLOTS and much larger.
+
+A card *reward* offers three. A multi-select -- a deck transform, an enchant --
+offers the whole deck, and one was observed live at 19 options on floor 16. Six
+slots meant the agent could not see most of what it was choosing between.
+
+Map nodes and rest/event options stay at CHOICE_SLOTS because they are genuinely
+few. A screen with more options than slots leaves the tail unencoded, which
+costs decision quality but not the ability to finish the screen -- the mask still
+offers every option."""
+
+CARD_FEATURES = 8
 NODE_FEATURES = 10
 OPTION_FEATURES = 4
 
-CARD_BLOCK = CHOICE_SLOTS * CARD_FEATURES      # 42
+CARD_BLOCK = CARD_SLOTS * CARD_FEATURES        # 160
 NODE_BLOCK = CHOICE_SLOTS * NODE_FEATURES      # 60
 OPTION_BLOCK = CHOICE_SLOTS * OPTION_FEATURES  # 24
-CHOICE_OBS_SIZE = CARD_BLOCK + NODE_BLOCK + OPTION_BLOCK  # 126
+CHOICE_OBS_SIZE = CARD_BLOCK + NODE_BLOCK + OPTION_BLOCK  # 244
 
 COST_SCALE = 5.0
 DAMAGE_SCALE = 50.0
@@ -93,17 +105,28 @@ def resolve_card_id(name: str) -> CardId | None:
     return None
 
 
-def encode_card_options(card_names: Sequence[str]) -> np.ndarray:
+def encode_card_options(
+    card_names: Sequence[str],
+    selected: Sequence[bool] | None = None,
+) -> np.ndarray:
     """Card slots, from ids alone. Unknown cards occupy a slot marked invalid.
 
     Marked rather than skipped: a card the simulator has not implemented is still
     an option the game offered, and silently compacting the list would shift every
     slot after it out of step with the action indices.
+
+    `selected` carries the multi-select state, and without it the agent cannot
+    see the effect of its own action. A deck transform needs exactly three cards
+    picked before it can be confirmed; with selection invisible the observation
+    is byte-identical whether a card is chosen or not, so a deterministic policy
+    toggles the same card on and off forever. Measured on `meta_ppo_v8`: 2.6% of
+    episodes ran to the step cap and consumed ~73% of evaluation compute, and
+    because transforms come from later rewards it struck the deepest runs.
     """
     from sts2_env.cards.factory import create_card
 
     out = np.zeros(CARD_BLOCK, dtype=np.float32)
-    for slot, name in enumerate(card_names[:CHOICE_SLOTS]):
+    for slot, name in enumerate(card_names[:CARD_SLOTS]):
         base = slot * CARD_FEATURES
         card_id = resolve_card_id(str(name))
         if card_id is None:
@@ -119,6 +142,8 @@ def encode_card_options(card_names: Sequence[str]) -> np.ndarray:
         out[base + 4] = (card.base_damage or 0) / DAMAGE_SCALE
         out[base + 5] = (card.base_block or 0) / BLOCK_SCALE
         out[base + 6] = 1.0
+        if selected is not None and slot < len(selected) and selected[slot]:
+            out[base + 7] = 1.0
     return out
 
 
@@ -159,10 +184,11 @@ def encode_choices(
     card_names: Sequence[str] = (),
     node_types: Sequence[str] = (),
     options: Sequence[tuple[str, bool]] = (),
+    selected: Sequence[bool] | None = None,
 ) -> np.ndarray:
-    """The full 126-dim block. Absent decisions stay zero."""
+    """The full CHOICE_OBS_SIZE block. Absent decisions stay zero."""
     return np.concatenate([
-        encode_card_options(card_names),
+        encode_card_options(card_names, selected),
         encode_map_nodes(node_types),
         encode_simple_options(options),
     ])
@@ -179,10 +205,19 @@ def choices_from_sim_actions(actions: Iterable[dict[str, Any]]) -> dict[str, lis
     nodes: list[str] = []
     options: list[tuple[str, bool]] = []
 
+    selected: list[bool] = []
     for action in actions:
         kind = action.get("action")
         if kind == "pick_card":
             cards.append(str(action.get("card_id", "")))
+            selected.append(False)
+        elif kind == "choose":
+            # Multi-select screens -- deck transform, enchant, hand selection.
+            # These were not read at all, so the whole screen encoded as zeros
+            # and the agent could not see what it was choosing between, nor
+            # what it had already picked.
+            cards.append(str(action.get("card_id", "")))
+            selected.append(bool(action.get("selected", False)))
         elif kind == "move":
             nodes.append(str(action.get("point_type", "")))
         elif kind in ("rest_option", "event_choice"):
@@ -190,7 +225,8 @@ def choices_from_sim_actions(actions: Iterable[dict[str, Any]]) -> dict[str, lis
                 str(action.get("option_id", "")),
                 bool(action.get("enabled", True)),
             ))
-    return {"card_names": cards, "node_types": nodes, "options": options}
+    return {"card_names": cards, "node_types": nodes, "options": options,
+            "selected": selected}
 
 
 def choices_from_bridge_state(state: dict[str, Any]) -> dict[str, list]:
@@ -205,9 +241,13 @@ def choices_from_bridge_state(state: dict[str, Any]) -> dict[str, list]:
     nodes: list[str] = []
     options: list[tuple[str, bool]] = []
 
+    selected: list[bool] = []
     for card in state.get("cards", []) or []:
         if isinstance(card, dict):
             cards.append(str(card.get("id", "")))
+            # The mod sends `selected` on card_select screens; absent elsewhere,
+            # which reads as not-selected and is correct for a single pick.
+            selected.append(bool(card.get("selected", False)))
     for node in state.get("nodes", []) or []:
         if isinstance(node, dict):
             nodes.append(str(node.get("type", "")))
@@ -217,4 +257,5 @@ def choices_from_bridge_state(state: dict[str, Any]) -> dict[str, list]:
                 str(option.get("id", "")),
                 bool(option.get("enabled", True)),
             ))
-    return {"card_names": cards, "node_types": nodes, "options": options}
+    return {"card_names": cards, "node_types": nodes, "options": options,
+            "selected": selected}
