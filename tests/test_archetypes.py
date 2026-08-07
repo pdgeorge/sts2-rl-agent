@@ -170,3 +170,58 @@ def test_the_runner_survives_a_deck_it_cannot_read():
 
     assert _deck_direction({}) is not None
     assert _deck_direction({"deck": [{"id": "NOT_A_CARD"}]}).committed is None
+
+
+# --- the milestone: the one moment she states a plan ------------------------
+
+def _watcher():
+    from sts2_env.bridge.milestones import MilestoneWatcher
+
+    watcher = MilestoneWatcher()
+    watcher.reset()
+    return watcher
+
+
+def test_she_names_the_deck_in_her_own_register():
+    """Terse, lowercase, no subject pronoun -- matching "heading for the
+    Ancient" and "took down an elite". And never the internal slug."""
+    direction = DeckDirection()
+    direction.observe_deck(["BODY_SLAM", "BARRICADE_CARD", "ENTRENCH"])
+
+    text = _watcher().archetype_chosen(direction.committed, direction.confidence)["text"]
+    assert text.startswith("building a block deck.")
+    assert "block-scaling" not in text, "internal slug leaked into what she says"
+    assert not text.startswith("I")
+
+
+def test_confidence_is_per_card_so_a_big_deck_does_not_sound_certain():
+    """The raw margin is a sum and grows with deck size, so a fifteen-card deck
+    would clear gut_phrase's "obvious" threshold on arithmetic alone."""
+    small = DeckDirection()
+    small.observe_deck(["BODY_SLAM", "BARRICADE_CARD", "ENTRENCH"])
+    big = DeckDirection()
+    big.observe_deck(["BODY_SLAM", "BARRICADE_CARD", "ENTRENCH"] * 5)
+
+    assert big.leader[1] > small.leader[1] * 3, "raw margin should grow with size"
+    assert abs(big.confidence - small.confidence) < 0.05, "confidence should not"
+
+
+def test_a_muddled_draft_sounds_uncertain_and_a_clear_one_does_not():
+    muddled = DeckDirection()
+    muddled.observe_deck(["BLUDGEON", "SHRUG_IT_OFF", "IRON_WAVE", "INFLAME"])
+    clear = DeckDirection()
+    clear.observe_deck(["PERFECTED_STRIKE", "TWIN_STRIKE", "POMMEL_STRIKE"])
+
+    assert "either way" in _watcher().archetype_chosen(
+        muddled.committed, muddled.confidence)["text"]
+    assert "obvious" in _watcher().archetype_chosen(
+        clear.committed, clear.confidence)["text"]
+
+
+def test_it_fires_once_a_run():
+    direction = DeckDirection()
+    direction.observe_deck(["BODY_SLAM", "BARRICADE_CARD", "ENTRENCH"])
+    watcher = _watcher()
+
+    assert watcher.archetype_chosen(direction.committed, direction.confidence)
+    assert watcher.archetype_chosen(direction.committed, direction.confidence) is None

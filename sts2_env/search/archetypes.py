@@ -213,6 +213,21 @@ class DeckDirection:
             self._committed = name
         return self._committed
 
+    @property
+    def confidence(self) -> float:
+        """Margin per card counted, rather than the raw margin.
+
+        The raw margin is a SUM, so it grows with deck size whatever the
+        evidence: a fifteen-card deck outruns `gut_phrase`'s "obvious" threshold
+        on arithmetic alone, and Cyra would sound certain about a deck she was
+        actually torn over. Per-card is comparable across deck sizes and lands
+        on the scale `gut_phrase` already uses -- a muddled draft reads ~0.11
+        against its 0.15 "torn" line, a clear one ~0.6 against its 0.50
+        "obvious" line.
+        """
+        _, margin = self.leader
+        return margin / self.counted if self.counted else 0.0
+
     def fit(self, card_id: str) -> float:
         """How well a card suits the direction so far.
 

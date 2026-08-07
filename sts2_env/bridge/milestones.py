@@ -66,6 +66,7 @@ class MilestoneWatcher:
         self.reset()
 
     def reset(self) -> None:
+        self._archetype: str | None = None
         """Called between runs. Without this, run 2 inherits run 1's room."""
         self._started = False
         self._room = ""
@@ -107,6 +108,26 @@ class MilestoneWatcher:
         return _milestone(
             f"heading for the Ancient. {gut_phrase(gap)}", "sts2_ancient")
 
+    def archetype_chosen(self, archetype: str, confidence: float) -> dict | None:
+        """Fires once a run, when the deck's direction stops being ambiguous.
+
+        Worth having beyond the plumbing: it is the only moment in a run where
+        she states a *plan*. Every other milestone reports something that
+        happened to her -- a run started, an elite died, a boss fell. This is
+        her deciding what she is trying to do, which is the first thing a
+        viewer can hold her to.
+
+        `confidence` is the per-card margin, not the raw one -- see
+        DeckDirection.confidence. Passing the raw margin would have her sound
+        certain about every deck simply because it had more cards in it.
+        """
+        if self._archetype is not None:
+            return None
+        self._archetype = archetype
+        word = _ARCHETYPE_WORDS.get(archetype, archetype.replace("-", " "))
+        return _milestone(
+            f"building a {word} deck. {gut_phrase(confidence)}", "sts2_archetype")
+
     def combat_result(self, state: dict) -> dict | None:
         """A reward screen right after an elite or boss room means she won it."""
         state_type = str(state.get("type", ""))
@@ -146,6 +167,16 @@ class MilestoneWatcher:
         if result is not None:
             out.append(result)
         return out
+
+
+#: Archetype slugs are internal; she should not say "block-scaling".
+_ARCHETYPE_WORDS = {
+    "strike-synergy": "strike",
+    "block-scaling": "block",
+    "strength": "strength",
+    "exhaust": "exhaust",
+    "bloodletting": "bloodletting",
+}
 
 
 def _milestone(text: str, kind: str) -> dict:
