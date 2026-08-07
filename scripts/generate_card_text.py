@@ -80,13 +80,9 @@ def _effects_from_decompile(class_name: str) -> tuple[str, ...]:
     phrases: list[str] = []
     for power in dict.fromkeys(_APPLY.findall(source)):
         phrases.append(f"Applies {_spaced(power)}.")
-    verbs = dict.fromkeys(
-        f"{_spaced(obj)} {action.lower()}"
-        for obj, action in _CMD.findall(source)
-        if obj not in {"Card"} or action not in {"Upgrade"}
-    )
-    if verbs:
-        phrases.append("Uses: " + ", ".join(list(verbs)[:6]) + ".")
+    # No "Uses: ..." line. It was built from every `XCmd.Y` in the source and
+    # produced things like "Sfx play" -- sound-effect calls, embedded as though
+    # they described the card.
     return tuple(phrases)
 
 
@@ -124,6 +120,10 @@ def _power_descriptions() -> dict[str, str]:
         if not doc:
             continue
         first = doc.split("\n")[0].strip()
+        # Docstrings sometimes carry an implementation aside -- Inferno's ran
+        # "(tracked separately via SelfDamage..." and was truncated mid-word.
+        first = re.sub(r"\s*\([^)]*$", "", first)
+        first = re.sub(r"\s*\([^)]*\)", "", first).strip()
         if first:
             out[getattr(power_id, "name", str(power_id))] = first
     return out
@@ -156,8 +156,15 @@ def _effects_from_simulator(card_id_name: str) -> tuple[str, ...]:
     phrases: list[str] = []
     for power in dict.fromkeys(_POWER_REF.findall(source)):
         text = described.get(power)
+        # The docstring alone, with no "Applies X:" prefix. That prefix is a
+        # shared substring across every power card, and a shared substring is
+        # exactly what makes a whole class of cards cluster together on
+        # something that is not their effect -- the same mistake as the "A
+        # Power:" boilerplate. Centring removes a common component from the
+        # vectors; it cannot remove repeated text that makes the cards
+        # genuinely similar.
         pretty = _spaced(power.title().replace("_", ""))
-        phrases.append(f"Applies {pretty}: {text}" if text else f"Applies {pretty}.")
+        phrases.append(text if text else f"Applies {pretty}.")
     tags = dict.fromkeys(_TAG_REF.findall(source))
     if tags:
         phrases.append(
@@ -214,8 +221,10 @@ def _describe(preview) -> str:
         parts.append(f"Repeats {preview.base_replay_count} additional times.")
     if preview.affliction:
         parts.append(f"Applies {preview.affliction}.")
-    for name, amount in sorted((preview.effect_vars or {}).items()):
-        parts.append(f"{name}: {amount}.")
+    # effect_vars are implementation identifiers -- "inferno_power: 6",
+    # "calc_base: 6" -- not English, and the encoder cannot read them. The
+    # numbers that matter are already in the damage/block lines and in the
+    # power docstrings.
     return "\n".join(parts)
 
 
@@ -227,9 +236,8 @@ def card_text(card_id) -> dict:
     keywords = sorted(str(k).split(".")[-1] for k in (preview.keywords or ()))
     tags = sorted(str(t).split(".")[-1] for t in (preview.tags or ()))
     effects = _effects_from_simulator(card_id.name) or _effects_from_decompile(_class_name(card_id))
-    description = _describe(preview)
-    if effects:
-        description = description + "\n" + "\n".join(effects)
+    lines = [ln for ln in (_describe(preview), *effects) if ln.strip()]
+    description = "\n".join(lines)
     return {
         # Strip the simulator's `_CARD` suffix: it named the card "Barricade
         # Card", which is noise in an embedding and wrong on a screen.

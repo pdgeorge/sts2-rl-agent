@@ -41,10 +41,41 @@ from pathlib import Path
 
 import numpy as np
 
-DEFAULT_INSTRUCTION = (
+INSTRUCTION = (
     "Represent this Slay the Spire 2 card by its mechanics, so that cards which "
     "work together in the same deck are close together."
 )
+"""The single most valuable thing in the encoded string. MEASURED.
+
+An ablation over format x instruction, leave-one-out archetype classification:
+
+                    no instruction    with instruction
+        json             7/15              10/15
+        pipe             6/15               9/15
+        prose            6/15               9/15
+
+Worth ~3 points in every format, where format itself is worth at most 1 and
+that is inside the noise at n=15.
+
+This was predicted backwards. The argument against it was that an identical
+25-token preamble on all 577 cards is dilution -- ~85% of every string already
+in common -- and that stripping scaffolding would sharpen the signal. It did the
+opposite, twice. Qwen3-Embedding is instruction-tuned: the preamble is not
+padding, it selects *which* similarity to encode, and without it the model
+chooses its own, which is not deck synergy.
+
+Leave it in. If it is ever changed, re-run the ablation rather than reasoning
+about it."""
+
+
+def card_sentence(card: dict) -> str:
+    """Prettified JSON, which won the ablation above -- narrowly, over pipes and
+    prose, and only because the instruction is doing the real work.
+
+    Kept as JSON for one further reason: it is the shape the reference dataset
+    used, so its vectors stay comparable with ours as a cross-check.
+    """
+    return json.dumps(card, indent=2, sort_keys=True)
 
 
 def _last_token_pool(hidden, attention_mask):
@@ -58,8 +89,7 @@ def _last_token_pool(hidden, attention_mask):
     return hidden[torch.arange(hidden.shape[0], device=hidden.device), lengths]
 
 
-def encode(texts: list[str], model_path: str, batch_size: int = 32,
-           instruction: str = DEFAULT_INSTRUCTION) -> np.ndarray:
+def encode(texts: list[str], model_path: str, batch_size: int = 32) -> np.ndarray:
     import torch
     from transformers import AutoModel, AutoTokenizer
 
@@ -70,7 +100,7 @@ def encode(texts: list[str], model_path: str, batch_size: int = 32,
         dtype=torch.float16 if device == "cuda" else torch.float32,
     ).to(device).eval()
 
-    prompted = [f"Instruct: {instruction}\nCard: {t}" for t in texts]
+    prompted = [f"Instruct: {INSTRUCTION}\nCard: {t}" for t in texts]
     out: list[np.ndarray] = []
     with torch.no_grad():
         for start in range(0, len(prompted), batch_size):
@@ -97,7 +127,7 @@ def main() -> int:
 
     cards = json.loads(Path(args.card_text).read_text())
     ids = sorted(cards)
-    texts = [json.dumps(cards[cid], indent=2, sort_keys=True) for cid in ids]
+    texts = [card_sentence(cards[cid]) for cid in ids]
     print(f"encoding {len(ids)} cards with {args.model}")
 
     vectors = encode(texts, args.model, args.batch_size)
