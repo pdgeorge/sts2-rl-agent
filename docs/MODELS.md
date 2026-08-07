@@ -46,6 +46,50 @@ starter-deck numbers measuring a different thing.
 
 ---
 
+## Archetype card picking, with search — 2026-08-07 — suggestive, not proven
+
+The same paired A/B as below, but with `SearchAgent` playing the fights instead
+of the frozen PPO. 100 pairs, identical seeds within a pair.
+
+```
+control    mean floor 12.38   median 11
+archetype  mean floor 13.42   median 12
+
+difference +1.04 +/- 0.69   =  +1.5 se
+won 23, lost 16, tied 61
+```
+
+**+1.5 se does not establish the effect.** Roughly a one-in-seven chance of
+landing this way by luck. Do not quote "+1 floor" as a result yet.
+
+**The regime comparison is what this actually shows:**
+
+```
+                effect      se      tied
+  model arm    +0.08     +/-0.18   208/300  (69%)
+  search arm   +1.04     +/-0.69    61/100  (61%)
+```
+
+Thirteen times the effect, measured with the agent that actually runs. That is
+strong evidence the first null result was measuring a regime where decks barely
+exist rather than measuring archetypes. Runs reach floor 12-13 instead of 8,
+non-committing runs fall from 44% to 37%, and the win/loss split goes 47-45 to
+23-16. All consistent, none conclusive alone.
+
+**To resolve:** ~280 total pairs would take this to ~2.5 se at the same effect
+size. Pool a second batch from a different seed offset rather than restarting:
+
+```bash
+.venv/bin/python scripts/ab_archetype_picking.py \
+    --runs 200 --combat search --time-budget 0.5 --seed 1000 \
+    > output/ab_search_seed1000.log 2>&1
+```
+
+Roughly two hours. `output/` rather than a scratchpad because /tmp here is a
+tmpfs and the first run's log was nearly lost to a reboot.
+
+---
+
 ## Archetype card picking — 2026-08-07 — a null result the experiment could not have avoided
 
 Step 10 of the Phase 5 build plan. 300 paired simulated runs, identical seeds,
