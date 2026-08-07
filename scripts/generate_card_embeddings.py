@@ -42,17 +42,21 @@ from pathlib import Path
 import numpy as np
 
 DEFAULT_MODEL_PATH = str(
-    Path.home() / ".cache" / "sts2-models" / "qwen3-embedding-0.6b"
+    Path(__file__).resolve().parent.parent / "models" / "qwen3-embedding-0.6b"
 )
-"""Where the encoder lives, and deliberately NOT the session scratchpad.
+"""Where the encoder lives: in the repo, under a gitignored `models/`.
 
-It was downloaded to /tmp first, which on this machine is a tmpfs -- RAM-backed
-and cleared on reboot. That is 1.2GB of RAM held for a model used a few minutes
-per game patch, and it would have silently disappeared before the next one.
+Deliberately not the session scratchpad, which was the first attempt -- /tmp is
+a tmpfs on this machine, so 1.2GB sat in RAM for a model used a few minutes per
+game patch and would have vanished on the next reboot.
+
+In the repo rather than a user cache so the weights sit beside the vectors they
+produced, and a checkout that has run the download is self-contained. Ignored by
+git: the 1024-dim vectors are committed, the 1.2GB that generated them is not.
 
 Re-download with:
 
-    hf download Qwen/Qwen3-Embedding-0.6B --local-dir ~/.cache/sts2-models/qwen3-embedding-0.6b
+    hf download Qwen/Qwen3-Embedding-0.6B --local-dir models/qwen3-embedding-0.6b
 """
 
 INSTRUCTION = (

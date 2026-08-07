@@ -23,6 +23,12 @@ Thumbs.db
 
 # Training outputs
 output/
+
+# Downloaded model weights. 1.2GB of Qwen3-Embedding-0.6B, needed only to
+# regenerate sts2_env/data/card_embeddings.npz on a game patch -- the vectors
+# are committed, the weights that produced them are not.
+#   hf download Qwen/Qwen3-Embedding-0.6B --local-dir models/qwen3-embedding-0.6b
+models/
 *.zip
 *.pt
 *.pth
