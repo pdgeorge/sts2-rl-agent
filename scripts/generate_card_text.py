@@ -90,6 +90,84 @@ def _effects_from_decompile(class_name: str) -> tuple[str, ...]:
     return tuple(phrases)
 
 
+_POWER_REF = re.compile(r"PowerId\.([A-Z_]+)")
+_TAG_REF = re.compile(r"CardTag\.([A-Z_]+)")
+
+
+@functools.lru_cache(maxsize=None)
+def _power_descriptions() -> dict[str, str]:
+    """PowerId name -> the first line of its simulator class docstring.
+
+    This is where the semantic content comes from, and it is the whole reason
+    the archetype classifier works at all.
+
+    A description assembled from preview fields reduces every Power with no
+    numeric grant to one sentence -- Barricade and Dark Embrace came out
+    byte-identical -- and naming the power does not help either, because the
+    encoder has no Slay the Spire knowledge and "Barricade" is an opaque token
+    to it. Measured: 7/15 leave-one-out both ways.
+
+    The docstrings are plain English about *what the effect does*: "Block is not
+    removed at the start of turn", "Whenever a card is Exhausted, draw Amount
+    card(s)". That is the register the published dataset's text is in, and it
+    scored 14/15 on the same seeds. They are also written by whoever ported each
+    power and live beside the code, so on_update.sh already covers them.
+    """
+    import sts2_env.powers  # noqa: F401  -- import for the side effect of
+    # every power module registering itself; POWER_CLASSES in common.py is a
+    # legacy alias holding only nine of them.
+    from sts2_env.core.creature import _POWER_CLASSES
+
+    out: dict[str, str] = {}
+    for power_id, cls in _POWER_CLASSES.items():
+        doc = (cls.__doc__ or "").strip()
+        if not doc:
+            continue
+        first = doc.split("\n")[0].strip()
+        if first:
+            out[getattr(power_id, "name", str(power_id))] = first
+    return out
+
+
+@functools.lru_cache(maxsize=None)
+def _effects_from_simulator(card_id_name: str) -> tuple[str, ...]:
+    """What the card's registered effect function actually does.
+
+    Reads the simulator rather than the decompile: the effect function is short
+    and explicit -- `barricade` is one call to `apply_power_to(owner,
+    PowerId.BARRICADE, 1)` -- so the powers it applies can be read off the
+    source, and each power's docstring says what it means.
+    """
+    import inspect
+
+    from sts2_env.cards.registry import _CARD_EFFECTS
+    from sts2_env.core.enums import CardId
+
+    card_id = getattr(CardId, card_id_name, None)
+    effect = _CARD_EFFECTS.get(card_id) if card_id is not None else None
+    if effect is None:
+        return ()
+    try:
+        source = inspect.getsource(effect)
+    except (OSError, TypeError):
+        return ()
+
+    described = _power_descriptions()
+    phrases: list[str] = []
+    for power in dict.fromkeys(_POWER_REF.findall(source)):
+        text = described.get(power)
+        pretty = _spaced(power.title().replace("_", ""))
+        phrases.append(f"Applies {pretty}: {text}" if text else f"Applies {pretty}.")
+    tags = dict.fromkeys(_TAG_REF.findall(source))
+    if tags:
+        phrases.append(
+            "Scales with the number of "
+            + ", ".join(t.title() for t in tags)
+            + " cards you own."
+        )
+    return tuple(phrases)
+
+
 def _spaced(camel: str) -> str:
     return re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", camel)
 
@@ -115,8 +193,11 @@ def _describe(preview) -> str:
         parts.append(f"Deal {damage} damage.")
     if block:
         parts.append(f"Gain {block} Block.")
-    if preview.is_power:
-        parts.append("A Power: its effect lasts for the rest of the combat.")
+    # NO BOILERPLATE. A sentence every Power shares is the longest common
+    # substring in the corpus, so it dominates similarity and clusters cards by
+    # *type* rather than by effect -- Barricade, Corruption and Dark Embrace all
+    # classified as "strength" because they shared it with Demon Form and
+    # Inflame. `type` is already a field; saying it again in prose only hurts.
     if preview.exhausts:
         parts.append("Exhaust.")
     if preview.is_ethereal:
@@ -135,8 +216,6 @@ def _describe(preview) -> str:
         parts.append(f"Applies {preview.affliction}.")
     for name, amount in sorted((preview.effect_vars or {}).items()):
         parts.append(f"{name}: {amount}.")
-    if not parts:
-        parts.append("No direct damage or block; its effect is situational.")
     return "\n".join(parts)
 
 
@@ -147,7 +226,7 @@ def card_text(card_id) -> dict:
     meta, preview = _metadata(card_id)
     keywords = sorted(str(k).split(".")[-1] for k in (preview.keywords or ()))
     tags = sorted(str(t).split(".")[-1] for t in (preview.tags or ()))
-    effects = _effects_from_decompile(_class_name(card_id))
+    effects = _effects_from_simulator(card_id.name) or _effects_from_decompile(_class_name(card_id))
     description = _describe(preview)
     if effects:
         description = description + "\n" + "\n".join(effects)
