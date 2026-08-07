@@ -906,3 +906,77 @@ def archetype_chosen(self, archetype: str, margin: float) -> dict | None:
 Worth having beyond the plumbing: it is the first moment in a run where she states a *plan* rather than narrating a move. Every other milestone reports something that happened to her. And `gut_phrase` already turns a margin into hedged or confident wording, so a narrow commit reads as uncertain — which is honest, and better characterisation than false confidence.
 
 Fires once per run, at the commit, and the logged label is also what makes a strange pick diagnosable afterwards.
+
+## Phase 5 build plan — the next ten steps, 2026-08-07
+
+Written before starting, so the order is a decision rather than a drift.
+
+**The strategy, in the user's words: get all three parts to "at least a little
+bit" before iterating on any of them.** Combat, deckbuilding and routing are not
+independent — a run dies to whichever is weakest that day, and improving one
+while another is near-zero neither shows up nor can be attributed. Evidence: the
+20 live runs show boss deaths at 49% mean HP with the *same* deck size as the
+win, and the user has seen both a 10%-HP win off greeded elites and a 70%-HP
+loss with an under-upgraded deck. All three parts, every time.
+
+Current floors: combat has search (deployed, 20% boss, real). Deckbuilding is
+`card_quality.py`, which cannot see archetype *or* upgrades. Routing and
+upgrades are a hardcoded `REST_HP_RATIO_THRESHOLD = 0.5` and "upgrade the first
+non-basic". So deckbuilding and upgrades are the two below the floor, and they
+turn out to be the same missing thing: **a scorer that knows what a card is
+worth to this deck.**
+
+### The ten
+
+1. **Download Qwen3-Embedding-0.6B.** The only external dependency the project
+   takes on, and it runs on patch days rather than at decision time.
+2. **Generate embeddings from `card_text.json`** — our own 577 cards, from the
+   simulator, not the HF dataset (which is several game versions stale). Write
+   `.npy` plus a loader so runtime needs numpy alone and `pyarrow` stays a dev
+   dependency.
+3. **Re-run `validate_card_embeddings.py` on the fresh vectors.** The earlier
+   11/11 leave-one-out and the ~2.5x peakedness separation were measured on
+   stale cards. The *mechanism* should carry — mean-centring being mandatory is
+   a property of the space, not of the text — but the numbers must be re-earned.
+   **If centring is not needed or peakedness does not separate, stop and
+   rethink.**
+4. **Lock the five archetype seed sets** against the fresh vectors:
+   strike-synergy, block-scaling, strength, exhaust, bloodletting. Verify each
+   seed still finds its own archetype, and that the five are distinguishable.
+5. **Archetype state** — accumulate `score[a] += cosine(card, a)` over
+   non-starter cards, commit when the leader's margin crosses a threshold.
+   Peakedness needs no separate term; it falls out of the accumulation.
+6. **The unified scorer** — `score(card, deck)` = quality (`card_quality`)
+   × archetype fit. One function, because the alternative is two implementations
+   of the same idea drifting apart, which this codebase has form for.
+7. **Card rewards** — `argmax` over offered cards. The decision the scorer was
+   built for.
+8. **Upgrade and transform targeting** — the same scorer pointed inward.
+   Upgrade: `argmax` of `score(X⁺, deck−X) − score(X, deck−X)`, the *gain* not
+   the absolute, because an already-strong card has little headroom. Plus a
+   bonus for the **26 cards that branch on `IsUpgraded`** (Armaments and
+   friends), whose upgrade changes behaviour rather than numbers and therefore
+   scores a delta of exactly zero. Transform: `argmin` of `score(X, deck−X)`.
+   The `deck−X` matters — leaving the card in makes it compete with itself.
+9. **The Cyra milestone** — she says which deck she is building, at the moment
+   she commits. The first time in a run she states a plan rather than narrating
+   something that happened to her.
+10. **A/B on simulated runs** — heuristic alone vs heuristic × archetype, on
+    floors reached. Three-way if `meta_ppo_v8`'s learned card-picker is worth
+    including as a (weak) arm. Simulator-only; no live time.
+
+### After the ten, in this order
+
+- **Combat retrain.** Meaningfully different now: stalling costs something
+  (progressive turn penalty) and the RNG is correct. Phase 3.3's null result
+  predates both.
+- **Meta-policy retrain.** Last, deliberately. It is not in the live stack, its
+  job changes once the router takes card rewards, and it is capped by whatever
+  combat solver sits beneath it. Training it now would hyper-optimise Act 1
+  against a fighter and a deckbuilder both about to be replaced.
+- **Embedding staleness into `on_update.sh`.** Regenerate vectors on patch days
+  beside the card-value diff, gated on the build fingerprint. Anything computed
+  from game content needs a staleness check bound to the build.
+- **The remaining `KNOWN_ISSUES` items** — floor-scaled step cap as a backstop,
+  and removing the fabricated `PHASE_BOSS_RELIC`, which changes the action space
+  and so wants doing deliberately rather than in passing.
