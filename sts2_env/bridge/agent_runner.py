@@ -479,6 +479,21 @@ def run_agent(
                     logger.info("CYRA: %s", event["text"])
                     cyra.publish(event)
 
+                # The deck's direction, checked on any state carrying a deck
+                # rather than at the card-reward screen itself: at that point the
+                # card just chosen is not in the deck yet, so committing there
+                # would always lag a pick behind. MilestoneWatcher keeps this to
+                # once a run.
+                if state.get("deck"):
+                    direction = _deck_direction(state)
+                    committed = direction.committed if direction else None
+                    if committed:
+                        event = milestones.archetype_chosen(
+                            committed, direction.confidence)
+                        if event:
+                            logger.info("CYRA: %s", event["text"])
+                            cyra.publish(event)
+
                 # room_type included so the log says WHERE a run ended, not just
                 # on what floor. Two live runs both ended on floor 17 while the
                 # simulator puts the act 1 boss on 16 -- so "floor >= 17 cleared
