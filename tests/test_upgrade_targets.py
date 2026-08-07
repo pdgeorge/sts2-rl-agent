@@ -34,13 +34,20 @@ def test_the_behavioural_list_came_from_the_decompile():
 
 
 def test_upgrading_scores_the_gain_not_the_absolute():
-    """An already-strong card has little headroom, so ranking by the upgraded
-    card's absolute value would just pick whatever was already best."""
-    deck = [{"id": "BLUDGEON"}, {"id": "SHRUG_IT_OFF"}]
-    # Bludgeon is by far the stronger card...
-    assert score_card(deck[0]) > score_card(deck[1]) * 2
-    # ...but the gains are comparable, which absolute scoring would never show.
-    assert upgrade_gain(deck[1], deck, 1) > 0.5 * upgrade_gain(deck[0], deck, 0)
+    """The user's rule: "what gives you the biggest benefit when upgrading", not
+    "what big card can I make bigger".
+
+    Bludgeon 32 -> 42 is the bigger number and the smaller change. Pommel Strike
+    gains a point of damage AND a card of draw, which is worth more despite
+    Pommel Strike being the weaker card to begin with.
+    """
+    deck = [{"id": "BLUDGEON"}, {"id": "POMMEL_STRIKE"}]
+
+    # Bludgeon is the stronger card...
+    assert score_card(deck[0]) > score_card(deck[1])
+    # ...and Pommel Strike is still the better upgrade.
+    assert upgrade_gain(deck[1], deck, 1) > upgrade_gain(deck[0], deck, 0)
+    assert pick_upgrade_target(deck) == 1
 
 
 def test_a_card_is_scored_against_the_deck_without_itself():

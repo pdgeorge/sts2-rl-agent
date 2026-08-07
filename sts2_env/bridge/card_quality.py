@@ -189,7 +189,116 @@ def score_card(card: Any, deck: list[Any] | None = None) -> float:
     if block > 0 and shape["size"] and shape["block_density"] < BLOCK_DENSITY_TARGET:
         score += BLOCK_NEED_BONUS
 
+    score += _effect_value(preview) / (cost * 10.0)
+
+    # Cost, valued on its own rather than only as a divisor. Barricade's upgrade
+    # is cost 3 -> 2 and nothing else, and dividing by cost cannot see that when
+    # there is no damage or block to divide: 0/3 and 0/2 are both zero. A
+    # cheaper card is better whatever else it does.
+    score += (CHEAPNESS_REFERENCE_COST - cost) * CHEAPNESS_VALUE
     return score
+
+
+CHEAPNESS_REFERENCE_COST = 3.0
+CHEAPNESS_VALUE = 0.15
+"""What a point of energy cost is worth by itself.
+
+Small: cost already divides the output terms, so this only has to cover the
+case where there is nothing to divide. Set so a 1-cost card starts 0.3 ahead of
+a 3-cost one, which is roughly the gap between them at equal effect."""
+
+
+#: What a unit of each effect is worth, on the same scale as a point of damage.
+#:
+#: Grounded in what the cards actually carry: these are the `effect_vars` keys
+#: the simulator produces, surveyed across all 577 cards, weighted by rough
+#: parity with damage. Drawing a card is worth several points of damage; a turn
+#: of Vulnerable multiplies everything that follows; energy buys a whole extra
+#: card. Anything unlisted scores nothing, which is honest -- an unweighted key
+#: is one nobody has thought about, not one worth zero.
+#:
+#: This exists because score_card read `(damage + block) / cost` and nothing
+#: else, so Pommel Strike's extra card of draw was worth +0.10 and Uppercut's
+#: doubled Weak and Vulnerable duration was worth exactly 0.00. Both were cited
+#: as cards that go from fine to excellent when upgraded, and the scorer could
+#: not see either upgrade.
+_EFFECT_VALUE = {
+    "cards": 6.0,        # a drawn card is roughly a card's worth of tempo
+    "energy": 8.0,       # buys a card AND keeps the one in hand
+    "damage": 1.0,
+    "block": 1.0,
+    "power": 5.0,        # a duration, mostly -- Uppercut's Weak and Vulnerable
+    "vulnerable": 5.0,   # multiplies every attack that lands during it
+    "weak": 4.0,
+    "strength": 7.0,     # permanent, and compounds over a fight
+    "dexterity": 5.0,
+    "repeat": 4.0,
+    "extra_damage": 2.0,
+    "increase": 3.0,
+    "poison_power": 4.0,
+    "focus_power": 5.0,
+    "strength_loss": 3.0,
+    "hp_loss": -2.0,     # a real cost, not a benefit
+    "doom": 2.0,
+    "summon": 3.0,
+    "forge": 2.0,
+    "stars": 2.0,
+    "gold": 0.05,
+}
+
+
+def quality_is_uninformative(card: Any) -> bool:
+    """True when `score_card` has nothing real to go on for this card.
+
+    A card whose effect is pure logic -- Body Slam ("damage equal to your
+    Block"), Entrench ("double your Block") -- has no base damage, no base block
+    and no scored effect vars. Whatever number `score_card` returns for it comes
+    from rarity and cost, which say nothing about whether the deck wants it.
+
+    Stated explicitly rather than inferred from `score == 0.0`. That test worked
+    only by accident and stopped working the moment cheapness started
+    contributing, silently dropping Body Slam from 1.10 to 0.40 in a deck built
+    around it.
+    """
+    card_id = _card_id(card)
+    if card_id is None:
+        return True
+    try:
+        _, preview = _metadata(card_id, _is_upgraded(card))
+    except Exception:
+        return True
+    return (
+        not (preview.base_damage or 0)
+        and not (preview.base_block or 0)
+        and _effect_value(preview) == 0.0
+    )
+
+
+def _effect_value(preview: Any) -> float:
+    """What a card's effects are worth beyond its damage and block.
+
+    Deliberately reads `effect_vars` rather than trying to interpret behaviour:
+    those are the numbers the simulator already derives from the decompile, so
+    they stay correct across a rebalance without anyone editing a table here.
+    """
+    total = 0.0
+    for name, amount in (getattr(preview, "effect_vars", None) or {}).items():
+        weight = _EFFECT_VALUE.get(name)
+        if weight is None:
+            continue
+        try:
+            total += weight * float(amount)
+        except (TypeError, ValueError):
+            continue
+    if getattr(preview, "exhausts", False):
+        total -= 3.0        # once per combat is a real limit
+    if getattr(preview, "is_innate", False):
+        total += 3.0
+    if getattr(preview, "is_retain", False):
+        total += 2.0
+    if getattr(preview, "is_ethereal", False):
+        total -= 4.0
+    return total
 
 
 ARCHETYPE_WEIGHT = 0.6
@@ -230,12 +339,13 @@ def score_card_for_deck(
       fit soften a negative would make a well-themed curse look takeable.
     * **positive** -- scaled by fit. Direction reorders cards of similar
       quality without letting a weak on-theme card beat a strong off-theme one.
-    * **zero** -- *no opinion*, not "worthless". `score_card` reads base damage
-      and block, so a card whose effect is pure logic scores nothing: Body Slam
-      ("damage equal to your Block") and Entrench ("double your Block") both
-      come out 0.0 despite being core block-scaling cards. Multiplying that by
-      fit leaves 0 and the deck would never take its own payoffs. So when
-      quality abstains, fit decides.
+    * **uninformative** -- no damage, no block, no scored effects, so whatever
+      number came back reflects rarity and cost rather than power. Body Slam
+      ("damage equal to your Block") and Entrench ("double your Block") are both
+      like this despite being core block-scaling cards, and a deck built around
+      them would never take its own payoffs. When quality abstains, fit decides.
+      Detected by `quality_is_uninformative` rather than by `score == 0.0`,
+      which worked by accident until cheapness started contributing.
     """
     quality = score_card(card, deck)
     if direction is None or quality < 0:
@@ -249,7 +359,7 @@ def score_card_for_deck(
     except Exception:  # noqa: BLE001 - a missing embedding is not a crash
         logger.debug("no archetype fit for %s", card_id, exc_info=True)
         return quality
-    if quality == 0.0:
+    if quality_is_uninformative(card):
         return ABSTAINED_QUALITY_SCALE * fit
     return quality * (1.0 + ARCHETYPE_WEIGHT * fit)
 

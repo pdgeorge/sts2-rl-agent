@@ -117,17 +117,23 @@ def test_a_curse_stays_refused_however_well_it_fits():
 
 
 def test_fit_decides_when_card_quality_abstains():
-    """Body Slam is "damage equal to your Block" -- no base damage or block, so
-    the quality scorer has no opinion and returns 0.0. Multiplying that by fit
-    leaves 0, and a block deck would never take its own payoff."""
-    from sts2_env.bridge.card_quality import score_card, score_card_for_deck
+    """Entrench is "double your Block" -- no base damage, no base block, no
+    scored effect vars, so whatever number the quality scorer returns comes from
+    rarity and cost and says nothing about whether this deck wants it. A block
+    deck would otherwise never take its own payoff.
+    """
+    from sts2_env.bridge.card_quality import (
+        quality_is_uninformative,
+        score_card_for_deck,
+    )
 
     deck = [{"id": "BODY_SLAM"}, {"id": "BARRICADE_CARD"}, {"id": "ENTRENCH"}]
     direction = DeckDirection()
     direction.observe_deck([c["id"] for c in deck])
 
-    assert score_card({"id": "BODY_SLAM"}, deck) == 0.0
-    assert score_card_for_deck({"id": "BODY_SLAM"}, deck, direction) > 1.0
+    assert quality_is_uninformative({"id": "ENTRENCH"})
+    assert not quality_is_uninformative({"id": "BLUDGEON"})
+    assert score_card_for_deck({"id": "ENTRENCH"}, deck, direction) > 0.4
 
 
 def test_the_plan_reorders_cards_of_similar_quality():

@@ -348,7 +348,7 @@ what "a better card" means. Comparing card-pickers under a solver that loses 93%
 of bosses may pick a different winner than the live stack, which plays combat
 with search.
 
-### 7. Card quality reads only damage and block
+### 7. Card quality reads only damage and block — LARGELY FIXED 2026-08-07
 
 `card_quality.score_card` values a card by `(damage + block) / cost` plus
 rarity. It cannot see **draw, energy, debuff duration, or any conditional
@@ -369,6 +369,31 @@ The pattern is worth stating on its own: **anything that reads base damage and
 block is blind to roughly a third of the Ironclad's cards.** Three components
 have now hit it independently.
 
-A real fix means scoring effects — draw, energy, scaling, debuff duration — not
-just the two numbers on the card face. `CARD_RATINGS` is the intended override
-hook and is currently empty.
+**Fixed** by scoring `effect_vars` — the numbers the simulator already derives
+from the decompile — with weights grounded in a survey of all 577 cards, plus
+valuing energy cost on its own. Every card named as a fine-to-excellent upgrade
+now registers:
+
+```
+                originally    now    what the upgrade does
+POMMEL_STRIKE      +0.10     +0.70   +1 damage, +1 card drawn
+UPPERCUT           +0.00     +0.25   doubles Weak & Vulnerable duration
+BARRICADE          +0.00     +0.15   cost 3 -> 2
+ARMAMENTS          +1.50     +1.50   upgrades your whole hand (behavioural)
+BLUDGEON           +0.33     +0.33   32 -> 42 damage
+```
+
+And Pommel Strike now outranks Bludgeon as an upgrade target, which is the rule
+this was for: biggest benefit, not biggest card.
+
+**Still missing.** Anger's upgrade duplicates the upgraded card, which lives in
+`OnPlay` logic and appears in neither `effect_vars` nor an `IsUpgraded` branch,
+so it scores its damage bump and nothing more. Any upgrade of that shape is
+invisible. And a card whose damage is computed rather than declared — Body Slam
+is "damage equal to your Block" — is still valued at its `extra_damage` var
+rather than what it would actually hit for.
+
+`quality_is_uninformative` now marks the cards the scorer genuinely cannot read,
+so archetype fit decides for those instead of a rarity-and-cost number
+masquerading as an assessment. `CARD_RATINGS` remains the override hook for
+anything needing a hand-set value, and is still empty.
