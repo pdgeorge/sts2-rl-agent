@@ -867,7 +867,17 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
 #: belongs to none of their state machines.
 _BRIDGE_STUNNED_MOVE_ID = "STUNNED"
 
-_ATTACKER_DAMAGE_MODIFIERS = (PowerId.STRENGTH, PowerId.WEAK)
+_ATTACKER_DAMAGE_MODIFIERS = (
+    PowerId.STRENGTH,
+    PowerId.WEAK,
+    # Vigor was the last big false positive: Terror Eel's Thrash applies
+    # `Vigor 6` to itself, so its Crash telegraphs 16 + 6 = 22 and the check
+    # reported that 43 times in one session against a base of 16 that is
+    # correct. Doubling is here for the same reason -- any of these means the
+    # telegraphed number and the base number are different quantities.
+    PowerId.VIGOR,
+    PowerId.DOUBLE_DAMAGE,
+)
 _DEFENDER_DAMAGE_MODIFIERS = (PowerId.VULNERABLE,)
 
 
