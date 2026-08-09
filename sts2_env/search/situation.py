@@ -867,6 +867,42 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
 #: belongs to none of their state machines.
 _BRIDGE_STUNNED_MOVE_ID = "STUNNED"
 
+#: IllusionPower's revive, built in `after_death` and therefore absent from any
+#: monster the simulator has not yet killed. Eye With Teeth and Parafright.
+_BRIDGE_REVIVE_MOVE_ID = "REVIVE_MOVE"
+
+
+def _install_revive_state(combat: CombatState, enemy: Creature, ai) -> bool:
+    """Put the enemy into IllusionPower's revive turn: heal, do nothing else.
+
+    Mirrors what `IllusionPower.after_death` builds -- a HEAL intent, must
+    perform once, following up into whatever the monster was doing -- without
+    requiring the creature to die on this side first.
+    """
+    from sts2_env.core.enums import IntentType
+    from sts2_env.monsters.state_machine import MoveState
+
+    power = enemy.powers.get(PowerId.ILLUSION)
+    follow_up = ai.state_log[-1] if getattr(ai, "state_log", None) else ai.current_move.state_id
+    if follow_up == _BRIDGE_REVIVE_MOVE_ID:
+        return False
+
+    def _revive(_: CombatState) -> None:
+        if power is not None and hasattr(power, "revive"):
+            power.revive(enemy)
+        else:
+            enemy.current_hp = enemy.max_hp
+
+    ai.states[_BRIDGE_REVIVE_MOVE_ID] = MoveState(
+        _BRIDGE_REVIVE_MOVE_ID,
+        _revive,
+        [Intent(IntentType.HEAL)],
+        follow_up_id=follow_up,
+        must_perform_once=True,
+    )
+    ai._current_state_id = _BRIDGE_REVIVE_MOVE_ID  # noqa: SLF001
+    return True
+
 _ATTACKER_DAMAGE_MODIFIERS = (
     PowerId.STRENGTH,
     PowerId.WEAK,
@@ -963,6 +999,26 @@ def _override_enemy_intent(
             return
         report_disparity(
             "stun_failed", str(getattr(enemy, "monster_id", "?")),
+            "could not apply", move_id)
+        return
+
+    # REVIVE_MOVE is the same shape of problem as STUNNED. IllusionPower builds
+    # it inside `after_death` -- so the simulator only owns the state once the
+    # creature has actually died in the simulator, and the live path rebuilds a
+    # fresh, undamaged monster on every decision. The Eye With Teeth that has
+    # already died and come back in the real game therefore reports a move this
+    # side has never constructed.
+    #
+    # Synthesised rather than skipped, for the same reason: an unmatched move id
+    # makes the override bail, and the search then rolls its lookahead on
+    # whatever the Eye was doing before it died -- Distract, three Dazed a turn --
+    # when what it is actually doing is spending the turn healing and dealing
+    # nothing at all. Free turns misread as threatened ones, 14 times in 13 runs.
+    if str(move_id) == _BRIDGE_REVIVE_MOVE_ID and str(move_id) not in ai.states:
+        if _install_revive_state(combat, enemy, ai):
+            return
+        report_disparity(
+            "revive_failed", str(getattr(enemy, "monster_id", "?")),
             "could not apply", move_id)
         return
 

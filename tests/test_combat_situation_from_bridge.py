@@ -572,3 +572,55 @@ def test_a_stun_does_not_report_itself_as_a_parity_gap() -> None:
         assert disparity_summary() == []
     finally:
         reset_disparities()
+
+
+def test_a_reviving_illusion_is_understood_as_healing_not_attacking() -> None:
+    """REVIVE_MOVE has the same shape of problem as STUNNED.
+
+    `IllusionPower.after_death` builds the state, so the simulator only owns it
+    once the creature has died *in the simulator* -- and the live path rebuilds a
+    fresh, undamaged monster every decision. An Eye With Teeth that already died
+    and came back in the real game reports a move this side never constructed.
+
+    Skipping it is not neutral: the override bails on an unmatched id, so the
+    search rolls its lookahead on what the Eye was doing before it died --
+    Distract, three Dazed a turn -- when it is actually spending the turn
+    healing and doing nothing. A free turn read as a threatened one.
+    """
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    state = _bridge_state()
+    state["combat_state"]["enemies"] = [
+        {"id": "EYE_WITH_TEETH", "hp": 6, "max_hp": 6, "block": 0, "is_alive": True,
+         "intent": "HEAL", "intent_damage": 0, "intent_move_id": "REVIVE_MOVE",
+         "powers": [{"id": "ILLUSION", "amount": 1}]},
+    ]
+
+    combat = situation.to_combat_mid_fight(state)
+    eye = next(e for e in combat.enemies if str(e.monster_id) == "EYE_WITH_TEETH")
+    ai = combat.enemy_ais[eye.combat_id]
+
+    assert ai.current_move.state_id == "REVIVE_MOVE"
+    # Hands back to what it was doing rather than dead-ending.
+    assert ai.states["REVIVE_MOVE"].follow_up_id == "DISTRACT_MOVE"
+
+    from sts2_env.search.turn_search import _incoming_damage
+    assert _incoming_damage(combat) == 0
+
+
+def test_a_revive_does_not_report_itself_as_a_parity_gap() -> None:
+    from sts2_env.search.parity import disparity_summary, reset_disparities
+
+    reset_disparities()
+    try:
+        situation = CombatSituation.from_bridge_state(_bridge_state())
+        state = _bridge_state()
+        state["combat_state"]["enemies"] = [
+            {"id": "EYE_WITH_TEETH", "hp": 6, "max_hp": 6, "block": 0, "is_alive": True,
+             "intent": "HEAL", "intent_damage": 0, "intent_move_id": "REVIVE_MOVE",
+             "powers": [{"id": "ILLUSION", "amount": 1}]},
+        ]
+        situation.to_combat_mid_fight(state)
+
+        assert disparity_summary() == []
+    finally:
+        reset_disparities()
