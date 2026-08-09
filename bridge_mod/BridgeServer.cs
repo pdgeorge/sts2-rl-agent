@@ -23,6 +23,33 @@ using System.Threading.Tasks;
 
 namespace STS2BridgeMod;
 
+/// <summary>
+/// A pending request was superseded by a newer one before the agent answered.
+///
+/// This is NOT a failure, and the difference matters enormously. Only one
+/// request can be outstanding at a time, so opening a nested prompt cancels
+/// whatever was already waiting -- and until this type existed, that cancellation
+/// arrived at the caller as a bare `null`, indistinguishable from "the agent
+/// timed out" or "the client is gone".
+///
+/// RlCombatHandler treats a null as the agent being unreachable and ends the
+/// run. Observed live on 2026-08-08: playing Battle Trance, Armaments, Burning
+/// Pact or Acrobatics opened a card-select mid-resolution, that select's request
+/// superseded the combat request still in flight, the combat handler read null,
+/// declared the agent gone and went to wait for a rewards screen -- while the
+/// fight was still going. Thirty seconds later the AutoSlay watchdog killed the
+/// run and it was recorded as "terminated" with the player alive and healthy.
+///
+/// Three of five live sessions died this way. Pre-emption is routine; say so.
+/// </summary>
+public sealed class RequestPreemptedException : Exception
+{
+    public RequestPreemptedException(string? supersededId, string? bySender)
+        : base($"Request {supersededId ?? "?"} was superseded by {bySender ?? "a newer request"}")
+    {
+    }
+}
+
 public class BridgeServer
 {
     public static readonly BridgeServer Instance = new();
@@ -129,7 +156,10 @@ public class BridgeServer
         TaskCompletionSource<string> tcs;
         lock (_pendingLock)
         {
-            _pendingAction?.TrySetCanceled();
+            // Fault rather than cancel, so the superseded caller can tell this
+            // apart from a timeout. See RequestPreemptedException.
+            _pendingAction?.TrySetException(
+                new RequestPreemptedException(_pendingRequestId, requestId));
             tcs = new TaskCompletionSource<string>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
             _pendingAction = tcs;
@@ -173,7 +203,8 @@ public class BridgeServer
         {
             lock (_pendingLock)
             {
-                _pendingAction?.TrySetCanceled();
+                _pendingAction?.TrySetException(
+                    new RequestPreemptedException(_pendingRequestId, "an uncorrelated wait"));
                 _pendingAction = tcs;
                 _pendingRequestId = null;
             }
@@ -207,6 +238,12 @@ public class BridgeServer
             });
 
             return await tcs.Task;
+        }
+        catch (RequestPreemptedException)
+        {
+            // Deliberately propagated rather than folded into null: the caller
+            // has to be able to retry instead of concluding the agent is gone.
+            throw;
         }
         catch (OperationCanceledException)
         {

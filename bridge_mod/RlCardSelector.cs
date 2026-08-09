@@ -26,11 +26,39 @@ public class RlCardSelector : ICardSelector
     private const int AgentTimeoutSeconds = 30;
     private static readonly TimeSpan AgentTimeout = TimeSpan.FromSeconds(AgentTimeoutSeconds);
 
+    private static int _pendingSelections;
+
+    /// <summary>
+    /// Whether a card-selection prompt is open and waiting on the agent.
+    ///
+    /// The combat loop reads this to know a played card has not finished
+    /// resolving. Card-selects fire from inside card resolution -- Armaments
+    /// upgrading a card in hand, Burning Pact choosing what to exhaust, Battle
+    /// Trance, Acrobatics, Headbutt -- and until this existed there was no way
+    /// to tell "the play is done" from "the play is halfway through and asking
+    /// a question". See PlayCardAndWaitAsync.
+    /// </summary>
+    public static bool SelectionPending => Volatile.Read(ref _pendingSelections) > 0;
+
     /// <summary>
     /// Called for deck upgrade, deck transform, deck enchant, hand selection,
     /// and various other card selection prompts.
     /// </summary>
     public async Task<IEnumerable<CardModel>> GetSelectedCards(
+        IEnumerable<CardModel> options, int minSelect, int maxSelect)
+    {
+        Interlocked.Increment(ref _pendingSelections);
+        try
+        {
+            return await GetSelectedCardsCore(options, minSelect, maxSelect);
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _pendingSelections);
+        }
+    }
+
+    private async Task<IEnumerable<CardModel>> GetSelectedCardsCore(
         IEnumerable<CardModel> options, int minSelect, int maxSelect)
     {
         List<CardModel> cardList = options.ToList();

@@ -42,6 +42,23 @@ public class RlCombatHandler : IRoomHandler, IHandler
     private static readonly TimeSpan AgentTimeout = TimeSpan.FromSeconds(30);
     private const int MaxRlHandSlots = 10;
 
+    /// <summary>How long to let a card finish resolving. See WaitForQuiescenceAsync.</summary>
+    private const int QuiescenceTimeoutMs = 15000;
+    private const int QuiescencePollMs = 25;
+
+    /// <summary>
+    /// Comfortably inside the AutoSlay watchdog's 30s, so a slow card-select
+    /// round trip cannot be mistaken for a frozen game.
+    /// </summary>
+    private const int WatchdogResetIntervalMs = 5000;
+
+    /// <summary>
+    /// A normal turn sees at most a handful of nested prompts. Well clear of
+    /// that, and low enough that a genuine storm ends the turn rather than the
+    /// session.
+    /// </summary>
+    private const int MaxPreemptionsPerTurn = 20;
+
     public RoomType[] HandledTypes => new RoomType[]
     {
         RoomType.Monster, RoomType.Elite, RoomType.Boss
@@ -88,6 +105,7 @@ public class RlCombatHandler : IRoomHandler, IHandler
             Logger.Log($"[RlCombat] Turn {turnCount}: awaiting agent decision");
 
             int cardsPlayed = 0;
+            int preemptions = 0;
             bool turnEnded = false;
 
             while (!turnEnded && cardsPlayed < 50 && IsPlayPhase(player))
@@ -116,6 +134,28 @@ public class RlCombatHandler : IRoomHandler, IHandler
                             stateJson,
                             AgentTimeout, ct);
                         Logger.Log($"[RlCombat] Agent response: {responseJson ?? "null"}");
+                    }
+                    catch (RequestPreemptedException ex)
+                    {
+                        // A nested prompt claimed the channel while this request
+                        // was in flight. Routine, and emphatically not a reason
+                        // to end the run -- the state we sent is now stale, so
+                        // wait for the prompt to resolve and ask again from the
+                        // state that actually exists afterwards.
+                        Logger.Log($"[RlCombat] {ex.Message}; re-asking once it resolves.");
+                        await WaitForQuiescenceAsync(ct);
+                        // Bounded because `continue` skips the cardsPlayed++ that
+                        // terminates this loop. A retry storm would otherwise spin
+                        // silently rather than surfacing as anything diagnosable.
+                        if (++preemptions >= MaxPreemptionsPerTurn)
+                        {
+                            Logger.Log(
+                                $"[RlCombat] {preemptions} pre-emptions in one turn; "
+                                + "ending the turn to break out.");
+                            turnEnded = await EndTurnAndWaitAsync(player, ct);
+                            break;
+                        }
+                        continue;
                     }
                     catch (Exception ex)
                     {
@@ -446,6 +486,71 @@ public class RlCombatHandler : IRoomHandler, IHandler
             await Task.Delay(50, ct);
             waitMs += 50;
         }
+
+        await WaitForQuiescenceAsync(ct);
+    }
+
+    /// <summary>
+    /// Block until the game has finished resolving whatever was just requested.
+    ///
+    /// WHY THE LOOP ABOVE IS NOT ENOUGH
+    /// --------------------------------
+    /// It waits for energy or hand size to *change*, which fires the moment the
+    /// card leaves the hand -- when the play has STARTED, not when it has
+    /// finished. For most cards those are the same instant. For any card that
+    /// asks a question mid-resolution they are not, and the gap is where three
+    /// of five live sessions died on 2026-08-08:
+    ///
+    ///   Playing card: BATTLE_TRANCE          <- hand changes, old wait returns
+    ///   sending state (2323 bytes)           <- next request goes out, id 1010
+    ///   Agent response: null                 <- select opened, id 1011 superseded it
+    ///   No agent response ... ending the run
+    ///   Waiting for rewards screen           <- but the fight is still going
+    ///   [30s] Watchdog: Stuck detected
+    ///
+    /// The same gap also loses card plays outright. Dispatching into an open
+    /// select leaves the play half-issued, and then End Turn is refused forever
+    /// because the game is still waiting on an unresolved card -- the "no cards
+    /// allowed to be played, End Turn greyed out" jam, which was never a
+    /// separate bug.
+    ///
+    /// Two conditions, because neither alone is sufficient: the action queue can
+    /// be empty while a select is open (the queue is parked awaiting the choice,
+    /// via RequestResumeActionAfterPlayerChoice), and a select can be absent
+    /// while the queue is still draining animations.
+    ///
+    /// Capped rather than unbounded. If the game genuinely wedges, returning
+    /// lets the existing stuck handling report it; spinning here would just move
+    /// the hang somewhere with less diagnostic output.
+    /// </summary>
+    private static async Task WaitForQuiescenceAsync(CancellationToken ct)
+    {
+        int waitMs = 0;
+        while (waitMs < QuiescenceTimeoutMs)
+        {
+            if (!CombatManager.Instance.IsInProgress)
+                return;
+
+            bool queueBusy = RunManager.Instance.ActionQueueSet?.IsEmpty == false;
+            if (!queueBusy && !RlCardSelector.SelectionPending)
+                return;
+
+            // The agent answers a card-select on this same connection, and that
+            // round trip counts against the 30s AutoSlay watchdog exactly like a
+            // frozen screen does. Keep it fed while legitimately waiting.
+            if (waitMs > 0 && waitMs % WatchdogResetIntervalMs == 0)
+            {
+                RlAutoSlayer.CurrentWatchdog?.Reset("Resolving a card");
+            }
+
+            await Task.Delay(QuiescencePollMs, ct);
+            waitMs += QuiescencePollMs;
+        }
+
+        Logger.Log(
+            $"[RlCombat] Card still resolving after {QuiescenceTimeoutMs}ms " +
+            $"(queue empty: {RunManager.Instance.ActionQueueSet?.IsEmpty}, " +
+            $"select pending: {RlCardSelector.SelectionPending}); continuing anyway.");
     }
 
     private static async Task UsePotionAndWaitAsync(
@@ -496,6 +601,10 @@ public class RlCombatHandler : IRoomHandler, IHandler
             await Task.Delay(50, ct);
             waitMs += 50;
         }
+
+        // Same reason as the card path: the slot emptying means the potion
+        // started, and several potions ask a question on the way down.
+        await WaitForQuiescenceAsync(ct);
     }
 
     // ----------------------------------------------------------------

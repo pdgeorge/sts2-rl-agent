@@ -16,6 +16,51 @@ log stayed clean. That distinction is the whole diagnostic value here.
 | Same action chosen over and over inside one screen | The mod advertised an action it cannot execute. The screen never closes, so it re-presents, and a deterministic policy makes the same choice again. | Fixed for card rewards |
 | Run sits on a map after beating a boss, and every subsequent run logs "Main menu not visible" | A transition timed out mid-run, leaving the game inside the run. The loop then waits for a menu that will never appear. | Logged plainly once; needs manual return to menu |
 | Everything looks fine but a decision is silently mistranslated | Simulator and bridge agree on the observation but disagree on what an action index means. No error either side. | Card-reward slot fixed; the parity suites exist for this class |
+| A healthy run is recorded `terminated`, or End Turn is refused forever | The combat loop asked for the next action before the previous card finished resolving. | Fixed 2026-08-09, see below |
+
+**The mid-resolution race, found 2026-08-08 across five live sessions.** One root
+cause, wearing two very different faces, and the second face was mistaken for an
+unrelated old bug for days.
+
+`PlayCardAndWaitAsync` waited for energy or hand size to *change*. That fires when
+the card leaves the hand -- when the play has **started**. For any card that asks
+a question mid-resolution (Armaments, Battle Trance, Burning Pact, Acrobatics,
+Headbutt) the play is then only half done, and the loop had already serialised the
+next state and sent it.
+
+*Face one -- the run ends while the player is healthy.* Only one bridge request may
+be outstanding, so the card-select's request superseded the combat request still in
+flight. `SendStateAndWaitForActionAsync` cancelled the old one, the caller received
+a bare `null`, and `RlCombatHandler` reads null as "the agent is unreachable" and
+stops -- `RlAutoSlayer` then waits for a rewards screen that cannot come, because
+the fight is still going. Thirty seconds later the AutoSlay watchdog throws, and
+`PlayRunAsync`'s catch-all reports `run_complete` / `terminated`. Two of the five
+sessions ended exactly here, one on the act 1 boss at 53/90 HP, one on an elite at
+54/80.
+
+*Face two -- "no cards playable, End Turn greyed out".* Same gap, worse outcome. The
+next play was dispatched **into the open select** and never resolved: the log shows
+`Playing card: DEFEND_IRONCLAD` with no matching `Player 1 playing card
+DEFEND_IRONCLAD` after it. The game then refuses to end the turn because it is
+still waiting on that card, forever. This had been carried as its own mysterious
+issue; it was never separate.
+
+Fixed in three parts. `WaitForQuiescenceAsync` blocks until
+`RunManager.Instance.ActionQueueSet.IsEmpty` **and** `RlCardSelector.SelectionPending`
+is clear -- both, because the queue parks while a choice is pending and drains
+after it. Pre-emption now raises `RequestPreemptedException` instead of arriving as
+`null`, so the combat loop can tell "superseded, ask again" from "the agent is
+gone" and retries rather than ending the run. The watchdog is fed while waiting,
+since a card-select round trip is a legitimate pause the watchdog would otherwise
+read as a freeze.
+
+**Still open, same screen.** `RlCardSelector` implements a generic hook, so the
+payload cannot say *why* the game is asking. The agent applies one heuristic
+(non-basic first, never a curse) to every prompt, which is right for Armaments and
+backwards for Burning Pact -- it exhausted Shrug It Off when a Strike was sitting
+there. Fixing this needs the prompt's source card in the payload, which
+`ICardSelector.GetSelectedCards(options, minSelect, maxSelect)` does not receive.
+
 
 **Confirmed at the act 1 -> act 2 boundary.** `FindAll<NMapPoint>` returned two
 candidates reporting the same coord (row 0, col 3), which a map cannot contain,
