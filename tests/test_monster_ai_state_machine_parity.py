@@ -555,7 +555,7 @@ THIEVING_HOPPER_NAB_DAMAGE_A9 = 16
 THIEVING_HOPPER_FLUTTER = 5
 TUNNELER_BITE_MOVE = "BITE_MOVE"
 TUNNELER_BURROW_MOVE = "BURROW_MOVE"
-TUNNELER_BELOW_MOVE = "BELOW_MOVE_1"
+TUNNELER_BELOW_MOVE = "BELOW_MOVE"
 TUNNELER_BITE_DAMAGE_A9 = 15
 TUNNELER_BURROW_BLOCK_A9 = 37
 TUNNELER_BELOW_DAMAGE_A9 = 26
@@ -570,13 +570,13 @@ BOWLBUG_NECTAR_BUFF_STRENGTH_A9 = 16
 BOWLBUG_ROCK_HEADBUTT_MOVE = "HEADBUTT_MOVE"
 BOWLBUG_ROCK_HEADBUTT_DAMAGE_A9 = 16
 BOWLBUG_ROCK_IMBALANCED = 1
-BOWLBUG_SILK_TRASH_MOVE = "TRASH_MOVE"
+BOWLBUG_SILK_TRASH_MOVE = "THRASH_MOVE"
 BOWLBUG_SILK_TOXIC_SPIT_MOVE = "TOXIC_SPIT_MOVE"
 BOWLBUG_SILK_THRASH_DAMAGE_A9 = 5
 BOWLBUG_SILK_THRASH_HITS = 2
 BOWLBUG_SILK_TOXIC_SPIT_WEAK = 1
 EXOSKELETON_SKITTER_MOVE = "SKITTER_MOVE"
-EXOSKELETON_MANDIBLE_MOVE = "MANDIBLE_MOVE"
+EXOSKELETON_MANDIBLE_MOVE = "MANDIBLES_MOVE"
 EXOSKELETON_ENRAGE_MOVE = "ENRAGE_MOVE"
 EXOSKELETON_SKITTER_DAMAGE = 1
 EXOSKELETON_SKITTER_HITS_A9 = 4
@@ -1266,10 +1266,10 @@ class TestFixedRotation:
 
     def test_act1_slimes_deadly_ascension_damage_matches_csharp(self):
         cases = [
-            (create_leaf_slime_s, "BUTT_MOVE", 4),
-            (create_twig_slime_s, "BUTT_MOVE", 5),
+            (create_leaf_slime_s, "TACKLE_MOVE", 4),
+            (create_twig_slime_s, "TACKLE_MOVE", 5),
             (create_leaf_slime_m, "CLUMP_SHOT", 9),
-            (create_twig_slime_m, "CLUMP_SHOT_MOVE", 12),
+            (create_twig_slime_m, "POKEY_POUNCE_MOVE", 12),
         ]
         for seed_offset, (factory, move_id, expected_damage) in enumerate(cases):
             combat = _make_combat(1250 + seed_offset)
@@ -1311,7 +1311,7 @@ class TestFixedRotation:
         cubex, cubex_ai = create_cubex_construct(Rng(rng_seed), ascension_level=9)
         combat.add_enemy(cubex, cubex_ai)
 
-        repeater = cubex_ai.states["REPEATER_MOVE"]
+        repeater = cubex_ai.states["REPEATER_BLAST_MOVE"]
         assert repeater.intents[0].damage == 8
         ally_hp_before_repeater = ally.current_hp
         repeater.perform(combat)
@@ -1319,7 +1319,7 @@ class TestFixedRotation:
         assert cubex.get_power_amount(PowerId.STRENGTH) == 2
 
         cubex.powers.pop(PowerId.STRENGTH)
-        expel = cubex_ai.states["EXPEL_BLAST"]
+        expel = cubex_ai.states["EXPEL_MOVE"]
         assert expel.intents[0].damage == 6
         ally_hp_before_expel = ally.current_hp
         expel.perform(combat)
@@ -1470,7 +1470,7 @@ class TestFixedRotation:
         strangler_ai.states["CONSTRICT"].perform(combat)
         assert ally.get_power_amount(PowerId.CONSTRICT) == 3
 
-        twack = strangler_ai.states["TWACK"]
+        twack = strangler_ai.states["THWACK"]
         assert twack.intents[0].damage == 8
         ally_hp_before_twack = ally.current_hp
         twack.perform(combat)
@@ -1800,14 +1800,14 @@ class TestFixedRotation:
         from sts2_env.monsters.act1_weak import create_leaf_slime_s, create_twig_slime_m, create_twig_slime_s
 
         _, leaf_s_ai = create_leaf_slime_s(rng)
-        assert {"BUTT_MOVE", "GOOP_MOVE"}.issubset(leaf_s_ai.states)
-        assert leaf_s_ai.current_move.state_id in {"BUTT_MOVE", "GOOP_MOVE"}
+        assert {"TACKLE_MOVE", "GOOP_MOVE"}.issubset(leaf_s_ai.states)
+        assert leaf_s_ai.current_move.state_id in {"TACKLE_MOVE", "GOOP_MOVE"}
 
         _, twig_s_ai = create_twig_slime_s(rng)
-        assert twig_s_ai.current_move.state_id == "BUTT_MOVE"
+        assert twig_s_ai.current_move.state_id == "TACKLE_MOVE"
 
         _, twig_m_ai = create_twig_slime_m(rng)
-        assert {"STICKY_SHOT_MOVE", "CLUMP_SHOT_MOVE"}.issubset(twig_m_ai.states)
+        assert {"STICKY_SHOT_MOVE", "POKEY_POUNCE_MOVE"}.issubset(twig_m_ai.states)
         assert twig_m_ai.current_move.state_id == "STICKY_SHOT_MOVE"
 
     def test_inklet_matches_original_stats_setup_and_starter_moves(self):
@@ -1877,11 +1877,11 @@ class TestFixedRotation:
         moves = _run_ai(ai, rng, 6)
         assert moves == [
             "LIQUIFY_GROUND_MOVE",
-            "THRASH_MOVE_1",
+            "THRASH_MOVE",
             "LUNGING_BITE_MOVE",
             "SALIVATE_MOVE",
             "THRASH_MOVE_2",
-            "THRASH_MOVE_1",
+            "THRASH_MOVE",
         ]
 
     def test_the_insatiable_liquify_applies_sandpit_and_frantic_escape(self):
@@ -1931,7 +1931,7 @@ class TestFixedRotation:
         primary_hp_before_thrash = combat.primary_player.current_hp
         ally_hp_before_thrash = ally.current_hp
         ai.roll_move(rng)
-        assert ai.current_move.state_id == "THRASH_MOVE_1"
+        assert ai.current_move.state_id == "THRASH_MOVE"
         ai.current_move.perform(combat)
         assert combat.primary_player.current_hp == primary_hp_before_thrash - expected_thrash_damage * expected_thrash_hits
         assert ally.current_hp == ally_hp_before_thrash - expected_thrash_damage * expected_thrash_hits
@@ -2131,7 +2131,7 @@ class TestFixedRotation:
         assert creature.max_hp == 127
         assert creature.get_power_amount(PowerId.SLOW) == 1
         assert _run_ai(ai, Rng(10), 4) == [
-            "INITIAL_SLEEP_MOVE",
+            "SLEEP_MOVE_2",
             "WAKE_MOVE",
             "SLASHES_MOVE",
             "SLASHES_MOVE",
@@ -2139,7 +2139,7 @@ class TestFixedRotation:
 
         wake_creature, wake_ai = create_bygone_effigy(Rng(10))
         combat.add_enemy(wake_creature, wake_ai)
-        assert wake_ai.current_move.state_id == "INITIAL_SLEEP_MOVE"
+        assert wake_ai.current_move.state_id == "SLEEP_MOVE_2"
         wake_ai.on_move_performed()
         wake_ai.roll_move(Rng(10))
         wake_ai.current_move.perform(combat)
@@ -2208,7 +2208,7 @@ class TestFixedRotation:
     def test_act1_normal_monsters_use_original_move_ids(self):
         cubex, cubex_ai = create_cubex_construct(Rng(11))
         assert cubex_ai.current_move.state_id == "CHARGE_UP_MOVE"
-        assert {"REPEATER_MOVE", "REPEATER_MOVE_2", "EXPEL_BLAST", "SUBMERGE_MOVE"}.issubset(cubex_ai.states)
+        assert {"REPEATER_BLAST_MOVE", "REPEATER_BLAST_MOVE_2", "EXPEL_MOVE", "SUBMERGE_MOVE"}.issubset(cubex_ai.states)
         assert cubex.block == 0
         assert cubex.get_power_amount(PowerId.ARTIFACT) == 0
         combat = _make_combat(11)
@@ -2386,11 +2386,11 @@ class TestFixedRotation:
 
         ai.on_move_performed()
         ai.roll_move(Rng(21))
-        assert ai.current_move.state_id in {"TWACK", "LASH"}
+        assert ai.current_move.state_id in {"THWACK", "LASH"}
 
         combat.player.current_hp = 80
         creature.block = 0
-        ai.states["TWACK"].perform(combat)
+        ai.states["THWACK"].perform(combat)
         assert combat.player.current_hp == 73
         assert creature.block == 5
 
@@ -2403,7 +2403,7 @@ class TestFixedRotation:
 
         cases = [
             (create_nibbit(Rng(1)), NIBBIT_SLICE_MOVE_ID, NIBBIT_SLICE_MOVE_BLOCK),
-            (create_slithering_strangler(Rng(2)), "TWACK", 5),
+            (create_slithering_strangler(Rng(2)), "THWACK", 5),
             (create_axe_ruby_raider(Rng(3)), "SWING_1", 5),
             (create_crossbow_ruby_raider(Rng(4)), "RELOAD_MOVE", 3),
             (create_cubex_construct(Rng(5)), "SUBMERGE_MOVE", 15),
@@ -2473,7 +2473,7 @@ class TestFixedRotation:
         combat.add_enemy(creature, ai)
         combat.player.current_hp = 7
 
-        ai.states["REPEATER_MOVE"].perform(combat)
+        ai.states["REPEATER_BLAST_MOVE"].perform(combat)
 
         assert combat.is_over
         assert combat.player_won is False
@@ -2818,7 +2818,7 @@ class TestFixedRotation:
         stunned_move_id = "STUNNED"
         bite_move_id = "BITE_MOVE"
         burrow_move_id = "BURROW_MOVE"
-        below_move_id = "BELOW_MOVE_1"
+        below_move_id = "BELOW_MOVE"
         dizzy_move_id = "DIZZY_MOVE"
         combat = _make_combat(setup_rng_seed)
         creature, ai = create_tunneler(Rng(setup_rng_seed))
@@ -2907,7 +2907,7 @@ class TestFixedRotation:
         assert not getattr(rock.powers[PowerId.IMBALANCED], "was_fully_blocked", False)
 
         _, silk_ai = create_bowlbug_silk(Rng(27))
-        assert _run_ai(silk_ai, Rng(27), 3) == ["TOXIC_SPIT_MOVE", "TRASH_MOVE", "TOXIC_SPIT_MOVE"]
+        assert _run_ai(silk_ai, Rng(27), 3) == ["TOXIC_SPIT_MOVE", "THRASH_MOVE", "TOXIC_SPIT_MOVE"]
 
     def test_thieving_hopper_tunneler_and_exoskeleton_ascension_scaling_matches_csharp(self):
         rng_seed = 1284
@@ -3032,14 +3032,14 @@ class TestFixedRotation:
         assert first_ai.current_move.state_id == "SKITTER_MOVE"
 
         second, second_ai = create_exoskeleton(Rng(29), slot="second")
-        assert second_ai.current_move.state_id == "MANDIBLE_MOVE"
-        assert second_ai.states["MANDIBLE_MOVE"].follow_up_id == "ENRAGE_MOVE"
+        assert second_ai.current_move.state_id == "MANDIBLES_MOVE"
+        assert second_ai.states["MANDIBLES_MOVE"].follow_up_id == "ENRAGE_MOVE"
 
         third, third_ai = create_exoskeleton(Rng(30), slot="third")
         assert third_ai.current_move.state_id == "ENRAGE_MOVE"
 
         fourth_moves = {create_exoskeleton(Rng(seed), slot="fourth")[1].current_move.state_id for seed in range(31, 41)}
-        assert fourth_moves == {"SKITTER_MOVE", "MANDIBLE_MOVE"}
+        assert fourth_moves == {"SKITTER_MOVE", "MANDIBLES_MOVE"}
 
     def test_act2_normal_chomper_and_hunter_killer_match_original_moves(self):
         chomper, chomper_ai = create_chomper(Rng(32))
