@@ -2100,8 +2100,8 @@ INFESTED_PRISM_TOUGH_HP = 171
 """`MinInitialHp => GetValueIfAscension(ToughEnemies, 171, 161)`, MaxInitialHp
 the same. Was 200/215 -- a 39 HP overestimate, the largest found, on an elite.
 The searcher was budgeting a fifth more damage than the fight needs."""
-INFESTED_PRISM_BASE_JAB_DAMAGE = 22
-INFESTED_PRISM_DEADLY_JAB_DAMAGE = 24
+INFESTED_PRISM_BASE_JAB_DAMAGE = 15
+INFESTED_PRISM_DEADLY_JAB_DAMAGE = 17
 INFESTED_PRISM_BASE_RADIATE_DAMAGE = 16
 INFESTED_PRISM_DEADLY_RADIATE_DAMAGE = 18
 INFESTED_PRISM_BASE_RADIATE_BLOCK = 16
