@@ -465,19 +465,31 @@ exactly the rooms it could not pay for. Measured over 1119 live fights:
 
 Two findings sit in that table. **32 of the 56 recorded elite choices were made
 between 40 and 59 HP**, in the 18–29% band, because 45/80 reads as healthy. And
-**across 89 attempts the agent has never once entered an act boss above 69 HP** —
-median entry 47, every boss fought from a position that loses 60–88% of the time.
-The rest site inherited the same threshold and chose SMITH over HEAL 17 times on
-the floor immediately before an act boss, at a median 49 HP.
+the agent arrives at act bosses worn down: **median entry 54 over 45 act 1 boss
+fights, with only 3 of 47 boss fights overall entered above 69 HP**, so nearly
+every boss is fought from a position that loses 60–88% of the time. The rest site
+inherited the same threshold and chose SMITH over HEAL 17 times on the floor
+immediately before an act boss, at a median 49 HP.
+
+> **Correction.** This first read "median 47 over 89 attempts, never above 69".
+> Both numbers were wrong, and wrong for an instructive reason: they counted
+> `combat_end` *segments* rather than fights, and a fight is split into several
+> segments by exactly the mid-resolution card-select bug documented above. The
+> metric was inflated by the bug it sat next to. Deduplicating by
+> (session, run, floor) gives 47 boss fights, median act 1 entry 54, and three
+> entries above 69 (73, 73, 80). Every other figure here — the death-rate table,
+> the elite fit, the 32-of-56 and 17-times counts — was computed on deduplicated
+> fights or on one-per-decision `choice` events and is unaffected.
 
 The floor-45 run died of exactly this. Floor 42, 76/97 — 78%, "healthy" — took an
 act 3 elite worth 58 HP and reached floor 45 at 21 with no rest between. It had
 survived the elite. It could not afford what came after.
 
 **What made that run good** was not its deck. It entered the act 1 boss at 73 HP
-against a median of 47, near the top of the whole distribution and inside the one
-band where elites kill nobody. Everything downstream followed from that, which
-makes the target a single number: **median HP entering the act 1 boss, 47 → 73**.
+against a median of 54 — joint second-highest of 47 recorded boss fights, and
+inside the band where elites kill nobody. Everything downstream followed from
+that, which makes the target a single number: **median HP entering the act 1
+boss, 54 → 73**.
 
 Fixed by gating each room on a fraction of max HP (`ROOM_MIN_HP_FRACTION`), fitted
 against the 116 elite fights with a known max HP rather than chosen:
