@@ -71,6 +71,52 @@ ROOM_PRIORITY_HEALTHY = (
     "shop",
     "restsite",
 )
+#: The health a room needs before it is worth entering, as a fraction of max HP.
+#:
+#: FITTED, not chosen. Over 116 live elite fights with a known max HP, gating on
+#: the fraction of health the player had walking in:
+#:
+#:     rule                     taken   died   death rate
+#:     hp > 0.50 * max  (old)      85     18      21%
+#:     hp >= 0.75 * max            35      6      17%
+#:     hp >= 0.80 * max            21      2      10%
+#:     hp >= 0.85 * max            18      2      11%
+#:
+#: 0.80 is where the curve bends; past it the extra caution buys nothing. The old
+#: 0.50 authorised precisely the fights that ended runs -- 32 of the 56 recorded
+#: elite choices were made between 40 and 59 HP, and the measured death rate
+#: there is 18-29% against 0% above 70.
+#:
+#: A FRACTION RATHER THAN AN ABSOLUTE HP FIGURE, which was the first attempt. The
+#: safe band was observed on characters with 80-93 max HP, so "70 HP" and "87% of
+#: max" describe the same measurement -- but only the fraction still means
+#: anything once Max HP rewards push the ceiling to 103. Absolute thresholds
+#: silently loosen as the character grows, which is backwards: the rooms get
+#: harder, not easier.
+ROOM_MIN_HP_FRACTION = {
+    "boss": 0.80,
+    "elite": 0.80,
+    "monster": 0.40,
+    "unknown": 0.40,
+    "event": 0.40,
+}
+"""Monsters at 0.40 from the same table: their death rate is 35% at 20-29 HP,
+17% at 30-39 and 6% at 40-49. Bosses share the elite figure aspirationally --
+across 89 attempts the agent has NEVER entered a boss above 69 HP, so there is
+no safe band in the data to fit, only a median entry of 47 and a 60-88% death
+rate. 0.80 is the target to move that median toward, not an observation."""
+
+#: Deliberately NO per-act scaling. The obvious move was to scale these by act,
+#: and the data refuses it: act 2 elites measure a p90 of 24 against act 1's 54,
+#: which reads as "act 2 is easier" and is really survivorship -- only strong
+#: runs get there, n=4. Fitting a multiplier to that is fitting noise, and the
+#: version of this that did made act 3 elites unaffordable at any HP and stopped
+#: the agent ever upgrading a card again. Revisit when deep runs are common
+#: enough to measure, which is what this policy exists to produce.
+
+#: Rooms worth routing *to* when the next real room cannot be afforded.
+RECOVERY_ROOMS = ("restsite", "shop", "treasure")
+
 ROOM_PRIORITY_LOW_HP = (
     "restsite",
     "shop",
@@ -901,22 +947,82 @@ def _phase_for_state(state: dict[str, Any]) -> str:
     }.get(msg_type, state.get("phase", Phase.UNKNOWN))
 
 
+def required_hp_fraction(room_type: str) -> float:
+    """How healthy the player should be before entering this kind of room.
+
+    Rooms absent from the table -- shops, rest sites, treasure -- return 0.0 and
+    are always eligible, which is what makes them the recovery options.
+
+    `Unknown` takes the monster figure rather than 0: an Unknown node resolves to
+    a fight often enough that treating it as free is how a run walks into one at
+    12 HP, which the logs show happening four times.
+    """
+    return ROOM_MIN_HP_FRACTION.get(_canonical_text(room_type), 0.0)
+
+
+def _can_afford(state: dict[str, Any], node: dict[str, Any]) -> bool:
+    """Is the player healthy enough for this room to be worth entering?"""
+    hp, max_hp = _read_hp_pair_from_state(state)
+    if hp is None or not max_hp:
+        return True
+    return hp >= required_hp_fraction(node.get("type")) * max_hp
+
+
+def _read_hp_pair_from_state(state: dict[str, Any]) -> tuple[int | None, int | None]:
+    for container in _candidate_player_containers(state):
+        hp, max_hp = _read_hp_pair(container)
+        if hp is not None:
+            return hp, max_hp
+    return None, None
+
+
 def _pick_map_node(state: dict[str, Any]) -> int:
-    """Choose a reachable map node from the bridge state's node list."""
+    """Choose a reachable map node, refusing rooms the current HP cannot pay for.
+
+    Rooms are still ranked by the same preference tables -- elites before
+    monsters, because elites are where relics come from and a run that never
+    takes one arrives at act 3 with nothing. What changed is that a room is only
+    *eligible* if the player can survive its p90 damage.
+
+    So the agent still wants the elite. It just takes it at 70 HP instead of 45,
+    and goes to a rest site first when it cannot. Measured elite death rate at
+    70-79 HP is 0%; at 40-59 it is 18-29%.
+
+    Falling back to the full priority list when nothing is affordable is
+    deliberate. Some map positions offer only fights, and refusing to move is not
+    an option the game supports -- the least-bad fight beats a stalled run.
+    """
     nodes = list(state.get("nodes", []))
     if not nodes:
         return DEFAULT_CHOICE_INDEX
-    hp_ratio = _read_hp_ratio(state)
-    priority = (
-        ROOM_PRIORITY_LOW_HP
-        if hp_ratio is not None and hp_ratio < REST_HP_RATIO_THRESHOLD
-        else ROOM_PRIORITY_HEALTHY
-    )
-    for room_type in priority:
-        for fallback_index, node in enumerate(nodes):
+
+    affordable = [node for node in nodes if _can_afford(state, node)]
+    hp, _ = _read_hp_pair_from_state(state)
+
+    # Recovery first whenever the map is offering something unaffordable: that is
+    # the signal the run is being outpaced, and it is the moment the old policy
+    # pressed on instead. The floor-45 run died here -- 76/97 read as "healthy",
+    # it took an act 3 elite worth 58, and there was no rest before floor 45.
+    if len(affordable) < len(nodes):
+        for room_type in RECOVERY_ROOMS:
+            for fallback_index, node in enumerate(nodes):
+                if _canonical_text(node.get("type")) == room_type:
+                    logger.info(
+                        "MAP: routing to %s at %s HP -- %d of %d nodes cost more "
+                        "than that.", room_type, hp,
+                        len(nodes) - len(affordable), len(nodes))
+                    return _read_index(node, fallback_index)
+
+    for room_type in ROOM_PRIORITY_HEALTHY:
+        for fallback_index, node in enumerate(affordable):
             if _canonical_text(node.get("type")) == room_type:
-                return _read_index(node, fallback_index)
-    return _read_index(nodes[0], DEFAULT_CHOICE_INDEX)
+                return _read_index(node, nodes.index(node))
+
+    # Nothing affordable and no recovery on offer: take the cheapest fight going.
+    cheapest = min(nodes, key=lambda n: required_hp_fraction(n.get("type")))
+    logger.info("MAP: nothing affordable at %s HP; taking the cheapest room (%s).",
+                hp, cheapest.get("type"))
+    return _read_index(cheapest, nodes.index(cheapest))
 
 
 def _card_name(card: Any) -> str:
@@ -1172,12 +1278,38 @@ def _pick_card_bundle_index(state: dict[str, Any]) -> int:
     return _read_index(option, DEFAULT_CHOICE_INDEX)
 
 
+#: Last floor of each act, so a rest site can tell whether a boss is next.
+#: Confirmed from live data rather than assumed: two runs both ended on floor 17
+#: in a room the bridge reported as `Boss` while the simulator puts the act 1
+#: boss on 16, and `room_type` in the run records settles it at 17/33/50.
+ACT_BOSS_FLOORS = frozenset({17, 33, 50})
+
+
+def _boss_is_next(state: dict[str, Any]) -> bool:
+    """Is the floor after this one an act boss?"""
+    try:
+        floor = int(state.get("floor") or 0)
+    except (TypeError, ValueError):
+        return False
+    return (floor + 1) in ACT_BOSS_FLOORS
+
+
 def _pick_rest_option(state: dict[str, Any]) -> int:
-    """Choose a rest-site option by option identity, not display order."""
+    """Choose a rest-site option by option identity, not display order.
+
+    HEAL whenever the next boss would out-damage the current HP. This used to ask
+    the flat `hp < 0.5 * max_hp`, and on the floor before an act boss that test
+    said SMITH 17 times at a median 49 HP -- upgrading a card immediately before
+    a fight the measured death rate puts at 88% from that position.
+
+    Boss HP entering, over 89 live attempts: median 47, and never once above 69.
+    Every boss has been fought from a losing position, so the rest site before it
+    is not a choice between two goods.
+    """
     options = _enabled_options(state)
     if not options:
         return DEFAULT_CHOICE_INDEX
-    hp_ratio = _read_hp_ratio(state)
+    hp, _ = _read_hp_pair_from_state(state)
 
     # Smithing is only worth a rest if there is something worth smithing. A deck
     # of nothing but basics has no upgrade that changes a fight, so the HP is
@@ -1185,12 +1317,23 @@ def _pick_rest_option(state: dict[str, Any]) -> int:
     deck = state.get("deck") or []
     has_real_upgrade = any(_worth_upgrading(card) for card in deck) if deck else True
 
+    # What is coming, not what a ratio says about now. A rest site's whole value
+    # is that it is the last chance to pay for the next room, so it is held to
+    # the same bar the map uses to decide whether that room is enterable.
+    _, max_hp = _read_hp_pair_from_state(state)
+    needed = required_hp_fraction("boss" if _boss_is_next(state) else "elite")
+    outmatched = hp is not None and max_hp and hp < needed * max_hp
+
     preferred = (
         REST_HEAL_OPTION_ID
-        if (hp_ratio is not None and hp_ratio < REST_HP_RATIO_THRESHOLD)
-        or not has_real_upgrade
+        if outmatched or not has_real_upgrade
         else REST_SMITH_OPTION_ID
     )
+    if outmatched and has_real_upgrade:
+        logger.info("REST: healing at %s/%s -- %s next wants %.0f%%.",
+                    hp, max_hp,
+                    "the act boss" if _boss_is_next(state) else "an elite",
+                    100 * needed)
     option = _first_matching_option(options, option_ids=(preferred,))
     if option is None and preferred == REST_SMITH_OPTION_ID:
         option = _first_matching_option(options, option_ids=(REST_HEAL_OPTION_ID,))

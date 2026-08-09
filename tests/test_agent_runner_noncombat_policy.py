@@ -150,3 +150,125 @@ def test_treasure_and_boss_relic_policy_use_action_labels() -> None:
 
     assert _pick_treasure_option(treasure) == 4
     assert _pick_boss_relic_option(boss_relic) == 2
+
+
+# ---------------------------------------------------------------------------
+# HP economy. The old policy had one 50%-of-max threshold governing every room,
+# which authorised exactly the fights that ended runs: 32 of 56 recorded elite
+# choices were made at 40-59 HP, where the measured death rate is 18-29%.
+# ---------------------------------------------------------------------------
+
+
+def test_map_policy_refuses_an_elite_in_the_dangerous_band() -> None:
+    """60% health cleared the old threshold and is where elites kill her."""
+    state = {
+        "player": {"hp": 48, "max_hp": 80},
+        "nodes": [
+            {"index": 0, "type": "Elite"},
+            {"index": 1, "type": "Monster"},
+        ],
+    }
+
+    assert _pick_map_node(state) == 1
+
+
+def test_map_policy_routes_to_rest_when_a_room_is_unaffordable() -> None:
+    state = {
+        "player": {"hp": 48, "max_hp": 80},
+        "nodes": [
+            {"index": 0, "type": "Elite"},
+            {"index": 1, "type": "RestSite"},
+        ],
+    }
+
+    assert _pick_map_node(state) == 1
+
+
+def test_map_policy_replays_the_floor_45_death() -> None:
+    """The decision that actually ended the deepest live run.
+
+    Floor 42 at 76/97 -- 78% health, comfortably "healthy" under the old 50%
+    threshold. It took the act 3 elite, lost 58 HP, and died on floor 45 at 21
+    with no rest site between. The elite must lose to the Unknown here.
+    """
+    state = {
+        "floor": 42,
+        "act": 3,
+        "run_hp": 76,
+        "run_max_hp": 97,
+        "nodes": [
+            {"index": 0, "type": "Unknown"},
+            {"index": 1, "type": "Elite"},
+        ],
+    }
+
+    assert _pick_map_node(state) == 0
+
+
+def test_map_policy_still_takes_elites_when_genuinely_healthy() -> None:
+    """Caution must not cost the relics. Elites are the whole relic engine."""
+    state = {
+        "player": {"hp": 93, "max_hp": 93},
+        "nodes": [
+            {"index": 0, "type": "RestSite"},
+            {"index": 1, "type": "Monster"},
+            {"index": 2, "type": "Elite"},
+        ],
+    }
+
+    assert _pick_map_node(state) == 2
+
+
+def test_map_policy_treats_unknown_as_a_fight() -> None:
+    """Unknown nodes resolve to combat often enough to cost HP like one."""
+    state = {
+        "player": {"hp": 8, "max_hp": 80},
+        "nodes": [
+            {"index": 0, "type": "Unknown"},
+            {"index": 1, "type": "Shop"},
+        ],
+    }
+
+    assert _pick_map_node(state) == 1
+
+
+def test_map_policy_still_moves_when_nothing_is_affordable() -> None:
+    """Refusing to move is not an option the game offers.
+
+    On a map with only fights and no HP to pay for them, the run has to take the
+    cheapest one rather than stall -- a stalled run is the failure mode this
+    whole file exists to avoid.
+    """
+    state = {
+        "player": {"hp": 6, "max_hp": 80},
+        "nodes": [
+            {"index": 0, "type": "Elite"},
+            {"index": 1, "type": "Monster"},
+        ],
+    }
+
+    assert _pick_map_node(state) == 1
+
+
+def test_rest_policy_heals_before_an_act_boss() -> None:
+    """Smithing before a boss happened 17 times, at a median 49 HP.
+
+    The measured death rate entering a boss at 40-49 HP is 88%, so the upgrade
+    was being bought with the run.
+    """
+    state = {
+        "floor": 16,
+        "run_hp": 49,
+        "run_max_hp": 80,
+        "deck": [{"id": "ANGER"}],
+        "options": [
+            {"index": 0, "id": "HEAL", "enabled": True},
+            {"index": 1, "id": "SMITH", "enabled": True},
+        ],
+    }
+
+    assert _pick_rest_option(state) == 0
+
+    # Healthy enough to fight it: the upgrade is worth more than the HP.
+    state["run_hp"] = 70
+    assert _pick_rest_option(state) == 1

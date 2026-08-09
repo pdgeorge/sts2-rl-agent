@@ -442,3 +442,70 @@ rather than what it would actually hit for.
 so archetype fit decides for those instead of a rarity-and-cost number
 masquerading as an assessment. `CARD_RATINGS` remains the override hook for
 anything needing a hand-set value, and is still empty.
+
+---
+
+### 8. The HP economy governed every room with one 50% threshold — FIXED 2026-08-09
+
+Found by asking why the deepest live run (floor 45, act 3) died, and the answer
+was not combat, deckbuilding or luck. It was three map decisions.
+
+`_pick_map_node` picked `ROOM_PRIORITY_HEALTHY` whenever `hp > 0.5 * max_hp`, and
+that table ranks elite second and restsite **last**. So the threshold authorised
+exactly the rooms it could not pay for. Measured over 1119 live fights:
+
+| Entering HP | Elite death rate | Monster | Boss |
+|---|---|---|---|
+| 20–29 | 100% | 35% | — |
+| 30–39 | 43% | 17% | — |
+| 40–49 | 18% | 6% | 88% |
+| 50–59 | 29% | 4% | 73% |
+| 60–69 | 20% | 2% | 60% |
+| 70–79 | **0%** | 0% | never happened |
+
+Two findings sit in that table. **32 of the 56 recorded elite choices were made
+between 40 and 59 HP**, in the 18–29% band, because 45/80 reads as healthy. And
+**across 89 attempts the agent has never once entered an act boss above 69 HP** —
+median entry 47, every boss fought from a position that loses 60–88% of the time.
+The rest site inherited the same threshold and chose SMITH over HEAL 17 times on
+the floor immediately before an act boss, at a median 49 HP.
+
+The floor-45 run died of exactly this. Floor 42, 76/97 — 78%, "healthy" — took an
+act 3 elite worth 58 HP and reached floor 45 at 21 with no rest between. It had
+survived the elite. It could not afford what came after.
+
+**What made that run good** was not its deck. It entered the act 1 boss at 73 HP
+against a median of 47, near the top of the whole distribution and inside the one
+band where elites kill nobody. Everything downstream followed from that, which
+makes the target a single number: **median HP entering the act 1 boss, 47 → 73**.
+
+Fixed by gating each room on a fraction of max HP (`ROOM_MIN_HP_FRACTION`), fitted
+against the 116 elite fights with a known max HP rather than chosen:
+
+```
+hp > 0.50 * max  (old)    85 taken   21% died
+hp >= 0.75 * max          35 taken   17% died
+hp >= 0.80 * max          21 taken   10% died   <- the bend
+hp >= 0.85 * max          18 taken   11% died
+```
+
+Elites are still ranked above monsters, so a healthy run still farms them; it
+just takes them at 80% instead of 56%. A fraction rather than an absolute HP
+figure because Max HP rewards push the ceiling to 103, and an absolute threshold
+silently loosens as the character grows — backwards, since the rooms get harder.
+
+**Two things this deliberately does not do.**
+
+*No per-act scaling.* The obvious move, and the data refuses it: act 2 elites
+measure a p90 of 24 against act 1's 54, which reads as "act 2 is easier" and is
+really survivorship at n=4. The version that fitted a multiplier to that made act
+3 elites unaffordable at any HP and stopped the agent upgrading a card ever
+again. Revisit when deep runs are common enough to measure — which is what this
+change exists to produce.
+
+*No lookahead.* The genuinely correct question at floor 42 was "can I recover
+before the next boss", and it is unanswerable here: `map_select` sends only the
+immediately reachable nodes with their row/col, never the graph. Reaching the
+right answer needs the mod to send the map. The 0.80 gate catches floor 42
+(76/97 = 0.78) but catches it for the wrong reason, and a map where the rest site
+sits two rows further on would still fool it.
