@@ -153,6 +153,17 @@ class LiveEvalRecorder:
             if c:
                 lines.append(f"  {lo:>3}-{hi:<3} {c:>4}  {'#' * min(40, c)}")
 
+        # Every place the live game disagreed with the simulator. Printed with
+        # the results rather than left in the log, because the search plans its
+        # whole lookahead on the simulator's numbers and a session that found
+        # three of these has three fights it was planning wrongly.
+        from sts2_env.search.parity import disparity_summary
+
+        found = disparity_summary()
+        if found:
+            lines += ["", f"simulator disparities ({len(found)} distinct):"]
+            lines += [f"  {line}" for line in found]
+
         # A live run is minutes, not milliseconds, so the cost of the next
         # datapoint is worth stating plainly.
         secs = [float(r.get("seconds") or 0) for r in self.runs]

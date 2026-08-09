@@ -49,6 +49,7 @@ from sts2_env.core.enums import CardId, IntentType, PowerId, RoomType
 from sts2_env.core.rng import Rng
 from sts2_env.monsters.factory import create_monster_by_id
 from sts2_env.monsters.intents import Intent
+from sts2_env.search.parity import check_max_hp, report_disparity
 from sts2_env.potions.base import create_potion
 from sts2_env.powers.base import PowerInstance
 from sts2_env.run.rooms import create_room
@@ -812,6 +813,11 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
             if "hp" in enemy_json:
                 enemy.current_hp = int(enemy_json["hp"])
             if "max_hp" in enemy_json:
+                # Checked BEFORE the overwrite, which is the only moment the two
+                # values coexist. Current HP is deliberately not checked -- it
+                # differs on every call because the fight has progressed, which
+                # is not a disparity.
+                check_max_hp(str(enemy.monster_id or ""), int(enemy_json["max_hp"]))
                 enemy.max_hp = int(enemy_json["max_hp"])
             if "block" in enemy_json:
                 enemy.block = int(enemy_json.get("block", 0))
@@ -827,6 +833,12 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
             for p in (enemy_json.get("powers") or []):
                 pid = _coerce_power_id(str(p.get("id", "")).upper())
                 if pid is None:
+                    # A power this simulator has no id for is dropped, so the
+                    # search plans as though the enemy does not have it. Silent
+                    # until now.
+                    report_disparity(
+                        "unknown_power", str(enemy.monster_id or "?"),
+                        "not modelled", str(p.get("id", "")).upper())
                     continue
                 amount = int(p.get("amount", 0))
                 enemy.powers[pid] = PowerInstance(power_id=pid, amount=amount)
@@ -892,6 +904,27 @@ def _override_enemy_intent(
     # the encounter setup built).
     existing = ai.states.get(str(move_id))
     if existing is not None and hasattr(existing, "intents"):
+        # The simulator's own telegraph for this exact move, before it is
+        # replaced. This is the check that matters most for the search: the
+        # bridge corrects the CURRENT turn's intent, but every turn the lookahead
+        # rolls past it uses the simulator's number. A move modelled at the wrong
+        # damage is planned against wrongly for the whole horizon, and nothing
+        # about the live run ever says so.
+        for prior in (existing.intents or []):
+            if getattr(prior, "intent_type", None) is not intent_type:
+                continue
+            prior_damage = int(getattr(prior, "damage", 0) or 0)
+            prior_hits = int(getattr(prior, "hits", 1) or 1)
+            if prior_damage != damage:
+                report_disparity(
+                    "intent_damage", f"{enemy.monster_id}.{move_id}",
+                    prior_damage, damage)
+            if prior_hits != hits:
+                report_disparity(
+                    "intent_hits", f"{enemy.monster_id}.{move_id}",
+                    prior_hits, hits)
+            break
+
         existing.intents = [intent]
         ai._current_state_id = str(move_id)
         return
@@ -903,11 +936,12 @@ def _override_enemy_intent(
     # Leave the AI as-is; the search sees the simulator's telegraph rather
     # than the bridge's, which loses damage precision but keeps the run
     # playable.
-    logger.debug(
-        "intent override for enemy %s: id %r not in simulator's state "
-        "machine; leaving simulator's intent as-is.",
-        getattr(enemy, "monster_id", "?"), move_id,
-    )
+    # Reported rather than logged at debug: a move the simulator has no state
+    # for is a bigger parity hole than a wrong number, because the search then
+    # rolls the whole lookahead on a move the game is not going to make.
+    report_disparity(
+        "unknown_move", str(getattr(enemy, "monster_id", "?")),
+        "no such state", move_id)
 
 
 # Intent name -> IntentType. The bridge sends the C# enum's ToString(), which
