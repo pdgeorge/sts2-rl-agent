@@ -1988,8 +1988,14 @@ def create_terror_eel(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Mon
 # ---- WaterfallGiant ----
 
 WATERFALL_GIANT_MONSTER_ID = "WATERFALL_GIANT"
-WATERFALL_GIANT_BASE_HP = 250
-WATERFALL_GIANT_TOUGH_HP = 260
+WATERFALL_GIANT_BASE_HP = 240
+WATERFALL_GIANT_TOUGH_HP = 250
+"""`MinInitialHp => GetValueIfAscension(ToughEnemies, 250, 240)`, so base is 240
+and the tough variant is 250 -- both were 10 too high here.
+
+Confirmed against the live game rather than read off the decompile alone: 60
+bridge reports of this monster all say `max_hp: 240`. (The other two say
+999999999, which is the eruption, not a third HP value.)"""
 WATERFALL_GIANT_BASE_PRESSURIZE = 15
 WATERFALL_GIANT_DEADLY_PRESSURIZE = 20
 WATERFALL_GIANT_BASE_STOMP_DAMAGE = 15

@@ -1163,7 +1163,11 @@ class TestUntargetableReviveStates:
         combat.add_enemy(giant, giant_ai)
         combat.start_combat()
 
-        assert giant.max_hp == 250
+        # 240, not 250: `MinInitialHp => GetValueIfAscension(ToughEnemies, 250,
+        # 240)` makes 250 the TOUGH value, and 60 live bridge reports of this
+        # monster all say max_hp 240. This assertion previously enshrined the
+        # simulator's own off-by-ten.
+        assert giant.max_hp == 240
         giant_ai.current_move.perform(combat)
         giant_ai.on_move_performed()
         giant_ai.roll_move(combat.rng)
