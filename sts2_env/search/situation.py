@@ -47,6 +47,7 @@ from sts2_env.core.combat import CombatState
 from sts2_env.core.creature import Creature
 from sts2_env.core.enums import CardId, IntentType, PowerId, RoomType
 from sts2_env.core.rng import Rng
+from sts2_env.monsters.factory import create_monster_by_id
 from sts2_env.monsters.intents import Intent
 from sts2_env.potions.base import create_potion
 from sts2_env.powers.base import PowerInstance
@@ -708,8 +709,19 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
         # ignored it, and the same state came back until the stuck-detector
         # stopped the session.
         matched: dict[int, dict] = {}
+        bridge_slot_of: dict[int, int] = {}
         unclaimed = list(range(len(combat.enemies)))
-        for enemy_json in enemies_json:
+
+        # PASS 1 -- exact id matches only.
+        #
+        # Separated from the fallback deliberately. These used to run together
+        # in one loop, so a bridge enemy the sim had no slot for would take the
+        # first free slot BEFORE the monster that actually belonged there was
+        # considered, and that monster was then dropped for having no slot left.
+        # Fogmog is the case: the bridge reports ["EYE_WITH_TEETH", "FOGMOG"],
+        # the Eye claimed Fogmog's slot, and Fogmog vanished.
+        leftovers: list[tuple[int, dict]] = []
+        for bridge_slot, enemy_json in enumerate(enemies_json):
             if not isinstance(enemy_json, dict):
                 continue
             wanted = str(enemy_json.get("id", "")).upper()
@@ -718,16 +730,49 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
                     i for i in unclaimed
                     if str(combat.enemies[i].monster_id).upper() == wanted
                 ),
-                # No id match: fall back to the first free slot rather than
-                # dropping the enemy. A monster this build names differently is
-                # a parity gap, and playing it in the wrong slot beats not
-                # seeing it at all.
-                unclaimed[0] if unclaimed else None,
+                None,
             )
             if slot is None:
+                leftovers.append((bridge_slot, enemy_json))
                 continue
             unclaimed.remove(slot)
             matched[slot] = enemy_json
+            # The enemy's ACTUAL position in the bridge's list, captured here
+            # rather than re-derived below. See the note on bridge_enemy_index.
+            bridge_slot_of[slot] = bridge_slot
+
+        # PASS 2 -- monsters the opening roster never contained.
+        #
+        # An encounter's roster is not the set of monsters the fight holds:
+        # Fogmog summons an Eye, and anything carrying MinionPower is resummoned
+        # after it dies. `to_combat` rebuilds the OPENING roster, so a summon has
+        # no slot and previously had to steal one. Build it instead -- the
+        # simulator already knows how, and a materialised Eye is a target the
+        # search can reason about rather than a phantom it mistakes for its
+        # summoner.
+        for bridge_slot, enemy_json in leftovers:
+            wanted = str(enemy_json.get("id", "")).upper()
+            built = create_monster_by_id(wanted, combat.niche_rng) if wanted else None
+            if built is not None:
+                creature, ai = built
+                combat.add_enemy(creature, ai)
+                slot = len(combat.enemies) - 1
+            elif unclaimed:
+                # Unknown to this simulator. Keep the old behaviour rather than
+                # losing the monster: playing it in the wrong slot beats not
+                # seeing it at all, and the id is logged as the parity gap it is.
+                logger.warning(
+                    "bridge reported monster %r that this simulator cannot "
+                    "build; reusing slot %d. This is a parity gap.",
+                    wanted, unclaimed[0])
+                slot = unclaimed.pop(0)
+            else:
+                logger.warning(
+                    "bridge reported monster %r with no slot to put it in; "
+                    "the search will not see it.", wanted)
+                continue
+            matched[slot] = enemy_json
+            bridge_slot_of[slot] = bridge_slot
 
         # Anything the bridge did not report is dead. Left alive it is a
         # phantom: a target the search can pick and the game will refuse.
@@ -740,10 +785,27 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
         # it goes on the wire. Without it the fix above merely moves the bug:
         # the search stops targeting phantoms and starts naming a live index
         # that points at the wrong monster, or at nothing.
-        combat.bridge_enemy_index = {
-            sim_slot: bridge_slot
-            for bridge_slot, (sim_slot, _) in enumerate(sorted(matched.items()))
-        }
+        #
+        # TAKEN FROM THE MATCH, NOT RE-ENUMERATED. This was
+        # `enumerate(sorted(matched.items()))`, which hands out bridge slots
+        # 0,1,2... in sim-roster order and is therefore only right when the
+        # bridge lists enemies in that same order. Fogmog is the case where it
+        # is not: `FogmogNormal.Slots` is ["illusion", "fogmog"], so the Eye it
+        # summons occupies the EARLIER display slot and the bridge reports
+        # ["EYE_WITH_TEETH", "FOGMOG"] while the sim roster is [FOGMOG, EYE].
+        # The old mapping sent sim slot 0 (Fogmog) to bridge slot 0 (the Eye),
+        # so every attack the search aimed at Fogmog landed on the Eye instead.
+        #
+        # That is not a small mis-aim. EyeWithTeeth carries IllusionPower: on
+        # death it heals to full and is never removed from combat, so it is
+        # effectively immortal, and damage spent on it is simply deleted.
+        # Measured over 29 live Fogmog fights: 7 of 7 in which Fogmog was never
+        # hit ended in death, against 9 of 22 when it was, and the survivors put
+        # 56% of their attacks into Fogmog against the dead runs' 24%. Fogmog
+        # was the deadliest normal encounter in act 1 by a factor of three
+        # (median 30 damage taken, next worst 24, 62% death rate) largely
+        # because half the agent's output was going into an illusion.
+        combat.bridge_enemy_index = dict(bridge_slot_of)
 
         for i, enemy_json in matched.items():
             enemy = combat.enemies[i]

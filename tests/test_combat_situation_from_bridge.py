@@ -479,3 +479,42 @@ def test_more_reported_enemies_than_the_encounter_builds_does_not_raise():
     combat = padded.to_combat()
 
     assert combat.enemies
+
+
+def test_bridge_enemy_index_follows_the_bridge_order_not_the_sim_roster() -> None:
+    """Fogmog: the summoned Eye occupies the EARLIER display slot.
+
+    `FogmogNormal.Slots` is ["illusion", "fogmog"], so once Fogmog summons its
+    Eye the game reports ["EYE_WITH_TEETH", "FOGMOG"] while the sim roster is
+    [FOGMOG, EYE]. The mapping used to be built by re-enumerating sim slots in
+    order, which sent sim slot 0 (Fogmog) to bridge slot 0 (the Eye) -- so every
+    attack the search aimed at Fogmog hit the Eye instead.
+
+    That is not a harmless mis-aim: EyeWithTeeth carries IllusionPower, heals to
+    full on death and is never removed from combat, so damage spent on it is
+    deleted outright.
+    """
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    # The sim roster order, whatever the encounter builder produced.
+    sim_ids = [str(e.monster_id).upper() for e in situation.to_combat().enemies]
+
+    state = _bridge_state()
+    state["combat_state"]["enemies"] = [
+        {"id": "EYE_WITH_TEETH", "hp": 6, "max_hp": 6, "block": 0,
+         "is_alive": True, "intent": "STATUS"},
+        {"id": "NIBBIT", "hp": 40, "max_hp": 74, "block": 0,
+         "is_alive": True, "intent": "ATTACK", "intent_damage": 8},
+    ]
+    combat = situation.to_combat_mid_fight(state)
+    mapping = combat.bridge_enemy_index
+
+    # Whichever sim slot holds the real monster must map to bridge slot 1,
+    # because that is where the bridge actually put it.
+    for sim_slot, enemy in enumerate(combat.enemies):
+        if not enemy.is_alive:
+            continue
+        expected = 0 if str(enemy.monster_id).upper() == "EYE_WITH_TEETH" else 1
+        assert mapping[sim_slot] == expected, (
+            f"sim slot {sim_slot} ({enemy.monster_id}) mapped to bridge "
+            f"{mapping[sim_slot]}, expected {expected}; sim roster was {sim_ids}"
+        )
