@@ -1120,8 +1120,11 @@ def create_haunted_ship(rng: Rng, ascension_level: int = 0) -> tuple[Creature, M
 
 GAS_BOMB_MONSTER_ID = "GAS_BOMB"
 GAS_BOMB_MINION_AMOUNT = 1
-GAS_BOMB_BASE_HP = 10
-GAS_BOMB_TOUGH_HP = 12
+GAS_BOMB_BASE_HP = 7
+GAS_BOMB_TOUGH_HP = 8
+"""`MinInitialHp => GetValueIfAscension(ToughEnemies, 8, 7)`, MaxInitialHp the
+same. Was 10/12 -- a 43% overestimate on a monster whose whole purpose is to be
+killed before it explodes, so the searcher was mispricing exactly that race."""
 GAS_BOMB_BASE_EXPLODE_DAMAGE = 8
 GAS_BOMB_DEADLY_EXPLODE_DAMAGE = 9
 GAS_BOMB_EXPLODE_MOVE = "EXPLODE_MOVE"
@@ -1647,10 +1650,14 @@ def create_two_tailed_rat(
 # ---- PhantasmalGardener (HP 28-32 / 29-33 asc) ----
 
 PHANTASMAL_GARDENER_MONSTER_ID = "PHANTASMAL_GARDENER"
-PHANTASMAL_GARDENER_BASE_MIN_HP = 28
-PHANTASMAL_GARDENER_BASE_MAX_HP = 32
-PHANTASMAL_GARDENER_TOUGH_MIN_HP = 29
-PHANTASMAL_GARDENER_TOUGH_MAX_HP = 33
+PHANTASMAL_GARDENER_BASE_MIN_HP = 26
+PHANTASMAL_GARDENER_BASE_MAX_HP = 31
+PHANTASMAL_GARDENER_TOUGH_MIN_HP = 27
+PHANTASMAL_GARDENER_TOUGH_MAX_HP = 32
+"""`MinInitialHp => GetValueIfAscension(ToughEnemies, 27, 26)`,
+`MaxInitialHp => GetValueIfAscension(ToughEnemies, 32, 31)`. Live reports span
+26-31. This is the deadliest elite in act 1 for this agent, and the simulator
+was giving it two extra HP to survive on."""
 PHANTASMAL_GARDENER_BITE_DAMAGE = 5
 PHANTASMAL_GARDENER_LASH_DAMAGE = 7
 PHANTASMAL_GARDENER_FLAIL_DAMAGE = 1
@@ -1755,8 +1762,10 @@ def create_phantasmal_gardener(
 # ---- SkulkingColony (HP 79 / 84 asc) ----
 
 SKULKING_COLONY_MONSTER_ID = "SKULKING_COLONY"
-SKULKING_COLONY_BASE_HP = 79
-SKULKING_COLONY_TOUGH_HP = 84
+SKULKING_COLONY_BASE_HP = 75
+SKULKING_COLONY_TOUGH_HP = 80
+"""`MinInitialHp => GetValueIfAscension(ToughEnemies, 80, 75)`, MaxInitialHp
+the same. Was 79/84; the live game reported 75 across 42 fights."""
 SKULKING_COLONY_BASE_SUPER_CRAB_DAMAGE = 6
 SKULKING_COLONY_DEADLY_SUPER_CRAB_DAMAGE = 7
 SKULKING_COLONY_SUPER_CRAB_REPEAT = 2
@@ -2096,8 +2105,24 @@ def create_waterfall_giant(rng: Rng, ascension_level: int = 0) -> tuple[Creature
         _gain_pressure(combat, WATERFALL_GIANT_PRESSURE_BUILDUP)
 
     def about_to_blow(combat: CombatState) -> None:
-        _state[WATERFALL_GIANT_STEAM_ERUPTION_DAMAGE_KEY] = creature.get_power_amount(PowerId.STEAM_ERUPTION)
+        banked = creature.get_power_amount(PowerId.STEAM_ERUPTION)
+        _state[WATERFALL_GIANT_STEAM_ERUPTION_DAMAGE_KEY] = banked
         creature.powers.pop(PowerId.STEAM_ERUPTION, None)
+
+        # TELEGRAPH IT. The real move is `DeathBlowIntent(() => SteamEruption
+        # Damage)` -- a lambda reading the banked total -- and this side had a
+        # bare `Intent(IntentType.DEATH_BLOW)` carrying no damage at all. So
+        # `turn_search._incoming_damage` summed the eruption as ZERO, the
+        # searcher believed nothing was coming, and blocking looked like wasted
+        # energy on the one turn where block is the entire game.
+        #
+        # Written here rather than at construction because the amount is not
+        # known until the giant dies. Safe to mutate: `clone_combat` deep-copies
+        # the MoveStates and their closures, so a rollout writing this cannot
+        # reach the root state (asserted in test_search_unkillable_enemies).
+        explode_state = states.get(WATERFALL_GIANT_EXPLODE_MOVE)
+        if explode_state is not None:
+            explode_state.intents = [Intent(IntentType.DEATH_BLOW, damage=banked)]
 
     def explode(combat: CombatState) -> None:
         _deal_damage_to_player(combat, creature, _state[WATERFALL_GIANT_STEAM_ERUPTION_DAMAGE_KEY])

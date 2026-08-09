@@ -858,6 +858,27 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
         combat.turn_count = max(combat.turn_count, combat.round_number - 1)
 
 
+#: Powers that change what an attack lands for, so a telegraphed number stops
+#: being comparable with a base one. On the attacker: Strength and Weak. On the
+#: defender: Vulnerable. Anything here on either side suspends the intent parity
+#: check for that decision.
+_ATTACKER_DAMAGE_MODIFIERS = (PowerId.STRENGTH, PowerId.WEAK)
+_DEFENDER_DAMAGE_MODIFIERS = (PowerId.VULNERABLE,)
+
+
+def _damage_is_modified(combat: CombatState, enemy: Creature) -> bool:
+    """Is anything scaling this enemy's attack away from its base value?"""
+    for power_id in _ATTACKER_DAMAGE_MODIFIERS:
+        if enemy.get_power_amount(power_id):
+            return True
+    player = getattr(combat, "player", None)
+    if player is not None:
+        for power_id in _DEFENDER_DAMAGE_MODIFIERS:
+            if player.get_power_amount(power_id):
+                return True
+    return False
+
+
 def _override_enemy_intent(
     combat: CombatState, enemy: Creature, enemy_json: dict[str, Any],
 ) -> None:
@@ -910,20 +931,36 @@ def _override_enemy_intent(
         # rolls past it uses the simulator's number. A move modelled at the wrong
         # damage is planned against wrongly for the whole horizon, and nothing
         # about the live run ever says so.
-        for prior in (existing.intents or []):
-            if getattr(prior, "intent_type", None) is not intent_type:
-                continue
-            prior_damage = int(getattr(prior, "damage", 0) or 0)
-            prior_hits = int(getattr(prior, "hits", 1) or 1)
-            if prior_damage != damage:
-                report_disparity(
-                    "intent_damage", f"{enemy.monster_id}.{move_id}",
-                    prior_damage, damage)
-            if prior_hits != hits:
-                report_disparity(
-                    "intent_hits", f"{enemy.monster_id}.{move_id}",
-                    prior_hits, hits)
-            break
+        #
+        # ONLY WHEN NOTHING IS MODIFYING THE DAMAGE. The simulator's intent holds
+        # BASE damage; the game telegraphs what will actually land, with Strength
+        # and Weak and the player's Vulnerable already folded in. Comparing those
+        # two directly is not a parity check, it is a Strength detector -- the
+        # first version of this reported 120-odd findings and the two biggest
+        # were the simulator being exactly right. Phantasmal Gardener's Bite is 5
+        # in the decompile and 5 here; the game said 7, 8 and 9 because
+        # ENLARGE_MOVE had granted +2 Strength each time. Damp Cultist's Dark
+        # Strike really is base 1, and the 6-to-17 spread was its own ramp.
+        #
+        # So the check is skipped whenever any damage-modifying power is in play.
+        # That is conservative -- it gives up on modified turns rather than
+        # guessing at the game's modifier order -- and it still sees the opening
+        # turn of nearly every fight, which is where a wrong base shows up.
+        if not _damage_is_modified(combat, enemy):
+            for prior in (existing.intents or []):
+                if getattr(prior, "intent_type", None) is not intent_type:
+                    continue
+                prior_damage = int(getattr(prior, "damage", 0) or 0)
+                prior_hits = int(getattr(prior, "hits", 1) or 1)
+                if prior_damage != damage:
+                    report_disparity(
+                        "intent_damage", f"{enemy.monster_id}.{move_id}",
+                        prior_damage, damage)
+                if prior_hits != hits:
+                    report_disparity(
+                        "intent_hits", f"{enemy.monster_id}.{move_id}",
+                        prior_hits, hits)
+                break
 
         existing.intents = [intent]
         ai._current_state_id = str(move_id)

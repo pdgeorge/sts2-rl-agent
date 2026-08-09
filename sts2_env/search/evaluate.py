@@ -50,6 +50,45 @@ PLAYER_POWER_VALUES: dict[PowerId, float] = {
     PowerId.FRAIL: -0.015,
 }
 
+#: Above this, an enemy's HP is a statement rather than a quantity. The game
+#: sets Waterfall Giant to 999,999,999 with `HpDisplay.InfiniteWithoutNumbers`
+#: when it starts erupting -- the phase is explicitly not about damage any more.
+UNKILLABLE_HP = 1_000_000
+
+
+def cannot_be_killed(enemy) -> bool:
+    """Is damaging this enemy incapable of achieving anything?
+
+    Read off the HP, which is how the game says it: `SetMaxAndCurrentHp(creature,
+    999999999m)` plus `HpDisplay.InfiniteWithoutNumbers`. A real fight never
+    approaches this, so the test needs no per-monster knowledge and cannot go
+    stale on a rebalance patch.
+
+    MEASURED CONSEQUENCE. When the Waterfall Giant dies it erupts: HP to a
+    billion, `ShouldStopCombatFromEnding` true, and one turn to block the total
+    Steam Eruption it banked. Every evaluation term went flat there -- `is_over`
+    unreachable so no `win`, `kill` zero forever, and `enemy_hp` scoring 22
+    damage at 5e-9 against a billion-HP denominator. The only term still
+    carrying weight was `block_unused` at -0.02, pushing the searcher away from
+    the single move that survives. The live logs show precisely that: 9, 7 and
+    22 damage dealt into the eruption with zero block held, across three
+    separate boss losses.
+
+    NOT ASKED OF THE POWERS, which was the first attempt and is wrong. Both
+    `should_creature_be_removed_from_combat_after_death` and
+    `should_stop_combat_ending` are already true for SteamEruptionPower *before*
+    the giant dies -- and before it dies, attacking it is exactly the right move,
+    because killing it is how the fight progresses. A power-shaped test tells the
+    searcher to stop attacking a 240 HP boss it needs to kill.
+
+    The same reasoning rules out treating Eye With Teeth as unkillable. It
+    revives, so damage is poor value, but killing it costs it a turn healing
+    instead of adding Dazed -- poor value is not no value, and the Fogmog problem
+    was the index mapping, not the evaluation.
+    """
+    return getattr(enemy, "current_hp", 0) >= UNKILLABLE_HP
+
+
 # The same, on an enemy, from our side of the table.
 ENEMY_POWER_VALUES: dict[PowerId, float] = {
     PowerId.VULNERABLE: 0.020,
@@ -128,14 +167,25 @@ def evaluate_components(
     parts["player_hp"] = weights.player_hp * (max(0, player.current_hp) / max_hp)
 
     # -- the enemies --------------------------------------------------------
+    #
+    # Only the ones killing can actually remove. Damage into anything else is
+    # energy that bought nothing, and scoring it as progress is how the searcher
+    # spent the Waterfall Giant's eruption turn attacking a creature with a
+    # billion HP instead of blocking the hit that killed it. See
+    # `cannot_be_killed`.
     enemies = list(combat.enemies)
-    total_max = sum(max(1, e.max_hp) for e in enemies) if enemies else 0
+    killable = [e for e in enemies if not cannot_be_killed(e)]
+    total_max = sum(max(1, e.max_hp) for e in killable) if killable else 0
     if total_max:
-        remaining = sum(max(0, e.current_hp) for e in enemies)
+        remaining = sum(max(0, e.current_hp) for e in killable)
         parts["enemy_hp"] = weights.enemy_hp * (1.0 - remaining / total_max)
-        dead = sum(1 for e in enemies if not e.is_alive)
-        parts["kill"] = weights.kill * (dead / len(enemies))
+        dead = sum(1 for e in killable if not e.is_alive)
+        parts["kill"] = weights.kill * (dead / len(killable))
     else:
+        # Nothing on the table can be killed this turn. There is no progress to
+        # be made by attacking, so both terms go silent and the score is carried
+        # by the player's own HP -- which is the correct thing to be optimising
+        # when the only question left is how much of the hit you eat.
         parts["enemy_hp"] = 0.0
         parts["kill"] = 0.0
 

@@ -30,12 +30,22 @@ def _clean():
 
 
 def test_a_value_outside_the_simulators_range_is_reported() -> None:
-    """Phantasmal Gardener: the game rolls 26-31, this simulator 28-32."""
-    check_max_hp("PHANTASMAL_GARDENER", 26)
+    """A value the simulator cannot roll must be named.
+
+    Deliberately synthetic rather than a real monster's real disparity, which is
+    what this asserted first: it used Phantasmal Gardener's 26 against a
+    simulator that said 28-32, and then passed only until that constant was
+    fixed. A regression test that dies when the bug it describes is fixed tests
+    the bug, not the detector.
+    """
+    span = simulator_hp_range("CORPSE_SLUG")
+    assert span is not None
+
+    check_max_hp("CORPSE_SLUG", span[1] + 50)
 
     found = disparity_summary()
     assert len(found) == 1
-    assert "PHANTASMAL_GARDENER" in found[0]
+    assert "CORPSE_SLUG" in found[0]
 
 
 def test_a_value_inside_the_range_is_silent() -> None:

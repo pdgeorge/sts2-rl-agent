@@ -1760,10 +1760,14 @@ DECIMILLIPEDE_SEGMENT_MONSTER_ID = "DECIMILLIPEDE_SEGMENT"
 DECIMILLIPEDE_SEGMENT_FRONT_MONSTER_ID = "DECIMILLIPEDE_SEGMENT_FRONT"
 DECIMILLIPEDE_SEGMENT_MIDDLE_MONSTER_ID = "DECIMILLIPEDE_SEGMENT_MIDDLE"
 DECIMILLIPEDE_SEGMENT_BACK_MONSTER_ID = "DECIMILLIPEDE_SEGMENT_BACK"
-DECIMILLIPEDE_SEGMENT_MIN_HP = 42
-DECIMILLIPEDE_SEGMENT_MAX_HP = 48
-DECIMILLIPEDE_SEGMENT_TOUGH_MIN_HP = 48
-DECIMILLIPEDE_SEGMENT_TOUGH_MAX_HP = 56
+DECIMILLIPEDE_SEGMENT_MIN_HP = 40
+DECIMILLIPEDE_SEGMENT_MAX_HP = 46
+DECIMILLIPEDE_SEGMENT_TOUGH_MIN_HP = 46
+DECIMILLIPEDE_SEGMENT_TOUGH_MAX_HP = 52
+"""`DecimillipedeSegment`: `MinInitialHp => GetValueIfAscension(ToughEnemies,
+46, 40)`, `MaxInitialHp => GetValueIfAscension(ToughEnemies, 52, 46)`.
+Was 42-48/48-56 -- every value one tier high, so the tough numbers were being
+used as the base ones. Live reported 40 and 42."""
 DECIMILLIPEDE_HP_STEP = 2
 DECIMILLIPEDE_REATTACH_HP = 25
 DECIMILLIPEDE_BASE_WRITHE_DAMAGE = 5
@@ -2091,8 +2095,11 @@ def create_entomancer(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Mon
 # ---- InfestedPrism (HP 200 / 215 asc) ----
 
 INFESTED_PRISM_MONSTER_ID = "INFESTED_PRISM"
-INFESTED_PRISM_BASE_HP = 200
-INFESTED_PRISM_TOUGH_HP = 215
+INFESTED_PRISM_BASE_HP = 161
+INFESTED_PRISM_TOUGH_HP = 171
+"""`MinInitialHp => GetValueIfAscension(ToughEnemies, 171, 161)`, MaxInitialHp
+the same. Was 200/215 -- a 39 HP overestimate, the largest found, on an elite.
+The searcher was budgeting a fifth more damage than the fight needs."""
 INFESTED_PRISM_BASE_JAB_DAMAGE = 22
 INFESTED_PRISM_DEADLY_JAB_DAMAGE = 24
 INFESTED_PRISM_BASE_RADIATE_DAMAGE = 16
@@ -2527,8 +2534,11 @@ def create_knowledge_demon(rng: Rng, ascension_level: int = 0) -> tuple[Creature
 # ---- KaiserCrab (Crusher + Rocket) ----
 
 CRUSHER_MONSTER_ID = "CRUSHER"
-CRUSHER_BASE_HP = 199
-CRUSHER_TOUGH_HP = 209
+CRUSHER_BASE_HP = 209
+CRUSHER_TOUGH_HP = 219
+"""`MinInitialHp => GetValueIfAscension(ToughEnemies, 219, 209)`, MaxInitialHp
+the same. The old pair were one tier low -- the old TOUGH value (209) is the
+real BASE. Live reported 209."""
 CRUSHER_BASE_THRASH_DAMAGE = 12
 CRUSHER_DEADLY_THRASH_DAMAGE = 14
 CRUSHER_ENLARGING_STRIKE_DAMAGE = 4
@@ -2652,8 +2662,10 @@ def create_crusher(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Monste
 
 
 ROCKET_MONSTER_ID = "ROCKET"
-ROCKET_BASE_HP = 189
-ROCKET_TOUGH_HP = 199
+ROCKET_BASE_HP = 199
+ROCKET_TOUGH_HP = 209
+"""`MinInitialHp => GetValueIfAscension(ToughEnemies, 209, 199)`, MaxInitialHp
+the same. Same one-tier-low shift as CRUSHER. Live reported 199."""
 ROCKET_BASE_TARGETING_RETICLE_DAMAGE = 3
 ROCKET_DEADLY_TARGETING_RETICLE_DAMAGE = 4
 ROCKET_BASE_PRECISION_BEAM_DAMAGE = 18

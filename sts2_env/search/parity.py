@@ -88,6 +88,14 @@ def simulator_hp_range(monster_id: str) -> tuple[int, int] | None:
 
     None when the monster cannot be built, which is its own parity gap and is
     reported where it happens rather than here.
+
+    KNOWN LIMITATION: a monster that changes form under the same id has more than
+    one legitimate range, and this samples only the form the factory starts in.
+    Tough Egg is the one case in the current build -- it hatches from 14-18 into
+    19-22 -- so a hatched egg reports as a disparity it is not. Left rather than
+    special-cased: one standing false positive in 83 monsters is cheaper than a
+    table of exceptions that goes stale, and the alternative is suppressing a
+    whole monster's HP checking to silence it.
     """
     from sts2_env.core.rng import Rng
     from sts2_env.monsters.factory import create_monster_by_id
@@ -109,6 +117,13 @@ def check_max_hp(monster_id: str, game_max_hp: int) -> None:
     wrong.
     """
     if not monster_id or not game_max_hp:
+        return
+    # A phase-change HP, not a statistic. Waterfall Giant is set to 999,999,999
+    # when it starts erupting, and reporting that as a modelling error buries the
+    # real findings under the one the simulator already handles correctly.
+    from sts2_env.search.evaluate import UNKILLABLE_HP
+
+    if int(game_max_hp) >= UNKILLABLE_HP:
         return
     span = simulator_hp_range(monster_id)
     if span is None:

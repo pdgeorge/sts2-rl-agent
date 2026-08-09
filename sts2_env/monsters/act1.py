@@ -1309,9 +1309,13 @@ def create_bygone_effigy(rng: Rng, ascension_level: int = 0) -> tuple[Creature, 
 # ---- Byrdonis (HP 91-94 / 99 asc) ----
 
 BYRDONIS_ID = "BYRDONIS"
-BYRDONIS_BASE_MIN_HP = 91
-BYRDONIS_BASE_MAX_HP = 94
-BYRDONIS_TOUGH_HP = 99
+BYRDONIS_BASE_MIN_HP = 81
+BYRDONIS_BASE_MAX_HP = 84
+BYRDONIS_TOUGH_HP = 90
+"""`MinInitialHp => GetValueIfAscension(ToughEnemies, 90, 81)`,
+`MaxInitialHp => GetValueIfAscension(ToughEnemies, 90, 84)`. Base is 81-84 and
+the tough variant is a flat 90. Was 91-94/99 -- ten too high across the board,
+and the live game reported 81, 82 and 84."""
 BYRDONIS_BASE_PECK_DAMAGE = 3
 BYRDONIS_DEADLY_PECK_DAMAGE = 4
 BYRDONIS_PECK_HITS = 3
