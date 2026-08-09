@@ -174,8 +174,8 @@ from sts2_env.monsters.act4 import (
     SLUDGE_SPINNER_MONSTER_ID,
     SKULKING_COLONY_INERTIA_MOVE,
     SKULKING_COLONY_MONSTER_ID,
-    SKULKING_COLONY_SMASH_MOVE,
-    SKULKING_COLONY_SUPER_CRAB_MOVE,
+    SKULKING_COLONY_PIERCING_STABS_MOVE,
+    SKULKING_COLONY_ZOOM_MOVE_2,
     SKULKING_COLONY_ZOOM_MOVE,
     TERROR_EEL_CRASH_MOVE,
     TERROR_EEL_MONSTER_ID,
@@ -875,17 +875,15 @@ PHANTASMAL_GARDENER_BASE_SKITTISH = 6
 PHANTASMAL_GARDENER_SKITTISH_A8 = 7
 SKULKING_COLONY_BASE_HP = 75
 SKULKING_COLONY_A8_HP = 80
-SKULKING_COLONY_BASE_SUPER_CRAB_DAMAGE = 6
-SKULKING_COLONY_SUPER_CRAB_DAMAGE_A9 = 7
-SKULKING_COLONY_SUPER_CRAB_HITS = 2
+SKULKING_COLONY_BASE_PIERCING_STABS_DAMAGE = 7
+SKULKING_COLONY_PIERCING_STABS_DAMAGE_A9 = 8  # GetValueIfAscension(DeadlyEnemies, 8, 7)
+SKULKING_COLONY_PIERCING_STABS_HITS = 2
 SKULKING_COLONY_BASE_ZOOM_DAMAGE = 14
 SKULKING_COLONY_ZOOM_DAMAGE_A9 = 16
-SKULKING_COLONY_BASE_SMASH_DAMAGE = 9
-SKULKING_COLONY_SMASH_DAMAGE_A9 = 11
-SKULKING_COLONY_SMASH_DAZED = 4
-SKULKING_COLONY_BASE_INERTIA_BLOCK = 10
-SKULKING_COLONY_INERTIA_BLOCK_A8 = 13
-SKULKING_COLONY_INERTIA_STRENGTH = 3
+SKULKING_COLONY_BASE_INERTIA_DAMAGE = 9
+SKULKING_COLONY_INERTIA_DAMAGE_A9 = 11  # InertiaDamage: GetValueIfAscension(DeadlyEnemies, 11, 9)
+SKULKING_COLONY_INERTIA_STRENGTH = 2
+SKULKING_COLONY_INERTIA_STRENGTH_A9 = 4  # GetValueIfAscension(DeadlyEnemies, 4, 2)
 SKULKING_COLONY_HARDENED_SHELL = 20
 TERROR_EEL_BASE_HP = 140
 TERROR_EEL_A8_HP = 150
@@ -6922,10 +6920,12 @@ class TestFixedRotation:
         ally_hp = 100
         osty_hp = 100
         ramming_speed_damage = 10
-        smash_damage = 9
         ramming_speed_wounds = 2
-        smash_dazed = 4
-        expected_damage = ramming_speed_damage + smash_damage
+        # Eye With Teeth's Distract, in place of Skulking Colony's Smash: the
+        # colony has no Dazed move in the game, and this test only needs two
+        # different status sources to show both land on the real players.
+        distract_dazed = 3
+        expected_damage = ramming_speed_damage
         combat = _make_combat(rng_seed)
         ally = _add_test_ally(combat, hp=ally_hp)
         primary_state = combat.combat_player_state_for(combat.primary_player)
@@ -6937,24 +6937,24 @@ class TestFixedRotation:
         osty = combat.summon_osty(combat.primary_player, osty_hp)
         assert osty is not None
         ship, ship_ai = create_haunted_ship(Rng(rng_seed))
-        colony, colony_ai = create_skulking_colony(Rng(rng_seed))
+        eye, eye_ai = create_eye_with_teeth(Rng(rng_seed))
         combat.add_enemy(ship, ship_ai)
-        combat.add_enemy(colony, colony_ai)
+        combat.add_enemy(eye, eye_ai)
 
         primary_hp_before = combat.primary_player.current_hp
         ally_hp_before = ally.current_hp
         osty_hp_before = osty.current_hp
         ship_ai.states["RAMMING_SPEED_MOVE"].perform(combat)
-        colony_ai.states["SMASH_MOVE"].perform(combat)
+        eye_ai.states["DISTRACT_MOVE"].perform(combat)
 
         assert combat.primary_player.current_hp == primary_hp_before
         assert ally.current_hp == ally_hp_before - expected_damage
         assert osty.current_hp == osty_hp_before - expected_damage
         assert [card.card_id for card in primary_state.discard] == (
-            [CardId.WOUND] * ramming_speed_wounds + [CardId.DAZED] * smash_dazed
+            [CardId.WOUND] * ramming_speed_wounds + [CardId.DAZED] * distract_dazed
         )
         assert [card.card_id for card in ally_state.discard] == (
-            [CardId.WOUND] * ramming_speed_wounds + [CardId.DAZED] * smash_dazed
+            [CardId.WOUND] * ramming_speed_wounds + [CardId.DAZED] * distract_dazed
         )
         assert combat.combat_player_state_for(osty) is None
 
@@ -7047,35 +7047,23 @@ class TestFixedRotation:
         assert colony.max_hp == SKULKING_COLONY_BASE_HP
         assert colony.get_power_amount(PowerId.HARDENED_SHELL) == SKULKING_COLONY_HARDENED_SHELL
         assert _run_ai(colony_ai, Rng(79), 5) == [
-            SKULKING_COLONY_SMASH_MOVE,
             SKULKING_COLONY_ZOOM_MOVE,
+            SKULKING_COLONY_ZOOM_MOVE_2,
             SKULKING_COLONY_INERTIA_MOVE,
-            SKULKING_COLONY_SUPER_CRAB_MOVE,
-            SKULKING_COLONY_SMASH_MOVE,
+            SKULKING_COLONY_PIERCING_STABS_MOVE,
+            SKULKING_COLONY_ZOOM_MOVE,
         ]
-        player_hp_before_smash = colony_combat.player.current_hp
-        colony_ai.states[SKULKING_COLONY_SMASH_MOVE].perform(colony_combat)
-        assert colony_combat.player.current_hp == player_hp_before_smash - SKULKING_COLONY_BASE_SMASH_DAMAGE
-        assert [card.card_id for card in colony_combat.discard_pile] == [CardId.DAZED] * SKULKING_COLONY_SMASH_DAZED
+        """The game's cycle, from the decompile: ZOOM -> ZOOM_2 -> INERTIA ->
+        PIERCING_STABS, starting on ZOOM. This previously asserted
+        SMASH -> ZOOM -> INERTIA -> SUPER_CRAB starting on SMASH, which was a
+        different monster: SMASH does not exist, ZOOM_MOVE_2 was missing, and
+        INERTIA gained block where the game attacks."""
 
-        lethal_colony, lethal_colony_ai = create_skulking_colony(Rng(80))
-        lethal_colony_combat = _make_combat(80)
-        lethal_colony_combat.add_enemy(lethal_colony, lethal_colony_ai)
-        lethal_colony_combat.player.current_hp = 9
-        lethal_colony_ai.states[SKULKING_COLONY_SMASH_MOVE].perform(lethal_colony_combat)
-        assert lethal_colony_combat.is_over
-        assert lethal_colony_combat.player_won is False
-        assert lethal_colony_combat.discard_pile == []
-
+        # INERTIA is an ATTACK that also grants Strength -- not a block move.
+        hp_before_inertia = colony_combat.player.current_hp
         colony_ai.states[SKULKING_COLONY_INERTIA_MOVE].perform(colony_combat)
-        assert colony.block == SKULKING_COLONY_BASE_INERTIA_BLOCK
+        assert colony_combat.player.current_hp == hp_before_inertia - SKULKING_COLONY_BASE_INERTIA_DAMAGE
         assert colony.get_power_amount(PowerId.STRENGTH) == SKULKING_COLONY_INERTIA_STRENGTH
-        counter = _BlockHookCounterPower()
-        colony.powers[PowerId.JUGGERNAUT] = counter
-        colony.block = 0
-        colony_ai.states[SKULKING_COLONY_INERTIA_MOVE].perform(colony_combat)
-        assert colony.block == SKULKING_COLONY_BASE_INERTIA_BLOCK
-        assert counter.calls == [SKULKING_COLONY_BASE_INERTIA_BLOCK]
 
         colony_zoom, colony_zoom_ai = create_skulking_colony(Rng(80))
         colony_zoom_combat = _make_combat(80)
@@ -7083,10 +7071,17 @@ class TestFixedRotation:
         player_hp_before_zoom = colony_zoom_combat.player.current_hp
         colony_zoom_ai.states[SKULKING_COLONY_ZOOM_MOVE].perform(colony_zoom_combat)
         assert colony_zoom_combat.player.current_hp == player_hp_before_zoom - SKULKING_COLONY_BASE_ZOOM_DAMAGE
-        player_hp_before_super_crab = colony_zoom_combat.player.current_hp
-        colony_zoom_ai.states[SKULKING_COLONY_SUPER_CRAB_MOVE].perform(colony_zoom_combat)
+
+        # Both zoom states run the same move, so the second hits for the same.
+        hp_before_zoom2 = colony_zoom_combat.player.current_hp
+        colony_zoom_ai.states[SKULKING_COLONY_ZOOM_MOVE_2].perform(colony_zoom_combat)
+        assert colony_zoom_combat.player.current_hp == hp_before_zoom2 - SKULKING_COLONY_BASE_ZOOM_DAMAGE
+
+        hp_before_stabs = colony_zoom_combat.player.current_hp
+        colony_zoom_ai.states[SKULKING_COLONY_PIERCING_STABS_MOVE].perform(colony_zoom_combat)
         assert colony_zoom_combat.player.current_hp == (
-            player_hp_before_super_crab - SKULKING_COLONY_BASE_SUPER_CRAB_DAMAGE * SKULKING_COLONY_SUPER_CRAB_HITS
+            hp_before_stabs
+            - SKULKING_COLONY_BASE_PIERCING_STABS_DAMAGE * SKULKING_COLONY_PIERCING_STABS_HITS
         )
 
         eel, eel_ai = create_terror_eel(Rng(81))
@@ -7148,31 +7143,44 @@ class TestFixedRotation:
 
         assert colony.max_hp == SKULKING_COLONY_A8_HP
         assert colony.get_power_amount(PowerId.HARDENED_SHELL) == SKULKING_COLONY_HARDENED_SHELL
-        smash = colony_ai.states[SKULKING_COLONY_SMASH_MOVE]
-        assert smash.intents[0].damage == SKULKING_COLONY_SMASH_DAMAGE_A9
-        player_hp_before_smash = colony_combat.player.current_hp
-        smash.perform(colony_combat)
-        assert colony_combat.player.current_hp == player_hp_before_smash - SKULKING_COLONY_SMASH_DAMAGE_A9
-        assert [card.card_id for card in colony_combat.discard_pile] == [CardId.DAZED] * SKULKING_COLONY_SMASH_DAZED
+        inertia = colony_ai.states[SKULKING_COLONY_INERTIA_MOVE]
+        assert inertia.intents[0].damage == SKULKING_COLONY_INERTIA_DAMAGE_A9
+        player_hp_before_inertia = colony_combat.player.current_hp
+        inertia.perform(colony_combat)
+        assert colony_combat.player.current_hp == player_hp_before_inertia - SKULKING_COLONY_INERTIA_DAMAGE_A9
 
-        zoom = colony_ai.states[SKULKING_COLONY_ZOOM_MOVE]
+        # A FRESH colony for the attack numbers. Inertia grants Strength, so a
+        # colony that has already used it hits for more than its base -- true to
+        # the game, and not what these assertions are measuring.
+        fresh_combat = _make_combat(rng_seed)
+        fresh_combat.ascension_level = 9
+        fresh, fresh_ai = create_skulking_colony(Rng(rng_seed), ascension_level=9)
+        fresh_combat.add_enemy(fresh, fresh_ai)
+
+        zoom = fresh_ai.states[SKULKING_COLONY_ZOOM_MOVE]
         assert zoom.intents[0].damage == SKULKING_COLONY_ZOOM_DAMAGE_A9
-        player_hp_before_zoom = colony_combat.player.current_hp
-        zoom.perform(colony_combat)
-        assert colony_combat.player.current_hp == player_hp_before_zoom - SKULKING_COLONY_ZOOM_DAMAGE_A9
+        player_hp_before_zoom = fresh_combat.player.current_hp
+        zoom.perform(fresh_combat)
+        assert fresh_combat.player.current_hp == player_hp_before_zoom - SKULKING_COLONY_ZOOM_DAMAGE_A9
 
-        super_crab = colony_ai.states[SKULKING_COLONY_SUPER_CRAB_MOVE]
-        assert super_crab.intents[0].damage == SKULKING_COLONY_SUPER_CRAB_DAMAGE_A9
-        assert super_crab.intents[0].hits == SKULKING_COLONY_SUPER_CRAB_HITS
-        player_hp_before_super_crab = colony_combat.player.current_hp
-        super_crab.perform(colony_combat)
-        assert colony_combat.player.current_hp == (
-            player_hp_before_super_crab - SKULKING_COLONY_SUPER_CRAB_DAMAGE_A9 * SKULKING_COLONY_SUPER_CRAB_HITS
+        stabs = fresh_ai.states[SKULKING_COLONY_PIERCING_STABS_MOVE]
+        assert stabs.intents[0].damage == SKULKING_COLONY_PIERCING_STABS_DAMAGE_A9
+        assert stabs.intents[0].hits == SKULKING_COLONY_PIERCING_STABS_HITS
+        player_hp_before_stabs = fresh_combat.player.current_hp
+        stabs.perform(fresh_combat)
+        assert fresh_combat.player.current_hp == (
+            player_hp_before_stabs
+            - SKULKING_COLONY_PIERCING_STABS_DAMAGE_A9 * SKULKING_COLONY_PIERCING_STABS_HITS
         )
 
+        # Inertia is an attack that grants Strength; it gains no block. The old
+        # assertion checked a block value the game never gives.
+        strength_before = colony.get_power_amount(PowerId.STRENGTH)
         colony_ai.states[SKULKING_COLONY_INERTIA_MOVE].perform(colony_combat)
-        assert colony.block == SKULKING_COLONY_INERTIA_BLOCK_A8
-        assert colony.get_power_amount(PowerId.STRENGTH) == SKULKING_COLONY_INERTIA_STRENGTH
+        assert colony.block == 0
+        assert colony.get_power_amount(PowerId.STRENGTH) == (
+            strength_before + SKULKING_COLONY_INERTIA_STRENGTH_A9
+        )
 
         eel_combat = _make_combat(rng_seed)
         eel_combat.ascension_level = 9
