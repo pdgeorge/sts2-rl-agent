@@ -518,3 +518,57 @@ def test_bridge_enemy_index_follows_the_bridge_order_not_the_sim_roster() -> Non
             f"sim slot {sim_slot} ({enemy.monster_id}) mapped to bridge "
             f"{mapping[sim_slot]}, expected {expected}; sim roster was {sim_ids}"
         )
+
+
+def test_a_stunned_monster_is_understood_as_doing_nothing() -> None:
+    """STUNNED is synthesised by the game, so it is in no state machine.
+
+    `Creature.StunInternal` builds `MoveState("STUNNED", stunMove, StunIntent())`
+    with a follow-up to the previous move and applies it via SetMoveImmediate, so
+    a lookup against a monster's states was always going to miss -- on every
+    monster, forever. It was the largest unknown_move cluster in the live logs,
+    including two act 1 bosses.
+
+    The cost was a wrong TURN rather than a wrong number: the search rolled its
+    lookahead on whatever move it thought was next, so it planned around a hit
+    that was not coming and spent a free turn defending.
+    """
+    situation = CombatSituation.from_bridge_state(_bridge_state())
+    state = _bridge_state()
+    state["combat_state"]["enemies"] = [
+        {"id": "NIBBIT", "hp": 30, "max_hp": 45, "block": 0, "is_alive": True,
+         "intent": "STUN", "intent_damage": 0, "intent_move_id": "STUNNED"},
+    ]
+
+    combat = situation.to_combat_mid_fight(state)
+    ai = combat.enemy_ais[combat.enemies[0].combat_id]
+
+    assert ai.current_move.state_id == "STUNNED"
+
+    # Nothing is coming this turn -- the whole point of a stun.
+    from sts2_env.search.turn_search import _incoming_damage
+    assert _incoming_damage(combat) == 0
+
+    # And it really is only one turn: the stun hands back to what it was doing.
+    hp_before = combat.player.current_hp
+    combat.end_player_turn()
+    assert combat.player.current_hp == hp_before
+
+
+def test_a_stun_does_not_report_itself_as_a_parity_gap() -> None:
+    """It is handled, so it must stop appearing in the disparity list."""
+    from sts2_env.search.parity import disparity_summary, reset_disparities
+
+    reset_disparities()
+    try:
+        situation = CombatSituation.from_bridge_state(_bridge_state())
+        state = _bridge_state()
+        state["combat_state"]["enemies"] = [
+            {"id": "NIBBIT", "hp": 30, "max_hp": 45, "block": 0, "is_alive": True,
+             "intent": "STUN", "intent_damage": 0, "intent_move_id": "STUNNED"},
+        ]
+        situation.to_combat_mid_fight(state)
+
+        assert disparity_summary() == []
+    finally:
+        reset_disparities()

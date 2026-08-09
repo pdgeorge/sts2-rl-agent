@@ -862,6 +862,11 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
 #: being comparable with a base one. On the attacker: Strength and Weak. On the
 #: defender: Vulnerable. Anything here on either side suspends the intent parity
 #: check for that decision.
+#: `MonsterModel.stunnedMoveId`. Not a per-monster move -- the game synthesises
+#: this state on any creature it stuns, so it appears under every monster id and
+#: belongs to none of their state machines.
+_BRIDGE_STUNNED_MOVE_ID = "STUNNED"
+
 _ATTACKER_DAMAGE_MODIFIERS = (PowerId.STRENGTH, PowerId.WEAK)
 _DEFENDER_DAMAGE_MODIFIERS = (PowerId.VULNERABLE,)
 
@@ -923,6 +928,34 @@ def _override_enemy_intent(
     # follow_up_id and the simulator's full effect; we override only its
     # intents (the bridge's telegraphed hit is more current than whatever
     # the encounter setup built).
+    # STUNNED is not in any monster's state machine, and never will be: the game
+    # BUILDS it when a creature is stunned --
+    #
+    #     MoveState state = new MoveState("STUNNED", stunMove, new StunIntent())
+    #     { FollowUpStateId = nextMoveId, MustPerformOnceBeforeTransitioning = true };
+    #     Monster.SetMoveImmediate(state);          -- Creature.StunInternal
+    #
+    # so a lookup against `ai.states` was always going to miss, on every monster,
+    # forever. It was the single biggest unknown_move cluster in the live logs --
+    # Corpse Slug, Terror Eel, Tunneler, Bowlbug Rock, Ceremonial Beast and
+    # Lagavulin Matriarch, the last two being act 1 bosses.
+    #
+    # The cost of missing it is not a wrong number, it is a wrong TURN. A stunned
+    # monster does nothing; the search was instead rolling its whole lookahead on
+    # whatever move the simulator thought was next, so it planned around a hit
+    # that was not coming and spent the free turn defending.
+    #
+    # `stun_enemy` already does precisely what StunInternal does, including the
+    # follow-up back to the previous move and must_perform_once. It simply had no
+    # caller on the live path.
+    if str(move_id) == _BRIDGE_STUNNED_MOVE_ID and str(move_id) not in ai.states:
+        if combat.stun_enemy(enemy):
+            return
+        report_disparity(
+            "stun_failed", str(getattr(enemy, "monster_id", "?")),
+            "could not apply", move_id)
+        return
+
     existing = ai.states.get(str(move_id))
     if existing is not None and hasattr(existing, "intents"):
         # The simulator's own telegraph for this exact move, before it is
