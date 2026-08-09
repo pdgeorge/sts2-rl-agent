@@ -244,6 +244,18 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--search-rollout-model",
+        action="store_true",
+        help=(
+            "Roll out inside the search with the trained model rather than the "
+            "block-then-attack heuristic. MODELS.md records four turns of "
+            "lookahead scoring WORSE than two because the heuristic playout "
+            "compounds its own errors and ranks Powers last, and names this as "
+            "the next thing to try. Nearly free: the search spends about 3%% of "
+            "its time budget."
+        ),
+    )
+    parser.add_argument(
         "--crash-log",
         default="output/crash_log.json",
         help="JSON file written when the game crashes or disconnects mid-run.",
@@ -274,6 +286,7 @@ def main() -> None:
             journal_path=args.journal or None,
             combat_policy_path=args.combat_policy,
             live_search=args.live_search,
+            search_rollout_model=args.search_rollout_model,
             capture_raw_path=args.capture_raw or None,
             capture_raw_per_type=args.capture_raw_per_type,
         )

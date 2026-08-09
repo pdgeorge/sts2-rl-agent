@@ -83,11 +83,53 @@ class LiveSearch:
         weights: EvalWeights = DEFAULT_WEIGHTS,
         time_budget: float = 3.0,
         lookahead_turns: int = 2,
+        playout_policy=None,
     ):
+        """`playout_policy` replaces the hand-written rollout inside the search.
+
+        THE SEAM THAT WAS BUILT AND NEVER CONNECTED. `SearchAgent` has taken a
+        playout policy since Phase 2.3 and `model_playout_policy` has existed to
+        supply one, but nothing on the live path passed either, so every live
+        rollout has run the block-then-attack heuristic.
+
+        `MODELS.md` records why that matters and names this as the next thing to
+        try: four turns of lookahead scored WORSE than two (boss 13.3% against
+        33.3%) because "the playout compounds its own errors the further it
+        runs", and the heuristic ranks Powers last, so a rollout never shows a
+        Power used well no matter how far it runs. Depth was never the limit.
+        The policy doing the rolling was.
+
+        Affordable, which was the open question. Measured on real act 1
+        positions, the search spends 0.08s of its 3.0s budget on a boss turn and
+        0.52s in the widest position act 1 offers, and never exhausts the budget
+        outside an artificial one. There is roughly 35x headroom for a more
+        expensive rollout, so this can be paid for out of slack rather than out
+        of search quality.
+
+        Default None keeps the previous behaviour, because whether a trained
+        rollout actually helps is still unmeasured.
+        """
+        self._playout_policy = playout_policy
         self._search = SearchAgent(
             weights=weights,
             time_budget=time_budget,
             lookahead_turns=lookahead_turns,
+            playout_policy=playout_policy,
+        )
+
+    def set_playout_policy(self, policy) -> None:
+        """Swap the rollout policy in, rebuilding the searcher around it.
+
+        Separate from the constructor because the runner loads the combat policy
+        after it builds this, and the combat policy is the one that should roll a
+        combat when a hierarchical model supplies a separate one.
+        """
+        self._playout_policy = policy
+        self._search = SearchAgent(
+            weights=self._search.weights,
+            time_budget=self._search.time_budget,
+            lookahead_turns=self._search.lookahead_turns,
+            playout_policy=policy,
         )
 
     # -- stats --------------------------------------------------------------
@@ -112,6 +154,7 @@ class LiveSearch:
             weights=self._search.weights,
             time_budget=self._search.time_budget,
             lookahead_turns=self._search.lookahead_turns,
+            playout_policy=self._playout_policy,
         )
 
     def decide(self, bridge_state: dict[str, Any], *, prev_action: int | None = None) -> int:

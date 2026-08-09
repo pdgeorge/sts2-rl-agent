@@ -207,6 +207,7 @@ def run_agent(
     combat_policy_path: str | None = None,
     journal_path: str | None = None,
     live_search: bool = False,
+    search_rollout_model: bool = False,
     capture_raw_path: str | None = None,
     capture_raw_per_type: int = 25,
 ) -> None:
@@ -291,6 +292,24 @@ def run_agent(
                 f"Combat policy expects {c_expected} observation dims, but combat "
                 f"observations are {COMBAT_OBS_SIZE}."
             )
+
+    # Rollouts inside the search, once there is a model to roll with. Attached
+    # here rather than where LiveSearch is built because the combat policy is
+    # loaded below that point, and the combat policy is the one that should roll
+    # a combat if a separate one was supplied.
+    if live_search_agent is not None and search_rollout_model:
+        from sts2_env.search.turn_search import model_playout_policy
+
+        live_search_agent.set_playout_policy(
+            model_playout_policy(combat_model or model))
+        logger.info(
+            "Search rollouts use the trained model rather than the "
+            "block-then-attack heuristic. MODELS.md names this as the next "
+            "thing to try: four turns of lookahead scored WORSE than two "
+            "because the heuristic playout compounds its own errors, and it "
+            "ranks Powers last, so a rollout never shows a Power used well. "
+            "Affordable because the search spends ~0.08s of its 3.0s budget "
+            "on a boss turn.")
         logger.info("Separate combat policy loaded from %s", combat_policy_path)
 
     logger.info("Connecting to STS2 at %s:%d...", host, port)
