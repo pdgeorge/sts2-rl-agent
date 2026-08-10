@@ -108,7 +108,7 @@ def main() -> int:
     parser.add_argument("--runs", type=int, default=60)
     parser.add_argument("--seed", type=int, default=5000)
     parser.add_argument(
-        "--time-budget", type=float, default=1.0,
+        "--time-budget", type=float, default=60.0,
         help=(
             "Seconds per turn. Live uses 3.0, but measurement shows the search "
             "spends ~0.08s on a boss turn and never exhausts its budget in a "

@@ -128,7 +128,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runs", type=int, default=60)
     parser.add_argument("--seed", type=int, default=9000)
-    parser.add_argument("--time-budget", type=float, default=1.0)
+    parser.add_argument(
+        "--time-budget", type=float, default=60.0,
+        help=(
+            "Seconds per turn. Offline this exists only to stop a runaway "
+            "search, NOT to limit one: the searcher needs about 0.08s on a "
+            "boss turn, so 60 can never bind. It must not bind, because a "
+            "wall-clock budget under worker contention truncates the search "
+            "and changes the run -- measured at 19-36 truncations per run at "
+            "budget 1.0 on 14 workers, turning one seed into floor 16 or 27 "
+            "depending on machine load. That is machine state leaking into a "
+            "measurement. Live keeps 3.0, where a hung search is the real risk."
+        ))
     parser.add_argument("--workers", type=int, default=0,
                         help="0 = cpu_count - 2")
     parser.add_argument("--out", default="output/sweep_eval_weights.txt")

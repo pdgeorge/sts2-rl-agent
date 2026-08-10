@@ -112,7 +112,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runs", type=int, default=240)
     parser.add_argument("--seed", type=int, default=20000)
-    parser.add_argument("--time-budget", type=float, default=1.0)
+    parser.add_argument(
+        "--time-budget", type=float, default=60.0,
+        help="Offline this must never bind -- see sweep_eval_weights.py.")
     parser.add_argument("--workers", type=int, default=0)
     parser.add_argument("--out", default="output/sweep_deckbuilding.txt")
     args = parser.parse_args()
