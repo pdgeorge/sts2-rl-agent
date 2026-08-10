@@ -1396,6 +1396,55 @@ _SET_MAX_HP = re.compile(r"max\s+hp\s+(?:becomes|is set to|to)\s+(\d+)", re.IGNO
 # Never walk out of an event below this much of your maximum. An event is worth
 # HP, but no event reward is worth arriving at the next elite unable to survive
 # its opening turn -- which is how these runs actually end.
+# ===========================================================================
+# ===  TEMPORARY WORKAROUND FOR A GAME CRASH -- DELETE WHEN MEGACRIT FIXES  ==
+# ===========================================================================
+#
+# Event options that segfault the game. Not our bug, and not a balance call:
+# picking one of these ENDS THE SESSION, losing every run that would have
+# followed it.
+#
+# NUTRITIOUS_SOUP, on the Tezcatara ancient event. Four selections across four
+# independent sessions, four SIGSEGVs, and every game log terminates one line
+# later on the identical asset load:
+#
+#     [AutoSlay] Selecting event option: TEZCATARA...options.NUTRITIOUS_SOUP
+#     [WARN] Asset not cached: res://scenes/vfx/vfx_card_enchant.tscn
+#     <process dies>
+#
+# `NutritiousSoup.AfterObtained()` loops the whole deck and calls
+# `NCardEnchantVfx.Create(item)` + `AddChildSafely` for EACH basic Strike --
+# N vfx nodes spawned in one frame, for cards with no on-screen node during an
+# event. This agent never removes Strikes, so it always carries the full five
+# and hits the worst case every time. Reproduces at both 5x and 1x animation
+# speed, so it is not our AnimationSpeedPatch.
+#
+# TAKING IT WOULD BE CORRECT PLAY. TezcatarasEmber on every basic Strike is
+# exactly what the `strike-synergy` archetype is built around, so this costs us
+# a genuinely strong pick. It is here only because a crash costs more.
+#
+# TO REMOVE: delete this block and the one call to
+# `_event_option_crashes_the_game` in `_pick_event_option`. Nothing else refers
+# to either. Verify with a live session that reaches Tezcatara and takes Soup.
+#
+# Matched on the display label because that is all the bridge sends -- the mod's
+# event payload carries `label` and `event_id` but not the option's TextKey. So
+# this is language-dependent, and would silently stop working on a non-English
+# client. Acceptable for a workaround; if it ever needs to be robust, add
+# `text_key` to the payload in `RlEventRoomHandler.ChooseEventOption`.
+CRASHING_EVENT_OPTION_LABELS = frozenset({"nutritious soup"})
+
+
+def _event_option_crashes_the_game(option: dict[str, Any]) -> bool:
+    """Does picking this option crash the game? See the block above."""
+    label = str(option.get("label") or "").strip().lower()
+    return label in CRASHING_EVENT_OPTION_LABELS
+
+
+# ===========================================================================
+# ===  END OF TEMPORARY WORKAROUND  =========================================
+# ===========================================================================
+
 EVENT_HP_FLOOR_RATIO = 0.5
 EVENT_HP_FLOOR_ABSOLUTE = 25
 
@@ -1487,6 +1536,18 @@ def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None
     for i, option in enumerate(options):
         hp_lost, max_hp_lost, max_hp_set = _event_hp_cost(option)
         index = _read_index(option, i)
+
+        # >>> TEMPORARY CRASH WORKAROUND -- see CRASHING_EVENT_OPTION_LABELS <<<
+        # Treated as lethal because it is: it kills the process, not the run.
+        # Delete this branch when the game is fixed.
+        if _event_option_crashes_the_game(option):
+            logger.warning(
+                "EVENT: refusing %r -- it segfaults the game (4 of 4 sessions). "
+                "This is a TEMPORARY workaround; see CRASHING_EVENT_OPTION_LABELS.",
+                option.get("label"))
+            unsafe.append((10 ** 6, index, option))
+            continue
+        # >>> END TEMPORARY CRASH WORKAROUND <<<
 
         lethal = False
         # An option that dictates a new maximum, or strips most of it, is a death

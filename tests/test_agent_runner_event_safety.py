@@ -358,3 +358,62 @@ def test_writing_the_stuck_state_never_raises() -> None:
     from sts2_env.bridge.agent_runner import _record_stuck_state
 
     _record_stuck_state("/nonexistent\0path/x.jsonl", {"type": "x"}, 1)
+
+
+# ---------------------------------------------------------------------------
+# TEMPORARY: the Nutritious Soup crash workaround. Delete this whole section
+# together with CRASHING_EVENT_OPTION_LABELS when the game is fixed.
+# ---------------------------------------------------------------------------
+
+
+def test_the_crashing_event_option_is_refused() -> None:
+    """Nutritious Soup segfaults the game -- 4 selections, 4 SIGSEGVs.
+
+    Not a balance judgement. Taking it would be correct play (TezcatarasEmber on
+    every basic Strike is what `strike-synergy` is built around); it is refused
+    only because it ends the SESSION, losing every run that would have followed.
+    """
+    from sts2_env.bridge.agent_runner import _pick_event_option
+
+    state = {
+        "options": [
+            {"index": 0, "label": "Nutritious Soup", "enabled": True,
+             "event_id": "TEZCATARA"},
+            {"index": 1, "label": "Very Hot Cocoa", "enabled": True,
+             "event_id": "TEZCATARA"},
+        ],
+        "run_hp": 70, "run_max_hp": 80,
+    }
+
+    assert _pick_event_option(state) == 1
+
+
+def test_a_crashing_option_alone_still_returns_something_legal() -> None:
+    """An event that is never answered blocks the run forever.
+
+    Refusing has to mean "prefer anything else", not "refuse to choose" -- the
+    screen does not go away on its own.
+    """
+    from sts2_env.bridge.agent_runner import _pick_event_option
+
+    state = {
+        "options": [{"index": 0, "label": "Nutritious Soup", "enabled": True,
+                     "event_id": "TEZCATARA"}],
+        "run_hp": 70, "run_max_hp": 80,
+    }
+
+    assert _pick_event_option(state) == 0
+
+
+def test_unrelated_events_are_untouched_by_the_workaround() -> None:
+    from sts2_env.bridge.agent_runner import _pick_event_option
+
+    state = {
+        "options": [
+            {"index": 0, "label": "Booming Conch", "enabled": True, "event_id": "NEOW"},
+            {"index": 1, "label": "Golden Pearl", "enabled": True, "event_id": "NEOW"},
+        ],
+        "run_hp": 70, "run_max_hp": 80,
+    }
+
+    assert _pick_event_option(state) in (0, 1)
