@@ -93,7 +93,12 @@ def walk(seed: int, agent, rng) -> tuple[int, int]:
     mgr = env._mgr
     run_state = getattr(mgr, "run_state", None)
     floor = int(getattr(run_state, "total_floor", 0) or 0)
-    act = int(getattr(run_state, "act_number", getattr(run_state, "act", 1)) or 1)
+    # `current_act_index`, 0-based, and NOT `act` or `act_number` -- neither
+    # exists. The first version of this asked for those with a default of 1, so
+    # every run reported act 1 and the clear rate came out 0/60 while the floor
+    # distribution reached 45. A run on floor 45 is deep in act 3; the number was
+    # measuring the default, not the run.
+    act = int(getattr(run_state, "current_act_index", 0) or 0) + 1
     env.close()
     return floor, act
 
@@ -155,10 +160,18 @@ def main() -> int:
     ]
     report = "\n".join(lines)
     print(report)
+    # Per-run rows, not just the summary. The first version wrote only the
+    # aggregate, so when the act figure turned out to be measuring a default
+    # rather than a run, there was nothing to recompute from and the whole 40
+    # minutes had to be spent again.
+    print("per-run (floor, act): "
+          + ", ".join(f"{f}/{a}" for f, a in zip(floors, acts)))
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         with open(args.out, "a", encoding="utf-8") as fh:
             fh.write(report)
+            fh.write("per-run (floor, act): "
+                     + ", ".join(f"{f}/{a}" for f, a in zip(floors, acts)) + "\n")
     return 0
 
 
