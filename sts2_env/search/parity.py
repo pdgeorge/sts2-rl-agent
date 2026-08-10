@@ -78,6 +78,23 @@ def reset_disparities() -> None:
     _SEEN.clear()
 
 
+#: Monsters whose HP range changes form under the same id, so the factory's
+#: starting form is not the only legitimate answer.
+#:
+#: Tough Egg hatches: 14-18 as an egg, 19-22 once it opens. Both are modelled
+#: correctly -- `TOUGH_EGG_BASE_HATCHLING_MIN_HP` and friends -- but the range
+#: sampler builds the egg and never sees the hatchling, so every hatched egg
+#: reported as a disparity. That was 99 of the 104 disparity occurrences in one
+#: live session, drowning a real Waterfall Giant finding under a false one.
+#:
+#: A declared table rather than a wider tolerance, because "accept anything
+#: nearby" would stop catching the off-by-a-few errors that made up most of the
+#: real findings -- Phantasmal Gardener was wrong by two.
+SECOND_FORM_HP_RANGES: dict[str, tuple[int, int]] = {
+    "TOUGH_EGG": (19, 22),
+}
+
+
 @functools.lru_cache(maxsize=512)
 def simulator_hp_range(monster_id: str) -> tuple[int, int] | None:
     """The (min, max) starting HP this simulator can roll for a monster.
@@ -89,13 +106,9 @@ def simulator_hp_range(monster_id: str) -> tuple[int, int] | None:
     None when the monster cannot be built, which is its own parity gap and is
     reported where it happens rather than here.
 
-    KNOWN LIMITATION: a monster that changes form under the same id has more than
-    one legitimate range, and this samples only the form the factory starts in.
-    Tough Egg is the one case in the current build -- it hatches from 14-18 into
-    19-22 -- so a hatched egg reports as a disparity it is not. Left rather than
-    special-cased: one standing false positive in 83 monsters is cheaper than a
-    table of exceptions that goes stale, and the alternative is suppressing a
-    whole monster's HP checking to silence it.
+    Monsters that change form under one id have more than one legitimate range,
+    and the factory only builds the form it starts in. Those extra ranges are
+    declared in `SECOND_FORM_HP_RANGES` and unioned in here.
     """
     from sts2_env.core.rng import Rng
     from sts2_env.monsters.factory import create_monster_by_id
@@ -105,7 +118,13 @@ def simulator_hp_range(monster_id: str) -> tuple[int, int] | None:
         built = create_monster_by_id(monster_id, Rng(seed))
         if built is not None:
             seen.add(int(built[0].max_hp))
-    return (min(seen), max(seen)) if seen else None
+    if not seen:
+        return None
+    low, high = min(seen), max(seen)
+    second = SECOND_FORM_HP_RANGES.get(str(monster_id or "").upper())
+    if second is not None:
+        low, high = min(low, second[0]), max(high, second[1])
+    return low, high
 
 
 def check_max_hp(monster_id: str, game_max_hp: int) -> None:

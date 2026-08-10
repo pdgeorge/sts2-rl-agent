@@ -2105,6 +2105,19 @@ def create_waterfall_giant(rng: Rng, ascension_level: int = 0) -> tuple[Creature
         _state[WATERFALL_GIANT_CURRENT_PRESSURE_GUN_DAMAGE_KEY] += WATERFALL_GIANT_PRESSURE_GUN_INCREASE
         _gain_pressure(combat, WATERFALL_GIANT_PRESSURE_BUILDUP)
 
+        # RE-TELEGRAPH THE GROWN NUMBER. The game declares this move as
+        # `new SingleAttackIntent(() => CurrentPressureGunDamage)` -- a lambda,
+        # so its intent tracks the damage as it climbs 20 -> 25 -> 30. This side
+        # had a static intent fixed at the base while `_state` did the growing,
+        # so the searcher planned every later cycle against 20 and ate 25, then
+        # 30, on the act 1 boss. Live reported exactly that: sim 20, game 25.
+        state = states.get(WATERFALL_GIANT_PRESSURE_GUN_MOVE)
+        if state is not None:
+            state.intents = [
+                attack_intent(_state[WATERFALL_GIANT_CURRENT_PRESSURE_GUN_DAMAGE_KEY]),
+                buff_intent(),
+            ]
+
     def pressure_up(combat: CombatState) -> None:
         pressure_up_dmg = _ascension_value(
             _combat_ascension_level(combat),
