@@ -633,3 +633,56 @@ fights.
 evaluation, which uses one fixed seed range and reads optimistically. Use
 `final_model`, not `best_model`: selection at that point was noise-limited and the
 two are indistinguishable over 300 episodes.
+
+---
+
+## sim vs live — 2026-08-10 — the simulator now predicts the live game
+
+The question the whole parity effort existed to answer, run with
+`scripts/sim_vs_live.py --runs 60`: does an offline run predict a live one? If
+it does, every question stops costing an hour.
+
+```
+                    SIMULATED (n=60)     LIVE (n=13)
+mean floor              14.8                15.6
+median                  16                  17     <- boss on 16 here, 17 live
+cleared act 1        32% +/- 6%          23% +/- 12%
+```
+
+**32% against 23% is 0.7 standard errors.** Statistically indistinguishable, on
+the metric that matters rather than only on mean floor.
+
+The shape matches too, which is the part that could have failed while the mean
+agreed: a heavy cluster at floor 16 (runs dying to the act 1 boss), an
+early-death tail at 4-8, and clears spread out to 45. Same distribution, not a
+different one with a coincidentally similar centre.
+
+**What it cost to learn.** 157 -> 2 simulator disparities over one day: nine
+wrong monster HP constants, eight wrong attack damages, Skulking Colony rebuilt
+(its Inertia was modelled as a block gain where the game attacks for 9), twenty
+misnamed move ids, and two dynamically-created states -- STUNNED and
+REVIVE_MOVE -- that no lookup against a monster's declared states could ever
+have found.
+
+**What it buys.**
+
+```
+live session      ~1 hour     +/- 10-12%
+simulated n=60    39 min      +/- 6%
+simulated n=500   parallel    +/- 2%
+```
+
+This is the difference between guessing and measuring, and the cost of guessing
+was demonstrated repeatedly on the day this was written: a per-room search
+budget proposed and then killed by measurement (the search uses 3% of its
+budget), a rollout policy called "harmful" off one session and then scoring the
+best result yet in the next, and a crash blamed on our own animation patch that
+reproduced at 1x. Every confident call from a single 20-run session was wrong.
+Every call from a direct count -- disparities, decompile values -- held.
+
+**Caveats.** The live arm is n=13 at +/- 12%, so this shows consistency rather
+than equivalence, and the simulator reads 9 points optimistic -- inside noise,
+but worth rechecking against a larger live sample. Its deep tail may also be
+generous: 4 of 60 reached act 3, which the live agent has managed twice ever. A
+large offline effect should still be confirmed live before it is believed. The
+point is to stop spending an hour finding out there was no effect.
