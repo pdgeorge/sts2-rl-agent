@@ -649,8 +649,8 @@ ENTOMANCER_MAX_HIVE_STRENGTH_GAIN = 2
 INFESTED_PRISM_BASE_HP = 161
 INFESTED_PRISM_A8_HP = 171
 INFESTED_PRISM_JAB_DAMAGE_A9 = 17
-INFESTED_PRISM_RADIATE_DAMAGE_A9 = 18
-INFESTED_PRISM_RADIATE_BLOCK_A9 = 18
+INFESTED_PRISM_RADIATE_DAMAGE_A9 = 13  # GetValueIfAscension(DeadlyEnemies, 13, 11)
+INFESTED_PRISM_RADIATE_BLOCK_A9 = 13  # RadiateBlock, same pair
 INFESTED_PRISM_WHIRLWIND_DAMAGE_A9 = 10
 INFESTED_PRISM_WHIRLWIND_HITS = 3
 INFESTED_PRISM_PULSATE_BLOCK_A8 = 22
@@ -2857,7 +2857,7 @@ class TestFixedRotation:
             (create_bowlbug_egg(Rng(2)), "BITE_MOVE", 7),
             (create_louse_progenitor(Rng(3)), "CURL_AND_GROW_MOVE", 14),
             (create_the_obscura(Rng(4)), "HARDENING_STRIKE_MOVE", 6),
-            (create_infested_prism(Rng(5)), INFESTED_PRISM_RADIATE_MOVE, 16),
+            (create_infested_prism(Rng(5)), INFESTED_PRISM_RADIATE_MOVE, 11),
             (create_infested_prism(Rng(6)), INFESTED_PRISM_PULSATE_MOVE, 20),
             (create_crusher(Rng(7)), "GUARDED_STRIKE_MOVE", 18),
         ]
@@ -4125,7 +4125,8 @@ class TestFixedRotation:
             INFESTED_PRISM_WHIRLWIND_MOVE,
             INFESTED_PRISM_PULSATE_MOVE,
         ]
-        assert creature.block == 36
+        # 31, not 36: RadiateBlock is 11 and was 16 here.
+        assert creature.block == 31
         assert creature.get_power_amount(PowerId.STRENGTH) == 4
         assert all(card.card_id not in (CardId.INFECTION, CardId.PARASITE) for card in combat.discard_pile)
 

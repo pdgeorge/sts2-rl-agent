@@ -2102,10 +2102,18 @@ the same. Was 200/215 -- a 39 HP overestimate, the largest found, on an elite.
 The searcher was budgeting a fifth more damage than the fight needs."""
 INFESTED_PRISM_BASE_JAB_DAMAGE = 15
 INFESTED_PRISM_DEADLY_JAB_DAMAGE = 17
-INFESTED_PRISM_BASE_RADIATE_DAMAGE = 16
-INFESTED_PRISM_DEADLY_RADIATE_DAMAGE = 18
-INFESTED_PRISM_BASE_RADIATE_BLOCK = 16
-INFESTED_PRISM_DEADLY_RADIATE_BLOCK = 18
+INFESTED_PRISM_BASE_RADIATE_DAMAGE = 11
+INFESTED_PRISM_DEADLY_RADIATE_DAMAGE = 13
+"""`RadiateDamage => GetValueIfAscension(DeadlyEnemies, 13, 11)`. Was 16/18.
+The live game reported 11 -- the unmodified base -- while this side
+telegraphed 16, on an elite whose fight is decided by whether the block it
+gains outpaces the damage it deals."""
+INFESTED_PRISM_BASE_RADIATE_BLOCK = 11
+INFESTED_PRISM_DEADLY_RADIATE_BLOCK = 13
+"""`RadiateBlock => GetValueIfAscension(DeadlyEnemies, 13, 11)`, the same
+pair as the damage. Was 16/18 -- the block was overstated by the same five
+as the damage, so the simulator had this elite both hitting harder and
+surviving longer than it does."""
 INFESTED_PRISM_BASE_WHIRLWIND_DAMAGE = 9
 INFESTED_PRISM_DEADLY_WHIRLWIND_DAMAGE = 10
 INFESTED_PRISM_WHIRLWIND_REPEAT = 3
