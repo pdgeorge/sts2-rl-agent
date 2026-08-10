@@ -39,6 +39,7 @@ seed sets of 60, so only the within-pair comparison means anything.
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import multiprocessing as mp
 import statistics
@@ -53,7 +54,7 @@ REPO = Path(__file__).resolve().parent.parent
 
 def _walk(args) -> tuple[str, int, int, int]:
     """One full simulated run. Returns (arm, seed, floor, act)."""
-    arm_name, use_archetype, seed, time_budget = args
+    arm_name, use_archetype, seed, time_budget, max_nodes = args
 
     sys.path.insert(0, str(REPO))
     sys.path.insert(0, str(REPO / "scripts"))
@@ -64,7 +65,7 @@ def _walk(args) -> tuple[str, int, int, int]:
     from ab_archetype_picking import _pick_card_reward, _search_combat_action
     from harvest_combat_benchmark import _noncombat_action
 
-    agent = SearchAgent(time_budget=time_budget, lookahead_turns=2)
+    agent = SearchAgent(time_budget=time_budget, lookahead_turns=2, max_nodes=max_nodes)
     rng = np.random.default_rng(seed)
     env = STS2RunEnv()
     env.reset(seed=seed)
@@ -115,26 +116,58 @@ def main() -> int:
     parser.add_argument(
         "--time-budget", type=float, default=60.0,
         help="Offline this must never bind -- see sweep_eval_weights.py.")
+    parser.add_argument(
+        "--max-nodes", type=int, default=2000,
+        help=(
+            "DETERMINISTIC cost bound, replacing the wall-clock one offline. "
+            "A time budget cannot be used here: under worker contention it "
+            "truncates the search and the run stops depending only on its seed. "
+            "But removing it entirely removes the cost bound too -- the node "
+            "default is 20000, and one sweep run explored enough of them to "
+            "spend three hours while thirteen workers sat idle. "
+            "2000 is calibrated to what live reaches inside its 3s: measured "
+            "positions run 33-680 nodes, and the widest artificial one 680, so "
+            "this does not bind on anything act 1 produces while bounding the "
+            "pathological tail. Same decisions, bounded cost, no clock."
+        ))
     parser.add_argument("--workers", type=int, default=0)
     parser.add_argument("--out", default="output/sweep_deckbuilding.txt")
     args = parser.parse_args()
 
     workers = args.workers or max(1, (mp.cpu_count() or 2) - 2)
     seeds = [args.seed + i for i in range(args.runs)]
-    jobs = [(name, flag, s, args.time_budget) for name, flag in ARMS for s in seeds]
+    jobs = [(name, flag, s, args.time_budget, args.max_nodes) for name, flag in ARMS for s in seeds]
 
     print(f"{len(ARMS)} arms x {args.runs} paired seeds = {len(jobs)} runs, "
           f"{workers} workers")
     started = time.monotonic()
 
     results: dict[str, dict[int, tuple[int, int]]] = {n: {} for n, _ in ARMS}
+
+    # Every finished run is written the moment it lands. The first version held
+    # all of them in the parent and wrote once at the end, so a single pathological
+    # run -- 20000 nodes deep while thirteen workers sat idle -- put three hours of
+    # completed work behind one process nobody could kill without losing it.
+    rows_path = Path(args.out).with_suffix(".rows.jsonl") if args.out else None
+    rows_fh = None
+    if rows_path is not None:
+        rows_path.parent.mkdir(parents=True, exist_ok=True)
+        rows_fh = rows_path.open("a", encoding="utf-8")
+
     with mp.Pool(workers) as pool:
         for i, (arm, seed, floor, act) in enumerate(
                 pool.imap_unordered(_walk, jobs, chunksize=1), 1):
             results[arm][seed] = (floor, act)
+            if rows_fh is not None:
+                rows_fh.write(json.dumps(
+                    {"arm": arm, "seed": seed, "floor": floor, "act": act}) + "\n")
+                rows_fh.flush()
             if i % 50 == 0:
                 print(f"  {i}/{len(jobs)}  "
                       f"({(time.monotonic() - started) / 60:.1f} min)", flush=True)
+
+    if rows_fh is not None:
+        rows_fh.close()
 
     elapsed = time.monotonic() - started
     base = results["quality only"]
