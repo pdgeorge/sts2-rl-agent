@@ -691,6 +691,22 @@ point is to stop spending an hour finding out there was no effect.
 
 ## eval weight sweep — 2026-08-10 — a negative result, and a lesson about n
 
+> **VOID — read this first.** Both sweeps below ran with a WALL-CLOCK search
+> budget of 1.0s across 14 workers, and that budget binds under contention: the
+> search was truncated 19-36 times per run, and one seed finished on floor 16 or
+> 27 depending on what else the machine was doing. Sweep 1 also ran alongside a
+> live session and sweep 2 did not, so the two were shaped by different machine
+> load and pooling them was wrong.
+>
+> The conclusion may still hold — nothing came close to significance, and
+> truncation is more likely to add noise than to manufacture a null — but it is
+> not supported by these numbers. `887c12c` sets offline budgets to 60s, which
+> cannot bind. Rerun before citing anything here.
+>
+> Kept rather than deleted because the METHOD lessons stand and were dearly
+> bought: absolute rates only compare within a seed set, paired differences are
+> the comparison that survives, and n=60 cannot resolve a 5-point effect.
+
 First use of the offline harness for a real question. Five arms, one `EvalWeights`
 field each, paired on seeds, run TWICE on different seed sets because a single
 offline number is no more trustworthy than a single live session.
