@@ -686,3 +686,55 @@ but worth rechecking against a larger live sample. Its deep tail may also be
 generous: 4 of 60 reached act 3, which the live agent has managed twice ever. A
 large offline effect should still be confirmed live before it is believed. The
 point is to stop spending an hour finding out there was no effect.
+
+---
+
+## eval weight sweep — 2026-08-10 — a negative result, and a lesson about n
+
+First use of the offline harness for a real question. Five arms, one `EvalWeights`
+field each, paired on seeds, run TWICE on different seed sets because a single
+offline number is no more trustworthy than a single live session.
+
+```
+arm              seeds 9000   seeds 5000     POOLED (n=120)
+enemy_hp 0.35      +5.0%        +1.7%       +3.4% +/- 3.3%  (+1.0 se)
+enemy_hp 0.50      -5.0%         0.0%       -2.5% +/- 3.4%  (-0.7 se)
+block_unused 0     +1.7%        +1.7%       +1.7% +/- 2.4%  (+0.7 se)
+turn -0.005        +3.3%        -5.0%       -0.9% +/- 2.2%  (-0.4 se)
+```
+
+**Nothing is supported.** Pooled at n=120, no arm reaches 1.1 se. The evaluation
+weights are approximately right, and further tuning is not the lever -- which
+redirects the boss-race work to deckbuilding, where the ceiling lives rather
+than the play quality.
+
+**`turn -0.005` is the reason the replication happened.** +3.3% on one seed set,
+-5.0% (-1.8 se) on the other. Reporting either alone would have claimed an
+effect with a sign chosen by which seeds were drawn.
+
+TWO NUMBERS THAT LOOK ALIKE AND ARE NOT
+---------------------------------------
+**Absolute clear rate wanders about 10 points between seed sets of 60.** Baseline
+is 20% on seeds 9000 and 30% on seeds 5000 -- same code, same everything. So an
+absolute offline rate may only be compared against another run on the SAME
+seeds. It reproduces there: `sim_vs_live` gave 32% / mean floor 14.8 on seeds
+5000, and this sweep's baseline gave 30% / 14.2 on the same seeds, which is what
+ruled out a harness difference between the two scripts.
+
+**Paired differences are the comparison that survives**, because pairing removes
+seed difficulty, and they are what this script reports.
+
+WHAT n HAS TO BE
+----------------
+At n=60 paired the difference resolves to about +/-4%, while arms move +/-5%
+between replications. A 5-point effect is therefore not detectable at n=60, and
+the earlier claim that offline resolves to +/-6% was too optimistic: that figure
+was the error on an absolute rate within one seed set, not the reproducibility
+across seed sets.
+
+Detecting a 5-point effect needs roughly n=240 an arm -- about 80 minutes at 14
+workers, still far cheaper than the four live hours it would take to say less.
+
+This does not overturn `sim vs live`. Both offline baselines (20% and 30%) sit
+inside the live 23% +/- 12%. It does mean the agreement looked tighter than it
+was, because seeds 5000 happened to be drawn first.
