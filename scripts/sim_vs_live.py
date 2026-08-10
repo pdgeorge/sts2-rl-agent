@@ -61,7 +61,7 @@ def walk(seed: int, agent, rng) -> tuple[int, int]:
 
     sys.path.insert(0, str(REPO / "scripts"))
     from ab_archetype_picking import _pick_card_reward, _search_combat_action
-    from harvest_combat_benchmark import _noncombat_action
+    from live_policy import noncombat_action as _noncombat_action
 
     env = STS2RunEnv()
     env.reset(seed=seed)
@@ -77,10 +77,6 @@ def walk(seed: int, agent, rng) -> tuple[int, int]:
         action = None
         if mgr.phase == RunManager.PHASE_COMBAT:
             action = _search_combat_action(agent, mgr, mask)
-        elif mgr.phase == RunManager.PHASE_CARD_REWARD:
-            action = _pick_card_reward(mgr, mask, rng, True)
-            if action is None:
-                action = _noncombat_action(mgr, mgr.phase, mask, rng)
         else:
             action = _noncombat_action(mgr, mgr.phase, mask, rng)
         if action is None:
