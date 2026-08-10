@@ -44,6 +44,8 @@ that does not depend on the convention at all.
 from __future__ import annotations
 
 import argparse
+import json
+import multiprocessing as mp
 import statistics
 import sys
 import time
@@ -54,14 +56,22 @@ import numpy as np
 REPO = Path(__file__).resolve().parent.parent
 
 
-def walk(seed: int, agent, rng) -> tuple[int, int]:
+def walk(job) -> tuple[int, int]:
     """One full simulated run with the live stack. Returns (floor, act)."""
+    seed, time_budget, max_nodes = job
+
+    sys.path.insert(0, str(REPO))
+    sys.path.insert(0, str(REPO / "scripts"))
+    import sts2_env.cards  # noqa: F401
     from sts2_env.gym_env.run_env import STS2RunEnv
     from sts2_env.run.run_manager import RunManager
-
-    sys.path.insert(0, str(REPO / "scripts"))
+    from sts2_env.search.turn_search import SearchAgent
     from ab_archetype_picking import _pick_card_reward, _search_combat_action
     from live_policy import noncombat_action as _noncombat_action
+
+    agent = SearchAgent(time_budget=time_budget, lookahead_turns=2,
+                        max_nodes=max_nodes)
+    rng = np.random.default_rng(seed)
 
     env = STS2RunEnv()
     env.reset(seed=seed)
@@ -111,25 +121,48 @@ def main() -> int:
             "position act 1 can produce, so a smaller number here changes the "
             "decisions not at all and the wall clock a great deal."
         ))
+    parser.add_argument(
+        "--max-nodes", type=int, default=2000,
+        help=(
+            "Deterministic cost bound. Without it the default is 20000, which "
+            "with a non-binding clock is what produced a three-hour single run "
+            "in the deckbuilding sweep. 2000 is calibrated to what live reaches "
+            "inside its own 3s, so it does not bind on act 1 positions."
+        ))
+    parser.add_argument("--workers", type=int, default=0, help="0 = cpu_count - 2")
     parser.add_argument("--out", default=None, help="Append a summary line here")
     args = parser.parse_args()
 
-    import sts2_env.cards  # noqa: F401
-    from sts2_env.search.turn_search import SearchAgent
+    workers = args.workers or max(1, (mp.cpu_count() or 2) - 2)
+    jobs = [(args.seed + i, args.time_budget, args.max_nodes)
+            for i in range(args.runs)]
+    print(f"{args.runs} runs, {workers} workers", flush=True)
 
-    agent = SearchAgent(time_budget=args.time_budget, lookahead_turns=2)
+    # Every result written as it lands. A sweep that dies partway is still worth
+    # what it computed -- learned when one straggler put 479 finished runs behind
+    # a process that could not be killed without losing them.
+    rows_fh = None
+    if args.out:
+        rows_path = Path(args.out).with_suffix(".rows.jsonl")
+        rows_path.parent.mkdir(parents=True, exist_ok=True)
+        rows_fh = rows_path.open("a", encoding="utf-8")
+
     floors: list[int] = []
     acts: list[int] = []
-
     started = time.monotonic()
-    for i in range(args.runs):
-        seed = args.seed + i
-        floor, act = walk(seed, agent, np.random.default_rng(seed))
-        floors.append(floor)
-        acts.append(act)
-        if (i + 1) % 10 == 0:
-            print(f"  {i + 1}/{args.runs}  mean floor "
-                  f"{statistics.mean(floors):.1f}", flush=True)
+    with mp.Pool(workers) as pool:
+        for i, (floor, act) in enumerate(pool.imap_unordered(walk, jobs), 1):
+            floors.append(floor)
+            acts.append(act)
+            if rows_fh is not None:
+                rows_fh.write(json.dumps({"floor": floor, "act": act}) + "\n")
+                rows_fh.flush()
+            if i % 10 == 0:
+                print(f"  {i}/{args.runs}  mean floor "
+                      f"{statistics.mean(floors):.1f}  "
+                      f"({(time.monotonic() - started) / 60:.1f} min)", flush=True)
+    if rows_fh is not None:
+        rows_fh.close()
 
     elapsed = time.monotonic() - started
     cleared = sum(1 for a in acts if a >= 2)
