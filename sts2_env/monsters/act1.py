@@ -1229,8 +1229,13 @@ def create_tracker_ruby_raider(rng: Rng, ascension_level: int = 0) -> tuple[Crea
 BYGONE_EFFIGY_ID = "BYGONE_EFFIGY"
 BYGONE_EFFIGY_BASE_HP = 127
 BYGONE_EFFIGY_TOUGH_HP = 132
-BYGONE_EFFIGY_BASE_SLASH_DAMAGE = 15
-BYGONE_EFFIGY_DEADLY_SLASH_DAMAGE = 17
+BYGONE_EFFIGY_BASE_SLASH_DAMAGE = 13
+BYGONE_EFFIGY_DEADLY_SLASH_DAMAGE = 15
+"""`SlashDamage => GetValueIfAscension(DeadlyEnemies, 15, 13)`. The old base
+(15) was the game's DEADLY value -- the same one-tier shift as Crusher and
+Rocket. An act 1 elite that has killed this agent repeatedly, and the live
+logs reported it as sim 15 against game 23-24, which is 13 plus its wake-up
+Strength."""
 BYGONE_EFFIGY_WAKE_STRENGTH = 10
 BYGONE_EFFIGY_SLOW = 1
 BYGONE_EFFIGY_INITIAL_SLEEP_MOVE = "SLEEP_MOVE_2"

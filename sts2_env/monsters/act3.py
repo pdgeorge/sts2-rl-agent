@@ -242,8 +242,13 @@ def create_axebot(
 ) -> tuple[Creature, MonsterAI]:
     hp = rng.next_int(40, 44)
     creature = Creature(max_hp=hp, monster_id="AXEBOT", min_initial_hp=40, max_initial_hp=44)
-    one_two_dmg = 5
-    hammer_uppercut_dmg = 8
+    # `OneTwoDamage => GetValueIfAscension(DeadlyEnemies, 10, 9)` and
+    # `HammerUppercutDamage => GetValueIfAscension(DeadlyEnemies, 14, 12)`.
+    # Were 5 and 8 -- barely half. Found by scripts/audit_attack_damage.py
+    # rather than by losing to it, which is the point of the audit: this
+    # monster is act 3 and the agent has never reached it.
+    one_two_dmg = 9
+    hammer_uppercut_dmg = 12
     hammer_uppercut_debuff = 1
     boot_up_block = 10
     boot_up_strength = 1

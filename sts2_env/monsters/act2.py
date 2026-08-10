@@ -2114,9 +2114,24 @@ INFESTED_PRISM_DEADLY_RADIATE_BLOCK = 13
 pair as the damage. Was 16/18 -- the block was overstated by the same five
 as the damage, so the simulator had this elite both hitting harder and
 surviving longer than it does."""
-INFESTED_PRISM_BASE_WHIRLWIND_DAMAGE = 9
-INFESTED_PRISM_DEADLY_WHIRLWIND_DAMAGE = 10
+INFESTED_PRISM_BASE_WHIRLWIND_DAMAGE = 5
+INFESTED_PRISM_DEADLY_WHIRLWIND_DAMAGE = 6
+"""`WhirlwindDamage => GetValueIfAscension(DeadlyEnemies, 6, 5)`. Was 9/10 --
+nearly double, and the third wrong number on this one elite after Jab and
+Radiate."""
 INFESTED_PRISM_WHIRLWIND_REPEAT = 3
+INFESTED_PRISM_BASE_PULSATE_DAMAGE = 8
+INFESTED_PRISM_DEADLY_PULSATE_DAMAGE = 10
+"""Pulsate ATTACKS as well as blocking and buffing:
+`new MoveState("PULSATE_MOVE", PulsateMove, new SingleAttackIntent(PulsateDamage),
+new BuffIntent(), new DefendIntent())`, with
+`PulsateDamage => GetValueIfAscension(DeadlyEnemies, 10, 8)`.
+
+This side modelled it as pure defence -- block and Strength, no damage -- so
+the searcher read an attacking turn as a safe one. Same shape as Skulking
+Colony's Inertia. Found by scripts/audit_attack_damage.py, which flagged it as
+a SKIP rather than a pass: the game declared an attack intent the simulator had
+no damage for."""
 INFESTED_PRISM_BASE_PULSATE_BLOCK = 20
 INFESTED_PRISM_TOUGH_PULSATE_BLOCK = 22
 INFESTED_PRISM_BASE_PULSATE_STRENGTH = 4
@@ -2184,9 +2199,22 @@ def create_infested_prism(rng: Rng, ascension_level: int = 0) -> tuple[Creature,
             INFESTED_PRISM_DEADLY_PULSATE_STRENGTH,
             INFESTED_PRISM_BASE_PULSATE_STRENGTH,
         )
+        pulsate_dmg = _ascension_value(
+            _combat_ascension_level(combat),
+            DEADLY_ENEMIES_ASCENSION_LEVEL,
+            INFESTED_PRISM_DEADLY_PULSATE_DAMAGE,
+            INFESTED_PRISM_BASE_PULSATE_DAMAGE,
+        )
+        _deal_damage_to_player(combat, creature, pulsate_dmg)
         _gain_block(creature, pulsate_block, combat)
         creature.apply_power(PowerId.STRENGTH, pulsate_str)
 
+    pulsate_intent_damage = _ascension_value(
+        ascension_level,
+        DEADLY_ENEMIES_ASCENSION_LEVEL,
+        INFESTED_PRISM_DEADLY_PULSATE_DAMAGE,
+        INFESTED_PRISM_BASE_PULSATE_DAMAGE,
+    )
     jab_intent_damage = _ascension_value(
         ascension_level,
         DEADLY_ENEMIES_ASCENSION_LEVEL,
@@ -2228,7 +2256,7 @@ def create_infested_prism(rng: Rng, ascension_level: int = 0) -> tuple[Creature,
         INFESTED_PRISM_PULSATE_MOVE: MoveState(
             INFESTED_PRISM_PULSATE_MOVE,
             pulsate,
-            [buff_intent(), defend_intent()],
+            [attack_intent(pulsate_intent_damage), buff_intent(), defend_intent()],
             follow_up_id=INFESTED_PRISM_JAB_MOVE,
         ),
     }
