@@ -1,4 +1,4 @@
-"""All 64 potions from STS2.
+"""All 65 potions from STS2.
 
 Each potion is registered with its rarity, usage type, and target type,
 matching the decompiled MegaCrit.Sts2.Core.Models.Potions source.
@@ -24,6 +24,7 @@ ALE = PotionTargetType.ALL_ENEMIES
 AP = PotionTargetType.ANY_PLAYER
 
 BLOOD_POTION_ID = "BloodPotion"
+AMBERGRIS_HEAL_PERCENT = 50  # DynamicVar("HealPercent", 50m)
 BLOOD_POTION_HEAL_PERCENT = 20
 ENTROPIC_BREW_ID = "EntropicBrew"
 FOUL_POTION_ID = "FoulPotion"
@@ -121,6 +122,12 @@ _r("SneckoOil",           R,  CO, AP)
 _r("SoldiersStew",        R,  CO, AP, character_pool="Ironclad")
 
 # ── Event / Token / Deprecated ────────────────────────────────────────
+# `Ambergris`: Rarity Event, TargetType AnyPlayer. Heals 50% of max HP and,
+# only while a combat is in progress, applies AmbergrisPower. It was the one
+# potion genuinely absent from this file -- the other four the bridge kept
+# reporting as unknown were present all along and lost to an id-coercion
+# guard. AT rather than CO because it heals and is worth drinking on a map.
+_r("Ambergris",           E,  AT, AP)
 _r(FOUL_POTION_ID,        E,  AT, S)
 _r("GlowwaterPotion",     E,  CO, S)
 _r("PotionShapedRock",    T,  CO, AE)

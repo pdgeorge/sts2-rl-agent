@@ -18,6 +18,7 @@ from sts2_env.core.enums import (
 from sts2_env.core.constants import PERCENT_DENOMINATOR
 from sts2_env.core.damage import calculate_damage, apply_damage
 from sts2_env.potions.all import (
+    AMBERGRIS_HEAL_PERCENT,
     BLOOD_POTION_HEAL_PERCENT,
     BLOOD_POTION_ID,
     ENTROPIC_BREW_ID,
@@ -343,6 +344,20 @@ def _bone_brew(combat: CombatState, user: Creature, target: Creature | None) -> 
     """
     if hasattr(combat, "summon_osty"):
         combat.summon_osty(user, 15)
+
+
+def _ambergris(combat: CombatState, user: Creature, target: Creature | None) -> None:
+    """Heal 50% of max HP, and gain Ambergris while a fight is on.
+
+    `CreatureCmd.Heal(target, MaxHp * HealPercent / 100)` with HealPercent 50,
+    then `Apply<AmbergrisPower>(target, 1)` guarded by
+    `CombatManager.Instance.IsInProgress` -- so the power only lands if it is
+    drunk in combat, while the heal happens either way.
+    """
+    t = target if target is not None else user
+    t.heal(t.max_hp * AMBERGRIS_HEAL_PERCENT // PERCENT_DENOMINATOR)
+    if not combat.is_over:
+        combat.apply_power_to(t, PowerId.AMBERGRIS, 1, applier=user)
 
 
 def _clarity(combat: CombatState, user: Creature, target: Creature | None) -> None:
@@ -788,6 +803,7 @@ def _potion_shaped_rock(combat: CombatState, user: Creature, target: Creature | 
 _ALL_EFFECTS: dict[str, object] = {
     # Common (20)
     "AttackPotion":        _attack_potion,
+    "Ambergris":           _ambergris,
     "BlockPotion":         _block_potion,
     BLOOD_POTION_ID:       _blood_potion,
     "ColorlessPotion":     _colorless_potion,

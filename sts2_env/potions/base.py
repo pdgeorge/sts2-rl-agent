@@ -175,10 +175,16 @@ def coerce_potion_id(potion_id: str) -> str:
     # UPPER_SNAKE -> CamelCase: "STRENGTH_POTION" -> "StrengthPotion".
     # Mirrors StringHelper.Unslugify in the decompiled Helpers.
     parts = potion_id.split("_")
-    if len(parts) > 1:
-        camel = "".join(p.capitalize() for p in parts if p)
-        if camel in _POTION_MODELS:
-            return camel
+    camel = "".join(p.capitalize() for p in parts if p)
+    if camel in _POTION_MODELS:
+        return camel
+    # NO `len(parts) > 1` GUARD. It used to skip anything without an
+    # underscore, which is every SINGLE-WORD potion -- and four of them are
+    # fully modelled here: Ashwater, Clarity, Duplicator, Fortifier. The bridge
+    # sends `ASHWATER`, this returned `ASHWATER`, the registry holds `Ashwater`,
+    # and `_instantiate_potion` dropped it as "a potion this build does not
+    # know". It knew. Live logs showed the searcher planning fights without a
+    # potion the player was holding.
     return potion_id
 
 

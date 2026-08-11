@@ -116,7 +116,8 @@ GLOWWATER_DRAW_COUNT = 10
 
 class TestPotionRegistry:
     def test_total_count(self):
-        assert len(all_potion_models()) == 64
+        # 65: Ambergris was the one potion genuinely missing from all.py.
+        assert len(all_potion_models()) == 65
 
     def test_normal_pool_excludes_event_token(self):
         pool = normal_pool_models()
@@ -180,7 +181,7 @@ class TestRarityCounts:
 
     def test_event_count(self):
         event = [m for m in all_potion_models() if m.rarity == PotionRarity.EVENT]
-        assert len(event) == 2
+        assert len(event) == 3  # + Ambergris
 
     def test_token_count(self):
         token = [m for m in all_potion_models() if m.rarity == PotionRarity.TOKEN]
