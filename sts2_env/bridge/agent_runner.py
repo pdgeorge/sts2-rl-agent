@@ -614,6 +614,25 @@ def run_agent(
                             # kind of thing that costs a debugging hour.
                             "death_enemy_id": last_enemy_id if died else None,
                         })
+                        # WAS THE SEARCH CUT SHORT? LiveSearch has counted
+                        # this from the start and nothing ever read it, so
+                        # whether live play is truncated has never been
+                        # measured. It is a real live/offline difference:
+                        # live runs on a 3s WALL CLOCK, offline on a hard
+                        # node cap with 60s, and a wall clock is the thing
+                        # that silently truncated two earlier sweeps.
+                        #
+                        # It matters for the 44-point boss gap (72% offline
+                        # against 28% live). If the wide boss turns are the
+                        # ones exhausting the budget, live is planning those
+                        # fights on a partial tree while offline never does.
+                        if live_search_agent is not None:
+                            try:
+                                st = live_search_agent.stats()
+                                summary["searches"] = st.get("searches")
+                                summary["searches_truncated"] = st.get("budget_exhausted")
+                            except Exception:
+                                pass
                         journal.record_run_end(summary)
                         on_run_end(summary)
                     if run_index >= max_runs:
