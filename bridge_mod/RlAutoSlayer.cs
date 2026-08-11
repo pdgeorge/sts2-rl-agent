@@ -107,6 +107,9 @@ public class RlAutoSlayer
 
     private CancellationTokenSource? _cts;
     private Rng? _random;
+    /// <summary>The seed this run was asked to use, re-asserted just before
+    /// the confirm click because character select wipes it. See PlayMainMenuAsync.</summary>
+    private string? _seed;
     private Watchdog? _watchdog;
     private IDisposable? _cardSelectorScope;
     private bool _completionSignalSent;
@@ -240,6 +243,7 @@ public class RlAutoSlayer
         SaveManager.Instance.ObtainEpochOverride(
             EpochModel.GetId<Necrobinder1Epoch>(), EpochState.Revealed);
 
+        _seed = seed;
         _random = new Rng((uint)StringHelper.GetDeterministicHashCode(seed));
 
         // Install our RL card selector for deck upgrade/transform/card selection screens
@@ -625,6 +629,33 @@ public class RlAutoSlayer
 
         NButton confirmBtn = await WaitHelper.ForNode<NButton>(
             mainMenu, CharacterConfirmButtonPath, ct);
+
+        // RE-ASSERT THE SEED HERE, NOT IN PlayRunAsync. Setting it before the
+        // menu walk did nothing, because the character select screen wipes it on
+        // the way in -- in singleplayer, unconditionally:
+        //
+        //     if (_lobby.NetService.Type != NetGameType.Singleplayer) { ...; return; }
+        //     NGame.Instance.DebugSeedOverride = null;      // NCharacterSelectScreen
+        //
+        // and StartRunLobby only reads it when the run actually begins:
+        //
+        //     string seed = (NGame.Instance?.DebugSeedOverride != null)
+        //         ? NGame.Instance.DebugSeedOverride : SeedHelper.GetRandomSeed();
+        //
+        // So every seed this mod has ever chosen was discarded, and every run
+        // embarked on a fresh one. The logs said so the whole time and nothing
+        // compared the two lines:
+        //
+        //     [RlAutoSlay] Starting RL run #43 with seed: WLM0U883M640
+        //     [INFO] Embarking on a singleplayer IRONCLAD run. Seed: YDE5DC0QHCKE
+        //
+        // Assigned last thing before the click that starts the run, which is
+        // after the wipe and before the read.
+        if (!string.IsNullOrWhiteSpace(_seed) && NGame.Instance != null)
+        {
+            NGame.Instance.DebugSeedOverride = _seed;
+        }
+
         Logger.Log("[RlAutoSlayer] Confirming character");
         await UiHelper.Click(confirmBtn);
     }
