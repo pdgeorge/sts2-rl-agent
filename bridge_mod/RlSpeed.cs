@@ -38,6 +38,14 @@ internal static class RlSpeed
     private static readonly Dictionary<string, SpeedPreset> Presets =
         new(StringComparer.OrdinalIgnoreCase)
     {
+        // Cleared of the Punch Off crash on 2026-08-11: that reproduced on seed
+        // 6D038P4FSM2F with AnimationSpeedPatch removed from the patch list
+        // entirely, so animation speed does not cause it. See
+        // docs/CRASH_PUNCH_OFF.md before blaming this again.
+        ["hyper"] = new SpeedPreset
+        {
+            Name = "hyper", WaitMultiplier = 0.0f, AnimMultiplier = 10.0f, ActionDelayMs = 0,
+        },
         ["turbo"] = new SpeedPreset
         {
             Name = "turbo", WaitMultiplier = 0.1f, AnimMultiplier = 5.0f, ActionDelayMs = 0,
