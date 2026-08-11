@@ -17,10 +17,12 @@ for non-combat decisions (map navigation, card rewards, etc.).
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import re
 import sys
 import time
+from pathlib import Path
 from collections.abc import Callable
 from typing import Any
 
@@ -189,6 +191,33 @@ def load_model(model_path: str) -> Any:
     model = MaskablePPO.load(model_path)
     logger.info("Model loaded successfully.")
     return model
+
+
+#: Every LiveSearch.decide failure, with the state that caused it. Read by
+#: scripts/replay_search_failures.py, which rebuilds each one offline.
+SEARCH_FAILURE_LOG = "output/live_search_failures.jsonl"
+
+
+def _record_search_failure(state: dict, exc: BaseException) -> None:
+    """Append the failing bridge state and traceback, one JSON object per line.
+
+    The state is the whole point. `CombatSituation.from_bridge_state` /
+    `to_combat` are pure functions of it, so one captured line reproduces the
+    failure offline against the decompile, without the game running and without
+    waiting for the same fight to come round again.
+    """
+    import traceback
+
+    path = Path(SEARCH_FAILURE_LOG)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({
+            "t": time.time(),
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+            "traceback": traceback.format_exc(),
+            "state": state,
+        }, default=str) + "\n")
 
 
 def run_agent(
@@ -702,7 +731,24 @@ def run_agent(
                             action_int = live_search_agent.decide(
                                 state, prev_action=_live_search_last_action,
                             )
-                        except Exception:
+                        except Exception as search_exc:
+                            # PERSIST IT, WITH THE STATE THAT CAUSED IT. This
+                            # only ever went to the console via logger.exception,
+                            # so the one thing that would let it be fixed -- the
+                            # bridge state the simulator could not rebuild --
+                            # scrolled away with the session. `to_combat` is a
+                            # pure function of that dict, so a captured state
+                            # reproduces the failure offline with no game.
+                            #
+                            # This is not a cosmetic gap. A raise here does not
+                            # degrade the search, it REPLACES it: the fight falls
+                            # back to the trained combat model. Offline always
+                            # searches, which is the leading explanation for
+                            # boss win rate being 72% offline and 28% live.
+                            try:
+                                _record_search_failure(state, search_exc)
+                            except Exception:  # noqa: BLE001 - never mask the original
+                                pass
                             # Once-per-combat escalation. The first raise logs
                             # loudly; the second switches this combat to the
                             # trained model. Repeated END_TURN firings would
