@@ -350,3 +350,19 @@ obs, info = env.reset()  # Start next episode
 **Cause:** The observation size changed between training and inference (e.g., new features were added to the observation encoder).
 
 **Solution:** Ensure the same version of `observation.py` is used for both training and inference. The observation size is `OBS_SIZE = 131` dimensions. If you modify the observation encoder, retrain the model.
+
+## "Loaded 2 mods WITH ERRORS! There are two or more mods with the same id"
+
+**Symptom:** the game reports duplicate mod ids on startup, naming a mod you
+only installed once.
+
+**Cause:** something else under `mods/` contains a manifest with that id. The
+loader walks every subfolder and reads every `.json` in it -- a backup copy of a
+mod is a second copy of that mod, not an inert folder. Backing BaseLib up to
+`mods/BaseLib.backup-3.4.0` before updating it does exactly this.
+
+**Fix:** keep backups OUTSIDE the mods folder, e.g. `~/sts2_baselib_backups/`.
+
+Related: do not put `mod_manifest.json` in a mod folder either. ModManager
+deserializes every `.json` under `mods/` as a ModManifest, and that file has no
+`id`, so the loader throws out of `ModManager.Initialize` during GameStartup.
