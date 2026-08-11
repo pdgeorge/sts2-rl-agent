@@ -110,6 +110,9 @@ class LiveSearch:
         rollout actually helps is still unmeasured.
         """
         self._playout_policy = playout_policy
+        # Survive the per-fight SearchAgent rebuild; see `stats`.
+        self._retired_searches = 0
+        self._retired_truncated = 0
         self._search = SearchAgent(
             weights=weights,
             time_budget=time_budget,
@@ -136,9 +139,18 @@ class LiveSearch:
 
     @property
     def stats(self) -> dict[str, int]:
+        """Cumulative over the session, not the current fight.
+
+        `reset_for_new_fight` REBUILDS the SearchAgent, so its own counters
+        start again every combat. Reporting those in a per-run summary would
+        describe the last fight of the run and nothing else -- and a boss is
+        usually the last fight, which is precisely the one that would look
+        untruncated because it had barely started counting.
+        """
         return {
-            "searches": self._search.searches,
-            "budget_exhausted": self._search.budget_exhausted_count,
+            "searches": self._retired_searches + self._search.searches,
+            "budget_exhausted": (self._retired_truncated
+                                 + self._search.budget_exhausted_count),
         }
 
     # -- the public API -----------------------------------------------------
@@ -150,6 +162,9 @@ class LiveSearch:
         regardless, so this is only an internal reset to stop a stale plan
         from a previous fight being replayed.
         """
+        # Bank the outgoing fight's counters before the rebuild discards them.
+        self._retired_searches += self._search.searches
+        self._retired_truncated += self._search.budget_exhausted_count
         self._search = SearchAgent(
             weights=self._search.weights,
             time_budget=self._search.time_budget,

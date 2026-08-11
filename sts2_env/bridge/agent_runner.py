@@ -655,13 +655,23 @@ def run_agent(
                         # against 28% live). If the wide boss turns are the
                         # ones exhausting the budget, live is planning those
                         # fights on a partial tree while offline never does.
+                        #
+                        # `stats` is a PROPERTY. Calling it raised TypeError,
+                        # which the bare `except: pass` here swallowed, so the
+                        # fields were silently absent from a whole session and
+                        # the measurement looked like "zero truncations" rather
+                        # than "never recorded". Logged now, not swallowed.
+                        #
+                        # NOTE the counters reset per fight: reset_for_new_fight
+                        # rebuilds the SearchAgent, so these are the LAST
+                        # fight's numbers, not the run's.
                         if live_search_agent is not None:
                             try:
-                                st = live_search_agent.stats()
+                                st = live_search_agent.stats
                                 summary["searches"] = st.get("searches")
                                 summary["searches_truncated"] = st.get("budget_exhausted")
                             except Exception:
-                                pass
+                                logger.exception("could not read LiveSearch stats")
                         journal.record_run_end(summary)
                         on_run_end(summary)
                     if run_index >= max_runs:
