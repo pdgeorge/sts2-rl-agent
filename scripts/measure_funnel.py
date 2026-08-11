@@ -172,8 +172,10 @@ def main() -> int:
              f"ACT 1 FUNNEL  tag={args.tag}  {len(rows)} runs  "
              f"({len(jobs)} this session, "
              f"{(time.monotonic() - started) / 60:.1f} min)", "",
-             f"{'group':<14}{'n':>5}{'reach boss':>14}{'win boss':>14}"
-             f"{'clear':>14}{'floor':>8}", "-" * 78]
+             "  win-boss is CONDITIONAL: the share of runs that GOT THERE.",
+             "  reach x win-boss = clear, e.g. 65% x 72% = 47%.", "",
+             f"{'group':<14}{'n':>5}{'reach boss':>14}{'win|reached':>14}"
+             f"{'clear (all)':>14}{'floor':>8}", "-" * 78]
     groups = [("ALL", rows)]
     for v in ("overgrowth", "underdocks"):
         groups.append((v, [r for r in rows if r["variant"] == v]))

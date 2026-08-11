@@ -123,11 +123,27 @@
              "looks like a mod manifest but is missing the 'id' field! This is not allowed."
              and throws out of ModManager.Initialize during GameStartup. BaseLib ships only
              the id-named .json, .dll and .pck; match that layout. -->
-        <Message Text="Copying BaseLib to mods folder." Importance="high" />
+        <!-- SEED it, do not OVERWRITE it. NuGet's newest is 3.4.0 and the author
+             ships later builds only as GitHub releases: 3.4.1 (2026-07-31) and
+             3.4.4 (2026-08-06) exist there and have never been on NuGet.
+
+             That matters because 3.4.0 is broken against the current game. It
+             does FieldRefAccess<NTreasureRoom, Node2D>("_chestNode") and the
+             field is now _chestButton, so it throws MissingFieldException in
+             EVERY treasure room. 3.4.4 references only _chestButton. The game
+             .pck is 2026-07-31 19:28 and 3.4.0 was installed 09:58 the same day,
+             which is the whole story.
+
+             So an unconditional copy silently DOWNGRADES a hand-installed
+             BaseLib on the next build, and the only symptom is treasure rooms
+             throwing again. Copy only what is missing; updating BaseLib is a
+             deliberate act, done from the GitHub releases page. -->
+        <Message Text="Seeding BaseLib into the mods folder if absent (never overwriting)." Importance="high" />
         <ItemGroup>
             <BaseLibFiles Include="$(NuGetPackageRoot)/alchyr.sts2.baselib/**/lib/**/BaseLib.dll;$(NuGetPackageRoot)/alchyr.sts2.baselib/**/Content/BaseLib.pck;$(NuGetPackageRoot)/alchyr.sts2.baselib/**/Content/BaseLib.json;"/>
         </ItemGroup>
-        <Copy SourceFiles="@(BaseLibFiles)" DestinationFolder="$(ModsPath)BaseLib/" />
+        <Copy SourceFiles="@(BaseLibFiles)" DestinationFolder="$(ModsPath)BaseLib/"
+              Condition="!Exists('$(ModsPath)BaseLib/%(Filename)%(Extension)')" />
     </Target>
 
     <Target Name="GodotExport" AfterTargets="Build;Publish" Condition="'$(GodotPath)' != '' and Exists('$(GodotPath)') and '$(IsInnerGodotExport)' != 'true'">
