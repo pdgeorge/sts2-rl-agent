@@ -49,7 +49,38 @@ public partial class MainFile : Node
             {
                 typeof(IsReleaseGamePatch),
                 typeof(WaitSpeedPatch),
-                typeof(AnimationSpeedPatch),
+
+                // >>> DISABLED TO RULE US OUT OF THE PUNCH OFF CRASH <<<
+                // RE-ENABLE BY UNCOMMENTING THE ONE LINE BELOW. Nothing else
+                // changed: the class is still compiled and RlSpeed still sets
+                // AnimationSpeedPatch.AnimMultiplier, which now simply has no
+                // effect because the patch is never applied. Animations run at
+                // 1x, so sessions are slower -- that is the cost of the test.
+                //
+                // WHY. Punch Off crashes the game on entry, twice on 2026-08-11,
+                // and the trace runs NCreature.SetAnimationTrigger_Patch1 ->
+                // MegaAnimationState.SetAnimation -> MegaSpineBinding.Call, then
+                // "Signal '_internal_spine_objects_invalidated' is already
+                // connected", then a GC finalizer disconnecting a registration
+                // that was never made, then list.h erase corrupting.
+                //
+                // That _Patch1 is BaseLib's, not ours -- we patch only Cmd,
+                // MegaAnimationState and NGame. But ours wraps
+                // MegaAnimationState.SetTimeScale, which is the same Spine
+                // binding one call away from SetAnimation, so adjacency alone
+                // does not clear us.
+                //
+                // `--speed normal` was NOT this test. It sets AnimMultiplier to
+                // 1.0 while the prefix stays installed and keeps wrapping every
+                // Spine call, which is why the crash survived it and why I was
+                // wrong to read that as evidence either way. This removes the
+                // patch itself.
+                //
+                // IF IT STILL CRASHES: we are cleanly ruled out, it is BaseLib
+                // against a game build it predates, and the line goes back.
+                // IF IT STOPS: our patch is implicated and turbo speed is not
+                // free -- do not simply re-enable it.
+                // typeof(AnimationSpeedPatch),
             };
 
             int patched = 0;
