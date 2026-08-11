@@ -754,3 +754,61 @@ workers, still far cheaper than the four live hours it would take to say less.
 This does not overturn `sim vs live`. Both offline baselines (20% and 30%) sit
 inside the live 23% +/- 12%. It does mean the agreement looked tighter than it
 was, because seeds 5000 happened to be drawn first.
+
+---
+
+## potion rules + waterfall giant siphon — 2026-08-11 — a null result, kept as one
+
+Live, 40 runs, `--live-search`, `output/live_journal_potionrules.jsonl`.
+
+| | before | after |
+|---|---|---|
+| act 1 clear | 14.7% +/- 6.1% (n=34) | **15.0% +/- 5.6% (n=40)** |
+| reached the boss | 59% | 60% |
+| won the boss | 25% | 28% +/- 9% |
+
+Two changes shipped together: Waterfall Giant's Siphon corrected from a flat 15
+to the ascension-gated 10, and the potion rules of thumb (drink the rock on
+sight, card generators on turn 1 of an elite or boss).
+
+THE MECHANISM WORKED. That is what makes this worth keeping.
+
+| | before | after |
+|---|---|---|
+| lost boss fights holding a potion, used nothing | 49% | **8%** |
+| non-automatic potions dead in the belt | 49 | **1** |
+
+Card generators were drunk 12 times in boss rooms and 7 in elites, the rock
+twice. The hoarding the live journals showed -- Skill 10, Attack 10, Colorless
+7, Power 6, Duplicator 6 dying unused across lost boss fights -- is gone.
+
+And the clear rate did not move. So the potions were not the constraint. A
+behavioural change that large producing no outcome change is stronger evidence
+than the flat clear rate alone: it is not "we could not tell", it is "we moved
+the thing and the number stayed".
+
+n=40 cannot see an effect smaller than about 11 points, so a small gain is not
+excluded. It is excluded as the answer to 50%.
+
+WHAT THIS SESSION ALSO SETTLED
+
+- The `intent_damage WATERFALL_GIANT.PRESSURE_GUN_MOVE sim=20 game=25/30` reports
+  (12 of them) are NOT a bug. `_override_enemy_intent` logs the difference and
+  then assigns `existing.intents = [intent]`, so the bridge's number replaces the
+  simulator's before the search plans, and the rollout escalates from the
+  corrected value. It is the expected noise of rebuilding the monster from base
+  on every decision.
+- The AnimationSpeedPatch crash test is INCONCLUSIVE, not passed. The patch was
+  correctly disabled (the log lists only IsReleaseGamePatch and WaitSpeedPatch)
+  and 40 runs did not crash -- but Punch Off, the trigger, appeared zero times,
+  despite Underdocks being 25 of 49 boss fights. The test has not run yet.
+
+THE GAP THAT IS LEFT
+
+Offline, same agent, 399 runs: reach 64%, boss win **71%**, clear 46%.
+Live, this session: reach 60%, boss win **28%**, clear 15%.
+
+Reach agrees to within 4 points. Boss win is 43 points apart. Offline also
+searches with max_nodes=2000 against live's 20,000, so the weaker searcher is
+the one winning -- budget cannot explain it, and the environmental difference
+must be larger than the raw gap suggests.
