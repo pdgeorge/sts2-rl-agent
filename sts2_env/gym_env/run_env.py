@@ -302,8 +302,13 @@ class STS2RunEnv(gymnasium.Env):
         render_mode: str | None = None,
         gamma: float = 0.99,
         enable_reward_shaping: bool = False,
+        act1_variant: str = "random",
     ):
         super().__init__()
+
+        # "random" matches how the game is actually played (its act-1 dropdown
+        # defaults to random). Pin it to isolate one variant in a sweep.
+        self._act1_variant = act1_variant
 
         self.observation_space = spaces.Box(
             low=OBS_VALUE_LOW,
@@ -343,6 +348,7 @@ class STS2RunEnv(gymnasium.Env):
             seed=run_seed,
             character_id=self._character_id,
             ascension_level=self._ascension_level,
+            act1_variant=self._act1_variant,
         )
         self._step_count = 0
 

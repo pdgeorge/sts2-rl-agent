@@ -58,7 +58,7 @@ from sts2_env.encounters.act4 import (
     setup_sludge_spinner_weak,
     setup_soul_fysh_boss,
     setup_skulking_colony_elite,
-    setup_toadpoles_normal,
+    setup_seapunk_normal,
     setup_toadpoles_weak,
     setup_terror_eel_elite,
     setup_two_tailed_rats_normal,
@@ -6563,15 +6563,20 @@ class TestFixedRotation:
             for enemy in toad_weak_combat.enemies
         ] == ["SPIKEN_MOVE", "WHIRL_MOVE"]
 
-        toad_normal_combat = _make_combat(60)
-        setup_toadpoles_normal(toad_normal_combat, Rng(60))
-        assert [enemy.monster_id for enemy in toad_normal_combat.enemies] == [
+        # C# SeapunkNormal.GenerateMonsters: (CalcifiedCultist, Seapunk). This
+        # asserted (CalcifiedCultist, Toadpole) for `setup_toadpoles_normal`, an
+        # encounter the game has no class for -- only ToadpolesWeak exists.
+        seapunk_normal_combat = _make_combat(60)
+        setup_seapunk_normal(seapunk_normal_combat, Rng(60))
+        assert [enemy.monster_id for enemy in seapunk_normal_combat.enemies] == [
             "CALCIFIED_CULTIST",
-            "TOADPOLE",
+            "SEAPUNK",
         ]
-        assert toad_normal_combat.enemy_ais[toad_normal_combat.enemies[1].combat_id].current_move.state_id == (
-            "WHIRL_MOVE"
-        )
+        # Seapunk.GenerateMoveStateMachine returns (list, moveState) -- the
+        # initial state is SEA_KICK_MOVE.
+        assert seapunk_normal_combat.enemy_ais[
+            seapunk_normal_combat.enemies[1].combat_id
+        ].current_move.state_id == "SEA_KICK_MOVE"
 
     def test_act4_normal_cultist_fossil_and_gremlin_merc_match_original_moves(self):
         calcified, calcified_ai = create_calcified_cultist(Rng(61))

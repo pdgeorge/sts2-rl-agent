@@ -131,6 +131,9 @@ SUPPORTED_CHARACTER_IDS = tuple(_CHARACTER_CONFIG)
 
 RUN_MANAGER_RNG_SEED_OFFSET = 9999
 
+#: Separate stream for the act-1 variant coin flip; see RunManager.__init__.
+ACT1_VARIANT_RNG_SEED_OFFSET = 424242
+
 
 def _get_starter_deck(character_id: str) -> list[CardInstance]:
     """Import and call the correct starter deck factory for the character."""
@@ -158,9 +161,25 @@ def _get_starter_deck(character_id: str) -> list[CardInstance]:
 # Encounter pool accessor per act
 # ---------------------------------------------------------------------------
 
-def _get_encounter_pools(act_index: int) -> dict[str, list]:
-    """Return {weak, normal, elite, boss} encounter setup lists for an act."""
-    if act_index == 0:
+#: The game's act-1 dropdown (NActDropdown._options). Act 1 is not fixed: it is
+#: EITHER Overgrowth or Underdocks, two full alternate acts that share a shape
+#: (BaseNumberOfRooms 15, NumberOfWeakEncounters 3) but share no encounters.
+#: `random` is the default, and resolves per run.
+ACT1_VARIANTS = ("random", "overgrowth", "underdocks")
+
+
+def _get_encounter_pools(act_index: int, act1_variant: str = "overgrowth") -> dict[str, list]:
+    """Return {weak, normal, elite, boss} encounter setup lists for an act.
+
+    Act 0 has two variants. `encounters/act4.py` is not a fourth act -- the game
+    has only three (Overgrowth/Underdocks at index 0, Hive at 1, Glory at 2) --
+    it is Underdocks, the alternate act 1, filed under a misleading name.
+    """
+    if act_index == 0 and act1_variant == "underdocks":
+        from sts2_env.encounters.act4 import (
+            WEAK_ENCOUNTERS, NORMAL_ENCOUNTERS, ELITE_ENCOUNTERS, BOSS_ENCOUNTERS,
+        )
+    elif act_index == 0:
         from sts2_env.encounters.act1 import (
             WEAK_ENCOUNTERS, NORMAL_ENCOUNTERS, ELITE_ENCOUNTERS, BOSS_ENCOUNTERS,
         )
@@ -230,6 +249,7 @@ class RunManager:
         character_id: str = DEFAULT_CHARACTER_ID,
         ascension_level: int = 0,
         start_with_neow: bool = False,
+        act1_variant: str = "overgrowth",
     ):
         self._seed = seed
         self._character_id = character_id
@@ -237,6 +257,24 @@ class RunManager:
 
         # Master RNG (for encounter selection, gold rolls, etc.)
         self._rng = Rng(seed + RUN_MANAGER_RNG_SEED_OFFSET)
+
+        # Which act 1 this run plays. Defaults to overgrowth (the game's
+        # `Overgrowth.IsDefault => true`) so that direct construction stays
+        # reproducible; STS2RunEnv passes `random`, which is how the game is
+        # actually played and how live generated its runs -- of 151 live act 1
+        # boss fights, 84 were underdocks.
+        #
+        # Drawn from a DEDICATED rng rather than `self._rng`, so resolving it
+        # consumes nothing from the master stream: an overgrowth run on seed N
+        # is byte-identical to the same seed before this existed, and paired A/B
+        # comparisons spanning this change stay valid.
+        if act1_variant not in ACT1_VARIANTS:
+            raise ValueError(
+                f"act1_variant must be one of {ACT1_VARIANTS}, got {act1_variant!r}")
+        if act1_variant == "random":
+            act1_variant = ("overgrowth", "underdocks")[
+                Rng(seed + ACT1_VARIANT_RNG_SEED_OFFSET).next_int(0, 1)]
+        self._act1_variant = act1_variant
 
         # (encounter setup name, encounter seed, combat seed) for the fight most
         # recently entered from an encounter pool, or None if the current combat
@@ -553,7 +591,8 @@ class RunManager:
         self._selected_combat_player_id = player.player_id
 
         # Select encounter from appropriate pool
-        pools = _get_encounter_pools(self._run_state.current_act_index)
+        pools = _get_encounter_pools(
+            self._run_state.current_act_index, self._act1_variant)
         if room_type == RoomType.BOSS:
             pool = pools["boss"]
         elif room_type == RoomType.ELITE:
