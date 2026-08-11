@@ -913,6 +913,12 @@ _ATTACKER_DAMAGE_MODIFIERS = (
     # telegraphed number and the base number are different quantities.
     PowerId.VIGOR,
     PowerId.DOUBLE_DAMAGE,
+    # Shrink carries a "DamageDecrease" and is a Debuff, so a shrunk
+    # attacker telegraphs less than its base. Shrinker Beetle reported
+    # sim 7 / game 4 and sim 13 / game 9 -- both exactly (base - 1) * 0.75,
+    # its own Shrink plus Weak -- against constants that match the
+    # decompile precisely. Two false positives, not two bugs.
+    PowerId.SHRINK,
 )
 _DEFENDER_DAMAGE_MODIFIERS = (PowerId.VULNERABLE,)
 

@@ -2101,9 +2101,40 @@ def create_waterfall_giant(rng: Rng, ascension_level: int = 0) -> tuple[Creature
         _gain_pressure(combat, WATERFALL_GIANT_PRESSURE_BUILDUP)
 
     def pressure_gun(combat: CombatState) -> None:
-        _deal_damage_to_player(combat, creature, _state[WATERFALL_GIANT_CURRENT_PRESSURE_GUN_DAMAGE_KEY])
-        _state[WATERFALL_GIANT_CURRENT_PRESSURE_GUN_DAMAGE_KEY] += WATERFALL_GIANT_PRESSURE_GUN_INCREASE
+        # THE INTENT IS THE SOURCE OF TRUTH, not a closure counter.
+        #
+        # This move climbs: `CurrentPressureGunDamage += PressureGunIncrease`
+        # after every use, and the game telegraphs it with a lambda --
+        # `new SingleAttackIntent(() => CurrentPressureGunDamage)` -- so the
+        # displayed number and the dealt number are the same thing by
+        # construction.
+        #
+        # Keeping the running total in a closure dict broke that on the LIVE
+        # path, which rebuilds this monster from the bridge on every decision:
+        # the counter reset to base while the real giant was on its third
+        # escalation. The bridge's own `intent_damage` was being installed onto
+        # the intent by `_override_enemy_intent`, so the telegraph was right and
+        # the damage dealt in every lookahead was still 20. Live reported it 12
+        # times in one session -- sim 20, game 25 -- on the act 1 boss.
+        #
+        # Reading the intent means the reconciled value is the value used, and
+        # the growth below keeps the two in step for pure-simulator rollouts.
+        state = states.get(WATERFALL_GIANT_PRESSURE_GUN_MOVE)
+        intents = [i for i in (getattr(state, "intents", None) or [])
+                   if getattr(i, "damage", 0)]
+        damage = int(intents[0].damage) if intents else _state[
+            WATERFALL_GIANT_CURRENT_PRESSURE_GUN_DAMAGE_KEY]
+
+        _deal_damage_to_player(combat, creature, damage)
+        _state[WATERFALL_GIANT_CURRENT_PRESSURE_GUN_DAMAGE_KEY] = (
+            damage + WATERFALL_GIANT_PRESSURE_GUN_INCREASE)
         _gain_pressure(combat, WATERFALL_GIANT_PRESSURE_BUILDUP)
+
+        if state is not None:
+            state.intents = [
+                attack_intent(_state[WATERFALL_GIANT_CURRENT_PRESSURE_GUN_DAMAGE_KEY]),
+                buff_intent(),
+            ]
 
         # RE-TELEGRAPH THE GROWN NUMBER. The game declares this move as
         # `new SingleAttackIntent(() => CurrentPressureGunDamage)` -- a lambda,
