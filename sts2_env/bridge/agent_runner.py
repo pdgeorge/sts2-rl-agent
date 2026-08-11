@@ -1689,14 +1689,44 @@ def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None
     return min(unsafe)[1]
 
 
+#: The last Crystal Sphere screen we answered. If the next one is identical, our
+#: answer did nothing and repeating it will do nothing again.
+_last_crystal_sphere: str | None = None
+
+
 def _pick_crystal_sphere_option(state: dict[str, Any]) -> int:
+    """A cell to divine, or proceed once divining stops doing anything.
+
+    PROCEED WHEN THE SCREEN DOES NOT MOVE. The mod lists every hidden cell as an
+    option whether or not the player has divinations left to spend, so a spent
+    board still offers 85 cells and one proceed. This preferred a cell whenever
+    one existed, clicked a cell that could not be clicked, got the same screen
+    back, and chose the same cell again -- 24 identical states, then the runner
+    gave up and ended the session on its first run.
+
+    Comparing against the previous screen is what distinguishes "there are cells
+    to divine" from "there are cells, and clicking them is a no-op". The state
+    carries no counter that would say so directly.
+    """
+    global _last_crystal_sphere
+
     options = _enabled_options(state)
     if not options:
         return DEFAULT_CHOICE_INDEX
+
+    signature = json.dumps(state.get("options"), sort_keys=True, default=str)
+    repeated = signature == _last_crystal_sphere
+    _last_crystal_sphere = signature
+
+    proceed = _first_matching_option(options, actions=(REWARD_PROCEED_ACTION,))
+    if repeated and proceed is not None:
+        logger.info("Crystal Sphere did not change after the last pick; proceeding.")
+        return _read_index(proceed, DEFAULT_CHOICE_INDEX)
+
     option = _first_matching_option(options, actions=(CRYSTAL_SPHERE_CELL_ACTION,))
     if option is not None:
         return _read_index(option, DEFAULT_CHOICE_INDEX)
-    option = _first_matching_option(options, actions=(REWARD_PROCEED_ACTION,)) or options[0]
+    option = proceed or options[0]
     return _read_index(option, DEFAULT_CHOICE_INDEX)
 
 
