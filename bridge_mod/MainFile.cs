@@ -50,37 +50,28 @@ public partial class MainFile : Node
                 typeof(IsReleaseGamePatch),
                 typeof(WaitSpeedPatch),
 
-                // >>> DISABLED TO RULE US OUT OF THE PUNCH OFF CRASH <<<
-                // RE-ENABLE BY UNCOMMENTING THE ONE LINE BELOW. Nothing else
-                // changed: the class is still compiled and RlSpeed still sets
-                // AnimationSpeedPatch.AnimMultiplier, which now simply has no
-                // effect because the patch is never applied. Animations run at
-                // 1x, so sessions are slower -- that is the cost of the test.
+                // CLEARED of the Punch Off crash on 2026-08-11, and restored.
                 //
-                // WHY. Punch Off crashes the game on entry, twice on 2026-08-11,
-                // and the trace runs NCreature.SetAnimationTrigger_Patch1 ->
-                // MegaAnimationState.SetAnimation -> MegaSpineBinding.Call, then
-                // "Signal '_internal_spine_objects_invalidated' is already
-                // connected", then a GC finalizer disconnecting a registration
-                // that was never made, then list.h erase corrupting.
+                // The test that cleared it: game seed 6D038P4FSM2F, forced, with
+                // this patch removed from the list entirely. It crashed anyway,
+                // on the same signature --
                 //
-                // That _Patch1 is BaseLib's, not ours -- we patch only Cmd,
-                // MegaAnimationState and NGame. But ours wraps
-                // MegaAnimationState.SetTimeScale, which is the same Spine
-                // binding one call away from SetAnimation, so adjacency alone
-                // does not clear us.
+                //     PunchOff.PunchEachOther() -> MegaSpineBinding.Call
+                //     ERROR: Signal '_internal_spine_objects_invalidated' is
+                //            already connected to given callable
                 //
-                // `--speed normal` was NOT this test. It sets AnimMultiplier to
-                // 1.0 while the prefix stays installed and keeps wrapping every
-                // Spine call, which is why the crash survived it and why I was
-                // wrong to read that as evidence either way. This removes the
-                // patch itself.
+                // so the crash does not need us. It is BaseLib's
+                // NCreature.SetAnimationTrigger_Patch1 against a game build
+                // BaseLib predates: BaseLib.dll is Jul 31 09:59, the game .pck is
+                // Jul 31 19:28, 3.4.0 is the newest published, and it already
+                // throws MissingFieldException on NTreasureRoom._chestNode in
+                // every treasure room.
                 //
-                // IF IT STILL CRASHES: we are cleanly ruled out, it is BaseLib
-                // against a game build it predates, and the line goes back.
-                // IF IT STOPS: our patch is implicated and turbo speed is not
-                // free -- do not simply re-enable it.
-                // typeof(AnimationSpeedPatch),
+                // Note for anyone tempted to repeat the test with `--speed
+                // normal`: that is NOT this test. It sets AnimMultiplier to 1.0
+                // while the prefix stays installed and keeps wrapping every Spine
+                // call. Remove the line below instead.
+                typeof(AnimationSpeedPatch),
             };
 
             int patched = 0;

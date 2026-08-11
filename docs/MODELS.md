@@ -812,3 +812,45 @@ Reach agrees to within 4 points. Boss win is 43 points apart. Offline also
 searches with max_nodes=2000 against live's 20,000, so the weaker searcher is
 the one winning -- budget cannot explain it, and the environmental difference
 must be larger than the raw gap suggests.
+
+---
+
+## siphon fix + potion rules, offline — 2026-08-11 — null, paired on 399 seeds
+
+`scripts/measure_funnel.py`, 400 seeds each arm, act 1 variant random.
+
+| | baseline | after |
+|---|---|---|
+| reach boss | 64% +/- 2.4% | 65% +/- 2.4% |
+| win boss | 71% +/- 2.8% | 72% +/- 2.8% |
+| clear act 1 | 45.6% | 46.9% |
+
+**Paired difference +1.3% +/- 1.2% (1.0 se).** 376 of 399 seeds ended
+identically. Waterfall Giant, the boss the siphon fix belongs to, went 62% ->
+66% offline, which is the right direction and far inside the noise.
+
+Offline agrees with live, which measured the same two changes at 15.0% +/- 5.6%
+against 14.7%. Two independent measurements, one of them paired and an order of
+magnitude tighter, both null. The changes were correct -- the siphon really was
+wrong and the hoarding really did stop -- and neither is worth anything toward
+50%.
+
+## the sim/live boss gap, sharpened
+
+Same agent, same act 1, both arms of both funnels:
+
+| | offline | live |
+|---|---|---|
+| reach the boss | 65% | 60% |
+| win the boss | **72%** | **28%** |
+| clear act 1 | 47% | 15% |
+
+Reach agrees within 5 points. Boss win is 44 points apart, and offline searches
+with max_nodes=2000 against live's 20,000 -- the WEAKER searcher is the one
+winning, so budget cannot explain it and the real environmental difference is
+larger than the raw gap.
+
+Every boss is over-predicted, and the three audited against the decompile today
+(The Kin, Soul Fysh, Lagavulin Matriarch) were correct in constants,
+transitions and move bodies. This is now the largest unexplained thing in the
+project and the only lead left with 30+ points in it.
