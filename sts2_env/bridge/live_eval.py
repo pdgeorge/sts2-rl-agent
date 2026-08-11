@@ -186,6 +186,66 @@ class LiveEvalRecorder:
             self._fh = None
 
 
+
+#: Slay the Spire 2 on Steam. Used only by --restart-on-crash.
+STS2_STEAM_APPID = "2868840"
+
+
+def _game_is_up(host: str, port: int, timeout: float = 1.0) -> bool:
+    """Is something listening on the bridge port?"""
+    import socket
+
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def _restart_game(host: str, port: int, wait_seconds: int = 180) -> bool:
+    """Relaunch STS2 and wait for the bridge to come back up.
+
+    WHY THIS EXISTS. One Punch Off ends a session. The event crashes the game on
+    room entry, it cannot be routed around (the crash is in AfterEventStarted,
+    before any option is offered, and the map shows only `Unknown`), and it is
+    not ours -- reproduced on seed 6D038P4FSM2F with our AnimationSpeedPatch
+    removed entirely, on the newest BaseLib. See docs/CRASH_PUNCH_OFF.md.
+
+    Until it is fixed upstream, an unattended session is capped by whenever that
+    event first comes up: one overnight attempt got two runs. Restarting turns a
+    crash from "session over" into "lose one run", which is the difference
+    between collecting n and not.
+    """
+    import shutil
+    import subprocess
+
+    steam = shutil.which("steam")
+    if steam is None:
+        logger.error("Cannot restart: `steam` is not on PATH.")
+        return False
+
+    # Clear the corpse first -- a crashed game can leave a process holding the
+    # port, and Steam will refuse to launch a second copy.
+    subprocess.run(["pkill", "-f", "SlayTheSpire2"], check=False)
+    time.sleep(5)
+
+    logger.info("Relaunching STS2 via Steam (appid %s)...", STS2_STEAM_APPID)
+    subprocess.Popen([steam, "-applaunch", STS2_STEAM_APPID],
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    deadline = time.monotonic() + wait_seconds
+    while time.monotonic() < deadline:
+        if _game_is_up(host, port):
+            logger.info("Bridge is back up; resuming.")
+            # The mod waits for a client before starting a run, so connecting
+            # immediately is safe; give the mod a moment to finish its own init.
+            time.sleep(5)
+            return True
+        time.sleep(5)
+    logger.error("Game did not come back within %ds; giving up.", wait_seconds)
+    return False
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Play STS2 live, repeatedly, and report act 1 clear rate.",
@@ -287,6 +347,19 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--restart-on-crash",
+        type=int,
+        default=0,
+        metavar="N",
+        help=(
+            "Relaunch the game and continue, up to N times, when it dies "
+            "mid-session. Off by default because it launches an application. "
+            "Use it for unattended runs: the Punch Off crash cannot be avoided "
+            "and ends a session outright, so one overnight attempt collected "
+            "two runs. Needs `steam` on PATH."
+        ),
+    )
+    parser.add_argument(
         "--crash-log",
         default="output/crash_log.json",
         help="JSON file written when the game crashes or disconnects mid-run.",
@@ -319,7 +392,11 @@ def main() -> None:
     logger.info("Live eval: up to %d runs, logging to %s", args.runs, args.log)
     logger.info("Ctrl-C stops and prints the summary.")
 
-    try:
+    # Restart loop. `recorder` accumulates across restarts, so the report and
+    # the JSONL cover the whole session rather than the last fragment of it.
+    restarts_left = max(0, args.restart_on_crash)
+    while True:
+      try:
         run_agent(
             model_path=args.model_path,
             host=args.host,
@@ -327,7 +404,7 @@ def main() -> None:
             deterministic=not args.stochastic,
             verbose=args.verbose,
             speed=args.speed,
-            max_runs=args.runs,
+            max_runs=args.runs - len(recorder.runs),
             on_run_end=recorder,
             tell_cyra=args.tell_cyra,
             journal_path=args.journal or None,
@@ -338,9 +415,9 @@ def main() -> None:
             capture_raw_per_type=args.capture_raw_per_type,
             force_seed=args.seed,
         )
-    except KeyboardInterrupt:
+      except KeyboardInterrupt:
         logger.info("Interrupted.")
-    except Exception as exc:
+      except Exception as exc:
         # Report what was measured before re-raising; a crash 40 runs in should
         # not throw away 40 runs of data.
         logger.exception("Live eval stopped by an error.")
@@ -361,9 +438,17 @@ def main() -> None:
             logger.info("Crash log written to %s", args.crash_log)
         except Exception:
             logger.exception("Could not write crash log.")
+        if restarts_left > 0 and len(recorder.runs) < args.runs:
+            restarts_left -= 1
+            logger.warning(
+                "Game died after %d/%d runs; restarting (%d restart(s) left).",
+                len(recorder.runs), args.runs, restarts_left)
+            if _restart_game(args.host, args.port):
+                continue
         print(recorder.report())
         recorder.close()
         sys.exit(1)
+      break
 
     print(recorder.report())
     recorder.close()
