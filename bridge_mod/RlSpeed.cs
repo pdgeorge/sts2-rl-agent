@@ -38,14 +38,22 @@ internal static class RlSpeed
     private static readonly Dictionary<string, SpeedPreset> Presets =
         new(StringComparer.OrdinalIgnoreCase)
     {
-        // Cleared of the Punch Off crash on 2026-08-11: that reproduced on seed
-        // 6D038P4FSM2F with AnimationSpeedPatch removed from the patch list
-        // entirely, so animation speed does not cause it. See
+        // TURBO IS THE FLOOR WORTH HAVING. A `hyper` preset (no waits, 10x
+        // animations) was added and removed the same night: measured on a live
+        // session at turbo, the median gap between agent actions is 0.23s, and
+        // the search alone costs 0.08-0.52s per decision. Animation is already
+        // nearly free at 5x, so the remaining wall clock is search and the
+        // game's own processing, neither of which a multiplier touches. The p99
+        // of 7.7s is act and boss transitions -- also untouched.
+        //
+        // Against that, WaitMultiplier 0.0 removes every wait, and the waits are
+        // where the quiescence and preemption bugs live. Buying ~nothing for
+        // that risk is a bad trade, and it would have split the record: every
+        // number this project has is on turbo.
+        //
+        // Animation speed is NOT the Punch Off crash -- that reproduced on seed
+        // 6D038P4FSM2F with AnimationSpeedPatch removed entirely. See
         // docs/CRASH_PUNCH_OFF.md before blaming this again.
-        ["hyper"] = new SpeedPreset
-        {
-            Name = "hyper", WaitMultiplier = 0.0f, AnimMultiplier = 10.0f, ActionDelayMs = 0,
-        },
         ["turbo"] = new SpeedPreset
         {
             Name = "turbo", WaitMultiplier = 0.1f, AnimMultiplier = 5.0f, ActionDelayMs = 0,

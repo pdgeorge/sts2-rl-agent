@@ -199,15 +199,17 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=9002)
     parser.add_argument("--speed", default="turbo",
-                        choices=("hyper", "turbo", "fast", "normal", "slow"),
+                        choices=("turbo", "fast", "normal", "slow"),
                         help=(
-                            "Game pacing. hyper is turbo with no waits at all and "
-                            "10x animations; turbo is the tested default. Animation "
-                            "speed was suspected of the Punch Off crash and CLEARED "
-                            "-- it reproduces with the patch removed entirely -- so "
-                            "slowing down to avoid crashes buys nothing. Note "
-                            "`normal` is not a way to disable the patch: it sets the "
-                            "multiplier to 1.0 while the prefix stays installed."
+                            "Game pacing; turbo is the default and the floor worth "
+                            "having. Faster presets were measured and dropped: at "
+                            "turbo the median gap between actions is 0.23s while the "
+                            "search alone costs 0.08-0.52s, so animation is already "
+                            "nearly free and the rest is not a multiplier's to give. "
+                            "Animation speed was suspected of the Punch Off crash and "
+                            "CLEARED. Note `normal` is NOT a way to disable that "
+                            "patch: it sets the multiplier to 1.0 while the prefix "
+                            "stays installed."
                         ))
     parser.add_argument("--stochastic", action="store_true",
                         help="Sample actions instead of taking the argmax. Live "
