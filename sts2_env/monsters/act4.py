@@ -2029,7 +2029,18 @@ WATERFALL_GIANT_BASE_PRESSURE_GUN_DAMAGE = 20
 WATERFALL_GIANT_DEADLY_PRESSURE_GUN_DAMAGE = 23
 WATERFALL_GIANT_PRESSURE_GUN_INCREASE = 5
 WATERFALL_GIANT_PRESSURE_BUILDUP = 3
-WATERFALL_GIANT_SIPHON_HEAL = 15
+WATERFALL_GIANT_BASE_SIPHON_HEAL = 10
+WATERFALL_GIANT_TOUGH_SIPHON_HEAL = 15
+"""`SiphonHeal => GetValueIfAscension(ToughEnemies, 15, 10)`, so base heals 10
+and only the tough variant heals 15. This was a flat 15 with no ascension gate,
+which is the base game's giant healing 50% more than it does every fourth turn
+of its cycle.
+
+It is the search that pays for this, not just the simulator: the live agent
+plans through this model, so it valued racing the giant down against a health
+pool that regenerates faster than the real one. Waterfall Giant is the agent's
+worst act 1 boss by a wide margin -- 4 wins in 28 live fights, 14%, against 33%
+across the other bosses."""
 WATERFALL_GIANT_CURRENT_PRESSURE_GUN_DAMAGE_KEY = "current_pressure_gun_damage"
 WATERFALL_GIANT_STEAM_ERUPTION_DAMAGE_KEY = "steam_eruption_damage"
 WATERFALL_GIANT_ABOUT_TO_BLOW_HP = 999_999_999
@@ -2097,7 +2108,13 @@ def create_waterfall_giant(rng: Rng, ascension_level: int = 0) -> tuple[Creature
         _gain_pressure(combat, WATERFALL_GIANT_PRESSURE_BUILDUP)
 
     def siphon(combat: CombatState) -> None:
-        creature.heal(WATERFALL_GIANT_SIPHON_HEAL * len(combat.combat_player_states))
+        siphon_heal = _ascension_value(
+            _combat_ascension_level(combat),
+            TOUGH_ENEMIES_ASCENSION_LEVEL,
+            WATERFALL_GIANT_TOUGH_SIPHON_HEAL,
+            WATERFALL_GIANT_BASE_SIPHON_HEAL,
+        )
+        creature.heal(siphon_heal * len(combat.combat_player_states))
         _gain_pressure(combat, WATERFALL_GIANT_PRESSURE_BUILDUP)
 
     def pressure_gun(combat: CombatState) -> None:
