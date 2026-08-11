@@ -216,8 +216,10 @@ public partial class MainFile : Node
                 // A fresh slayer per run: RunAsync's finally tears its state down, and
                 // a new seed per run is the difference between a stream and a rerun.
                 _autoSlayer = new RlAutoSlayer();
-                string seed = SeedHelper.GetRandomSeed();
-                Logger.Log($"[RlAutoSlay] Starting RL run #{runNumber} with seed: {seed}");
+                string? forced = SeedOverride.Get();
+                string seed = forced ?? SeedHelper.GetRandomSeed();
+                Logger.Log($"[RlAutoSlay] Starting RL run #{runNumber} with seed: {seed}"
+                           + (forced != null ? $"  (FORCED via {SeedOverride.EnvVar})" : ""));
                 _autoSlayer.Start(seed);
 
                 // Start() is fire-and-forget. RlAutoSlayer.IsActive is static, set true
@@ -283,6 +285,39 @@ public static class WaitSpeedPatch
     {
         fastSeconds *= WaitMultiplier;
         standardSeconds *= WaitMultiplier;
+    }
+}
+
+/// <summary>
+/// Force every run onto one seed, for reproducing a specific run.
+///
+/// `STS2_RL_SEED=VHHTGKTPEZWF` replays that run instead of rolling a new one.
+/// The seed was always chosen here and always logged; nothing could ask for a
+/// particular one, so a run that crashed the game could only be re-found by
+/// playing until it happened again.
+///
+/// The immediate use is the Punch Off crash. VHHTGKTPEZWF is run #34 of the
+/// 2026-08-11T17.41 session, whose log ends inside
+/// PunchOff.PunchEachOther -> MegaSpineBinding.Call with a double-connected
+/// `_internal_spine_objects_invalidated` signal. Punch Off appeared ZERO times
+/// in a later 40-run session, so waiting for it to recur is not a test plan.
+///
+/// The larger use is A/B testing. Two live arms on the same seeds is a paired
+/// comparison, and pairing is what made the offline sweeps able to see effects
+/// that 40 unpaired runs cannot -- live act 1 clear rate carries about +/-5.6%
+/// at n=40, which is wider than most changes worth making.
+///
+/// Read per run rather than cached, so it can be changed without a restart.
+/// </summary>
+internal static class SeedOverride
+{
+    public const string EnvVar = "STS2_RL_SEED";
+
+    /// <summary>The forced seed, or null to roll a fresh one.</summary>
+    public static string? Get()
+    {
+        string? seed = System.Environment.GetEnvironmentVariable(EnvVar);
+        return string.IsNullOrWhiteSpace(seed) ? null : seed.Trim();
     }
 }
 
