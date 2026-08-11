@@ -117,20 +117,41 @@ def main() -> int:
     parser.add_argument("--time-budget", type=float, default=60.0)
     parser.add_argument("--workers", type=int, default=0)
     parser.add_argument("--tag", default="baseline")
+    parser.add_argument("--resume", action="store_true",
+                        help="Skip seeds already present in the rows file.")
     parser.add_argument("--out", default="output/funnel.txt")
     args = parser.parse_args()
 
     workers = args.workers or max(1, (mp.cpu_count() or 2) - 2)
-    jobs = [(args.seed + i, args.variant, args.max_nodes, args.time_budget)
-            for i in range(args.runs)]
-    print(f"{args.runs} runs, variant={args.variant}, {workers} workers, "
-          f"max_nodes={args.max_nodes}", flush=True)
-
     rows_path = Path(args.out).with_suffix(f".{args.tag}.rows.jsonl")
     rows_path.parent.mkdir(parents=True, exist_ok=True)
-    rows_fh = rows_path.open("a", encoding="utf-8")
 
+    # Resume, because a killed run leaves its finished seeds on disk and they
+    # cost roughly 20 seconds of wall clock each. Completions arrive out of
+    # order, so what is missing is NOT the tail -- an interrupted 400-run job
+    # left seeds scattered from 50206 to 50399 undone. Read what is there and
+    # ask for the difference.
     rows: list[dict] = []
+    if args.resume and rows_path.exists():
+        with rows_path.open(encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rows.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+    done = {r["seed"] for r in rows}
+
+    jobs = [(args.seed + i, args.variant, args.max_nodes, args.time_budget)
+            for i in range(args.runs) if (args.seed + i) not in done]
+    print(f"{args.runs} runs, variant={args.variant}, {workers} workers, "
+          f"max_nodes={args.max_nodes}"
+          + (f"  [resuming: {len(done)} done, {len(jobs)} to go]" if done else ""),
+          flush=True)
+
+    rows_fh = rows_path.open("a", encoding="utf-8")
     started = time.monotonic()
     with mp.Pool(workers) as pool:
         for i, row in enumerate(pool.imap_unordered(_walk, jobs, chunksize=1), 1):
@@ -148,8 +169,9 @@ def main() -> int:
         return len(sel), len(reached), len(won)
 
     lines = ["", "=" * 78,
-             f"ACT 1 FUNNEL  tag={args.tag}  {args.runs} runs  "
-             f"{(time.monotonic() - started) / 60:.1f} min", "",
+             f"ACT 1 FUNNEL  tag={args.tag}  {len(rows)} runs  "
+             f"({len(jobs)} this session, "
+             f"{(time.monotonic() - started) / 60:.1f} min)", "",
              f"{'group':<14}{'n':>5}{'reach boss':>14}{'win boss':>14}"
              f"{'clear':>14}{'floor':>8}", "-" * 78]
     groups = [("ALL", rows)]
