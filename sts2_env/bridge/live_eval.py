@@ -256,6 +256,15 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--console-log",
+        default="output/live_console.log",
+        help=(
+            "Also write this side's log here, tracebacks included. Empty string "
+            "disables. On by default because console-only output is how the "
+            "LiveSearch failure tracebacks were lost."
+        ),
+    )
+    parser.add_argument(
         "--seed",
         default=None,
         help=(
@@ -273,11 +282,27 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # CONSOLE *AND* FILE. Everything this side prints used to exist only in the
+    # terminal, so a session's most useful output died with the scrollback. The
+    # LiveSearch tracebacks were lost that way for weeks -- the message said the
+    # simulator could not rebuild a state and never said which state, because
+    # the traceback that would have said so was console-only.
+    #
+    # The game's own log rotates itself and the journal holds events, but
+    # neither holds this side's exceptions. Default it on rather than rely on
+    # remembering to pipe through tee.
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
+    if args.console_log:
+        Path(args.console_log).parent.mkdir(parents=True, exist_ok=True)
+        handlers.append(logging.FileHandler(args.console_log, encoding="utf-8"))
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
         datefmt="%H:%M:%S",
+        handlers=handlers,
     )
+    if args.console_log:
+        logger.info("Console log also being written to %s", args.console_log)
 
     recorder = LiveEvalRecorder(Path(args.log) if args.log else None, args.model_path)
     logger.info("Live eval: up to %d runs, logging to %s", args.runs, args.log)
