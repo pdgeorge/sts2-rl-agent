@@ -41,6 +41,7 @@ from sts2_env.gym_env.action_space import (
 )
 from sts2_env.search.cloning import clone_combat
 from sts2_env.search.evaluate import DEFAULT_WEIGHTS, EvalWeights, evaluate
+from sts2_env.search.potion_policy import forced_potion_action
 
 if TYPE_CHECKING:
     from sts2_env.core.combat import CombatState
@@ -618,6 +619,17 @@ class SearchAgent:
 
     def act(self, combat: "CombatState") -> int:
         mask = get_action_mask(combat)
+
+        # Rules of thumb first, for the potions the evaluator is blind to. See
+        # potion_policy for why, and for the standing instruction to replace any
+        # of them with something measured. Checked before the plan because a
+        # forced drink changes the position the plan was made for.
+        if self.include_potions:
+            forced = forced_potion_action(
+                combat, {int(a) for a in np.where(mask == 1)[0]})
+            if forced is not None:
+                self._plan = []
+                return forced
 
         # A pending choice was not part of the planned line; decide it on its own
         # terms and then plan afresh.
