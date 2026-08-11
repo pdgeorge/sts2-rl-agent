@@ -854,3 +854,22 @@ Every boss is over-predicted, and the three audited against the decompile today
 (The Kin, Soul Fysh, Lagavulin Matriarch) were correct in constants,
 transitions and move bodies. This is now the largest unexplained thing in the
 project and the only lead left with 30+ points in it.
+
+---
+
+## search truncation — 2026-08-12 — measured, and it is not the problem
+
+`searches_truncated` over 9 live runs: **37 of 2,379 searches, 1.6%**, hit the
+3-second wall clock. Per run it ranges 0.0% to 1.8%.
+
+That kills one of the two leading explanations for the live/offline boss gap.
+Live searches under a wall clock and offline under a hard node cap, so the
+suspicion was that the wide boss turns were being cut short live while offline
+never was. They are not.
+
+It also deepens the remaining puzzle rather than resolving it: live searches
+essentially uninterrupted, with max_nodes 20,000 against offline's 2,000, and
+still wins 28% of act 1 boss fights to offline's 72%.
+
+What is left on the list: the same-seed diff, offline against live, on identical
+maps and decks. Seeding was fixed on 2026-08-11 and has never been used for this.
