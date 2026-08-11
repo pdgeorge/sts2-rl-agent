@@ -144,6 +144,14 @@ internal static class RlRunInfo
             // "potions" list, which is only the usable ones and is not slot
             // indexed -- reading that would put a potion in the wrong column
             // whenever an earlier slot was empty, and the agent picks by slot.
+            // An unreadable potion is NOT an empty slot. Both used to serialise
+            // as null, so a potion the mod could not name vanished from the
+            // state and read downstream as "she was holding nothing" -- which
+            // is indistinguishable from the real thing and silently biases any
+            // question about what she held versus what she used. It has not
+            // fired yet (2,635 recorded states agree with potion_count exactly)
+            // and this is here so that if it ever does, it says so instead of
+            // quietly deleting the potion.
             var potionSlots = new List<object>();
             try
             {
@@ -151,12 +159,19 @@ internal static class RlRunInfo
                 {
                     if (potion == null) { potionSlots.Add(null); continue; }
                     try { potionSlots.Add((string)potion.Id.Entry); }
-                    catch { potionSlots.Add(null); }
+                    catch (System.Exception ex)
+                    {
+                        LogOnce($"potion id unreadable: {ex.GetType().Name}");
+                        potionSlots.Add("UNREADABLE_POTION");
+                    }
                 }
             }
             catch (System.Exception ex)
             {
+                // Partial list: say so rather than shipping a truncated one that
+                // reads as a shorter potion belt than she actually has.
                 LogOnce($"potion slots unreadable: {ex.GetType().Name}");
+                potionSlots.Add("UNREADABLE_POTION");
             }
             SetIfAbsent(state, "potion_slots", potionSlots);
 
