@@ -210,6 +210,7 @@ def run_agent(
     search_rollout_model: bool = False,
     capture_raw_path: str | None = None,
     capture_raw_per_type: int = 25,
+    force_seed: str | None = None,
 ) -> None:
     """Main agent loop.
 
@@ -340,8 +341,15 @@ def run_agent(
             # records those actions as the model's. Silence in this console should
             # mean nothing is happening.
             "allow_random_fallback": allow_random_fallback,
+            # Every run on one seed. The mod also reads STS2_RL_SEED, but that
+            # is read in the GAME process, which Steam launches separately --
+            # exporting it in front of this command sets it on the wrong
+            # process and does nothing. This is the path that works.
+            **({"seed": force_seed} if force_seed else {}),
         })
         logger.info("Requested speed=%s, random_fallback=%s", speed, allow_random_fallback)
+        if force_seed:
+            logger.info("FORCING every run onto seed %s", force_seed)
 
         logger.info("Connected. Starting agent loop.")
 

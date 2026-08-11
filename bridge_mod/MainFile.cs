@@ -313,9 +313,21 @@ internal static class SeedOverride
 {
     public const string EnvVar = "STS2_RL_SEED";
 
+    /// <summary>Set by the client's `configure` message. Wins over the env var.
+    ///
+    /// THE ENV VAR ALONE WAS USELESS FROM THE CLIENT. This code runs inside the
+    /// GAME process, which Steam launches separately, so exporting the variable
+    /// in front of the Python command set it on the wrong process entirely and
+    /// every run still rolled a fresh seed. The env var is kept because it is
+    /// the only way in when launching the game by hand, but the bridge is the
+    /// path that actually works from live_eval.
+    /// </summary>
+    public static string? FromClient;
+
     /// <summary>The forced seed, or null to roll a fresh one.</summary>
     public static string? Get()
     {
+        if (!string.IsNullOrWhiteSpace(FromClient)) return FromClient!.Trim();
         string? seed = System.Environment.GetEnvironmentVariable(EnvVar);
         return string.IsNullOrWhiteSpace(seed) ? null : seed.Trim();
     }

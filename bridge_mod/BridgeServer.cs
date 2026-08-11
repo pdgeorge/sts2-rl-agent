@@ -383,6 +383,18 @@ public class BridgeServer
                         Logger.Log("[BridgeServer] Random fallback "
                                    + (RlSpeed.AllowRandomFallback ? "enabled." : "disabled."));
                     }
+                    // Force every run onto one seed. Sent from the client so a
+                    // reproduction or a paired A/B can be asked for without
+                    // relaunching the game; an empty string clears it.
+                    if (root.TryGetProperty("seed", out var seedProp)
+                        && seedProp.ValueKind == JsonValueKind.String)
+                    {
+                        string s = seedProp.GetString() ?? "";
+                        SeedOverride.FromClient = string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+                        Logger.Log(SeedOverride.FromClient == null
+                            ? "[BridgeServer] Seed override cleared; runs roll their own."
+                            : $"[BridgeServer] Seed FORCED to {SeedOverride.FromClient} for every run.");
+                    }
                     SendState("{\"type\":\"configured\",\"speed\":\""
                               + RlSpeed.Current.Name + "\"}");
                     return;

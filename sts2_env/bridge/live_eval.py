@@ -256,6 +256,17 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--seed",
+        default=None,
+        help=(
+            "Force EVERY run onto this game seed, e.g. VHHTGKTPEZWF. Sent over "
+            "the bridge, so it needs no game restart. Use it to reproduce one "
+            "run (VHHTGKTPEZWF is the Punch Off crash) or to pair two arms of "
+            "an A/B on identical maps -- unpaired live runs carry about +/-5.6%% "
+            "at n=40, wider than most changes worth measuring."
+        ),
+    )
+    parser.add_argument(
         "--crash-log",
         default="output/crash_log.json",
         help="JSON file written when the game crashes or disconnects mid-run.",
@@ -289,6 +300,7 @@ def main() -> None:
             search_rollout_model=args.search_rollout_model,
             capture_raw_path=args.capture_raw or None,
             capture_raw_per_type=args.capture_raw_per_type,
+            force_seed=args.seed,
         )
     except KeyboardInterrupt:
         logger.info("Interrupted.")
