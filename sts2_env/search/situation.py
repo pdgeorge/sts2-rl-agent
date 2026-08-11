@@ -158,13 +158,16 @@ class CardRef:
     upgraded: bool = False
 
     def instantiate(self) -> CardInstance:
-        try:
-            cid = CardId[self.card_id]
-        except KeyError as exc:
+        # Resolved, not looked up directly: the bridge sends FLAME_BARRIER and
+        # this build spells it FLAME_BARRIER_CARD, one of 68 such members. A raw
+        # CardId[...] here dropped every one of them out of the DECK the search
+        # plans with. See `resolve_card_id`.
+        cid = resolve_card_id(self.card_id)
+        if cid is None:
             raise KeyError(
                 f"No card named {self.card_id!r} in this build. Regenerate the "
                 f"fixture against the current game build."
-            ) from exc
+            )
         return create_card(cid, upgraded=self.upgraded)
 
 
@@ -583,6 +586,33 @@ def _room_type_for_combat(name: str) -> RoomType:
     return RoomType.MONSTER
 
 
+def resolve_card_id(name: str) -> CardId | None:
+    """A bridge card id as a CardId, or None if this build really lacks it.
+
+    THE SUFFIX. 68 of 600 CardId members are spelled `X_CARD` while the bridge
+    sends `X`, so a raw `CardId[name]` lookup misses every one of them --
+    Barricade, Corruption, Colossus, Blur, Buffer, Afterimage, Biased Cognition
+    among them. The bridge-hand path then "dropped" the card as unknown, which
+    means the searcher could not see it and therefore could not play it.
+
+    Observed live: FLAME_BARRIER dropped 45 times in one session, while the card
+    sat in hand. The run died holding a card the agent was structurally unable
+    to play.
+
+    `reference_static_metadata.card_id_for_reference_class` has known this since
+    it was written; it just was not on this path. Same alias set, plus the
+    trailing `+` the bridge uses for upgraded cards.
+    """
+    raw = str(name or "").strip()
+    if not raw:
+        return None
+    base = raw.rstrip("+").upper()
+    for alias in (base, f"{base}_CARD", f"{base}_STATUS"):
+        if alias in CardId.__members__:
+            return CardId[alias]
+    return None
+
+
 def _instantiate_deck(refs) -> list[CardInstance]:
     """Build the deck, dropping cards this build does not have.
 
@@ -745,13 +775,9 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
             cid_str = card_json.get("id")
             if not cid_str:
                 continue
-            try:
-                cid = CardId[cid_str]
-            except KeyError:
-                logger.warning(
-                    "bridge hand: card %r not in this build; dropping.",
-                    cid_str,
-                )
+            cid = resolve_card_id(cid_str)
+            if cid is None:
+                report_disparity("hand_card", str(cid_str), "unknown", "dropped")
                 continue
             upgraded = bool(card_json.get("upgraded", False))
             instance = create_card(cid, upgraded=upgraded)

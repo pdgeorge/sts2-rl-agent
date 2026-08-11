@@ -61,13 +61,20 @@ SKIP_THRESHOLD = 0.0
 
 
 def _card_id(card: Any) -> CardId | None:
+    """The CardId for a bridge card, or None if this build really lacks it.
+
+    Resolved rather than looked up directly. 68 of 600 CardId members are
+    spelled `X_CARD` while the bridge sends `X`, so a raw lookup returned None
+    for Barricade, Corruption, Colossus, Blur, Buffer and 63 others -- and this
+    function decides CARD REWARDS. An unresolvable id cannot be scored, so every
+    one of those was being judged blind at the reward screen.
+    """
     name = card.get("id") if isinstance(card, dict) else card
     if not name:
         return None
-    try:
-        return CardId[str(name).rstrip("+")]
-    except KeyError:
-        return None
+    from sts2_env.search.situation import resolve_card_id
+
+    return resolve_card_id(str(name))
 
 
 def _metadata(card_id: CardId, upgraded: bool = False):
