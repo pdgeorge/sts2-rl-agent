@@ -220,7 +220,7 @@ class CombatSituation:
         """
         reset_instance_counter()
 
-        deck = [ref.instantiate() for ref in self.deck]
+        deck = _instantiate_deck(self.deck)
         potions = [_instantiate_potion(pid, i) for i, pid in enumerate(self.potions)]
 
         run_state = RunState(
@@ -243,7 +243,7 @@ class CombatSituation:
         player.potions = potions
         player.max_potion_slots = self.max_potion_slots
 
-        room = create_room(RoomType[self.room_type])
+        room = create_room(_room_type_for_combat(self.room_type))
         combat = CombatState(
             player_hp=self.current_hp,
             player_max_hp=self.max_hp,
@@ -537,6 +537,74 @@ class CombatSituation:
             ascension_level=int(state.get("ascension") or 0),
             enemy_max_hp=enemy_max_hp,
         )
+
+
+#: The bridge sends the game's MapPointType, not a room type, and the two enums
+#: are not the same set:
+#:
+#:   MapPointType   Unassigned Unknown Shop Treasure RestSite Monster Elite Boss Ancient
+#:   RoomType       MONSTER ELITE BOSS SHOP REST_SITE TREASURE EVENT
+#:
+#: Monster/Elite/Boss/Shop/Treasure line up once upper-cased, and everything else
+#: does not. `RoomType[name]` therefore raised KeyError on a `?` node -- and a
+#: raise here is not a degraded search, it is NO search: the runner catches it and
+#: hands the whole fight to the trained combat model. Measured at 4.2% of live
+#: combats (9 of 215), every one of them played by the weaker agent.
+_MAP_POINT_TO_ROOM = {
+    "MONSTER": RoomType.MONSTER,
+    "ELITE": RoomType.ELITE,
+    "BOSS": RoomType.BOSS,
+    "SHOP": RoomType.SHOP,
+    "TREASURE": RoomType.TREASURE,
+    "RESTSITE": RoomType.REST_SITE,   # RoomType spells it REST_SITE
+    "REST_SITE": RoomType.REST_SITE,
+    "EVENT": RoomType.EVENT,
+    # A `?` that turned into a fight IS a monster fight -- the node type is what
+    # the map showed before it resolved, not what the room became.
+    "UNKNOWN": RoomType.MONSTER,
+    "UNASSIGNED": RoomType.MONSTER,
+    "ANCIENT": RoomType.EVENT,        # Neow
+}
+
+
+def _room_type_for_combat(name: str) -> RoomType:
+    """The room to build a combat in, from whatever the bridge called it.
+
+    NEVER RAISES. The room only selects room-scoped modifiers; being wrong about
+    it costs a little accuracy, while raising costs the entire searcher for that
+    fight. An unmapped name is reported rather than swallowed, so a new one shows
+    up as a parity gap instead of as quietly worse play.
+    """
+    key = str(name or "").upper()
+    room = _MAP_POINT_TO_ROOM.get(key)
+    if room is not None:
+        return room
+    report_disparity("room_type", key, "unmapped", "MONSTER")
+    return RoomType.MONSTER
+
+
+def _instantiate_deck(refs) -> list[CardInstance]:
+    """Build the deck, dropping cards this build does not have.
+
+    Same contract the potions already use, and for the same reason: a searcher
+    that clones a fight missing one card is still useful, a searcher that raises
+    is not. `CardRef.instantiate` raises by design -- correct for a FIXTURE,
+    where a stale card name should stop the harness -- but on the live path a
+    raise inside `to_combat` is caught by the runner and hands the whole fight
+    to the trained model.
+
+    Worse than a single fight: the deck persists, so one unknown card would take
+    the searcher out of EVERY remaining fight of that run. This was the same
+    shape as the `RoomType['UNKNOWN']` KeyError that was costing 4.2% of live
+    combats, still armed, and had simply not been hit yet.
+    """
+    deck: list[CardInstance] = []
+    for ref in refs:
+        try:
+            deck.append(ref.instantiate())
+        except KeyError:
+            report_disparity("deck_card", str(ref.card_id), "unknown", "dropped")
+    return deck
 
 
 def _instantiate_potion(potion_id: str | None, slot: int):
