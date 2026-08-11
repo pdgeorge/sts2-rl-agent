@@ -41,6 +41,25 @@ from sts2_env.bridge import agent_runner as _live  # noqa: E402
 from sts2_env.run.run_manager import RunManager  # noqa: E402
 
 
+def _boss_is_next(mgr) -> bool:
+    """Is the very next room the act boss, per the simulator's own map?
+
+    Computed rather than inferred from a floor number. The simulator does not
+    count the Ancient/Neow room, so its floors run one behind the live game's
+    and the live `floor + 1 in {17, 33, 50}` rule never fires here.
+    """
+    rs = getattr(mgr, "run_state", None)
+    act_map = getattr(rs, "map", None)
+    boss = getattr(act_map, "boss_point", None)
+    coord = getattr(boss, "coord", None)
+    boss_row = getattr(coord, "row", None)
+    if boss_row is None:
+        return False
+    # `act_floor` is `coord.row + 1`, so the row just walked is act_floor - 1.
+    current_row = int(getattr(rs, "act_floor", 0) or 0) - 1
+    return current_row + 1 >= int(boss_row)
+
+
 def _hp_fields(mgr) -> dict:
     """The HP/floor/act fields every live chooser reads off a bridge state."""
     rs = getattr(mgr, "run_state", None)
@@ -93,6 +112,7 @@ def noncombat_action(mgr, phase: str, run_mask, rng, *, layout=None) -> int | No
                          "enabled": True}
                         for i, a in enumerate(opts)],
             "deck": _deck(mgr),
+            "boss_is_next": _boss_is_next(mgr),
             **_hp_fields(mgr),
         }
         chosen = _live._pick_rest_option(state)

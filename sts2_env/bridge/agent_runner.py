@@ -1305,7 +1305,24 @@ ACT_BOSS_FLOORS = frozenset({17, 33, 50})
 
 
 def _boss_is_next(state: dict[str, Any]) -> bool:
-    """Is the floor after this one an act boss?"""
+    """Is the floor after this one an act boss?
+
+    An explicit `boss_is_next` wins when the caller supplies one, because the
+    floor rule below is tied to the LIVE game's numbering and does not travel.
+    The simulator does not count the opening Ancient/Neow room as a floor -- live
+    reports it as floor 1 -- so its act 1 boss is total_floor 16 against the
+    game's 17, and `floor + 1 in {17, 33, 50}` never fires offline. The
+    "heal rather than smith before the boss" rule was therefore silently absent
+    from every simulated run while being active in every live one, which is
+    exactly the kind of divergence that stops an offline result transferring.
+
+    `scripts/live_policy.py` computes the flag from the simulator's own map
+    (`run_state.map.boss_point`), so each side answers in its own terms rather
+    than sharing a constant neither can honour.
+    """
+    explicit = state.get("boss_is_next")
+    if explicit is not None:
+        return bool(explicit)
     try:
         floor = int(state.get("floor") or 0)
     except (TypeError, ValueError):
