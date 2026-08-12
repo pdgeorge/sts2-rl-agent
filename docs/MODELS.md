@@ -873,3 +873,46 @@ still wins 28% of act 1 boss fights to offline's 72%.
 
 What is left on the list: the same-seed diff, offline against live, on identical
 maps and decks. Seeding was fixed on 2026-08-11 and has never been used for this.
+
+---
+
+## incoming-damage modifiers — 2026-08-12 — null, and the gap did not move
+
+`_incoming_damage` summed raw intents, so the rollout policy decided whether it
+needed block from a number the turn would not produce -- under-reading every
+buffed enemy. Fixed to apply Strength, Weak and the player's Vulnerable, with
+`pre_modified` guarding the live path where the game's telegraph already carries
+them.
+
+Paired on 400 identical seeds:
+
+| | before | after |
+|---|---|---|
+| boss win | 188/260 = 72% | 191/258 = **74%** |
+| clear | 47.0% | 47.8% |
+
+**Paired difference +0.8% +/- 1.0%.** Null.
+
+The prediction -- mine and the user's -- was that boss win would DROP toward
+live's 36%, on the reasoning that fights get harder once the agent stops
+under-blocking. That reasoning is wrong: the fix gives the agent better
+information, it does not buff the enemies. Better information makes decisions
+better, and the number moved up rather than down, inside the noise.
+
+WHAT IT MEANS FOR THE 38-POINT GAP
+
+Nothing closed. Offline 74% boss win against live 36%, on a reach rate that
+agrees (64% against 58%). Four candidate explanations are now dead:
+
+  search truncation        measured at 1.6% of searches
+  incoming-damage estimate fixed, no change
+  act 1 variant            fixed; offline now rolls all six bosses
+  wrong monster constants  audited against the decompile; the ones that looked
+                           wrong were correct arithmetic on buffed enemies
+
+The card-resolution bug was LIVE-ONLY -- offline builds decks from CardId and
+never had it -- so it can only raise live toward offline, not lower offline.
+
+What remains is `scripts/replay_live_boss_fights.py`: play the boss positions
+the live agent actually faced, offline, with the live search budget. At n=2 the
+search won both fights live lost, which is a lead and not a result.
