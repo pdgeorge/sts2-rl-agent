@@ -46,6 +46,11 @@ import numpy as np
 REPO = Path(__file__).resolve().parent.parent
 
 
+def rs_live(mgr):
+    """The live RunState, or a stand-in, so a torn-down manager cannot raise."""
+    return getattr(mgr, "run_state", None) or object()
+
+
 def _walk(job) -> dict:
     seed, variant, max_nodes, time_budget = job
 
@@ -65,6 +70,7 @@ def _walk(job) -> dict:
     env.reset(seed=seed)
 
     boss = None
+    bosses: dict[int, str] = {}
     for _ in range(3000):
         mgr = env._mgr
         if mgr is None:
@@ -79,6 +85,15 @@ def _walk(job) -> dict:
             # the first one seen keeps a later act's boss out of the numbers.
             if boss is None and last and "boss" in last[0]:
                 boss = last[0]
+            # EVERY act's boss, by act. Without this the only measurable
+            # milestone is "cleared act N", and reach-versus-win cannot be
+            # separated for act 2 or 3 -- which is the whole point of a funnel.
+            # `floor >= 32` does NOT stand in for reaching the act 2 boss: the
+            # floor only passes 32 after that fight is already won, so it scores
+            # a 100% win rate by construction.
+            if last and "boss" in last[0]:
+                act_index = int(getattr(rs_live(mgr), "current_act_index", 0) or 0)
+                bosses.setdefault(act_index, last[0])
             action = _search_combat_action(agent, mgr, mask)
         else:
             action = noncombat_action(mgr, mgr.phase, mask, rng)
@@ -95,6 +110,9 @@ def _walk(job) -> dict:
         "floor": int(getattr(rs, "total_floor", 0) or 0),
         "act": int(getattr(rs, "current_act_index", 0) or 0) + 1,
         "boss": boss,
+        # {act_index: setup_name} for every boss fought, so reach and win can be
+        # separated per act rather than only for act 1.
+        "bosses": {str(k): v for k, v in bosses.items()},
     }
     env.close()
     return row
@@ -184,6 +202,19 @@ def main() -> int:
         floor = np.mean([r["floor"] for r in sel]) if sel else 0.0
         lines.append(f"{name:<14}{n:>5}{_pct(reach, n):>14}"
                      f"{_pct(won, reach):>14}{_pct(won, n):>14}{floor:>8.1f}")
+    # Per-act milestones. Reach and win separated, which "cleared act N" alone
+    # cannot do -- and which is what stops a change that buys act 1 while
+    # quietly costing act 2 from looking like progress.
+    lines += ["", "per-act milestones (reach the boss, then win it):",
+              f"  {'act':<6}{'reached':>12}{'won|reached':>14}{'cleared':>12}"]
+    for act_index in (0, 1, 2):
+        reached = [r for r in rows if str(act_index) in (r.get("bosses") or {})]
+        cleared = [r for r in rows if r["act"] >= act_index + 2]
+        lines.append(
+            f"  {act_index + 1:<6}{_pct(len(reached), len(rows)):>12}"
+            f"{_pct(len(cleared), len(reached)):>14}"
+            f"{_pct(len(cleared), len(rows)):>12}")
+
     lines += ["", "per boss (fights / wins):"]
     per = collections.Counter(r["boss"] for r in rows if r["boss"])
     wins = collections.Counter(r["boss"] for r in rows if r["boss"] and r["act"] >= 2)
