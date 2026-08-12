@@ -1254,6 +1254,40 @@ def _deck_direction(state: dict[str, Any]):
         return None
 
 
+#: The bar a card must clear rises with the deck it would join.
+#:
+#: A FLAT BAR IS THE WRONG SHAPE, and a flat deck-size cap is worse. Deck size is
+#: not intrinsically bad -- a cycling deck wants cards and a strength deck does
+#: not -- so a cap tells the cycling deck to stop building the thing that makes
+#: it work. Size should FALL OUT of quality: the same rule gives a cycling deck
+#: thirty cards because thirty cards cleared the bar, and a strength deck twelve.
+#:
+#: A mediocre card is worth taking at ten cards and not at twenty-five, because
+#: at twenty-five it dilutes the draws that matter. Expressed as: take it when
+#:
+#:     100 * score / QUALITY_BAR_SCALE  >  current deck size
+#:
+#: `rank_cards` scores between 1.00 and 5.90 across the 366 real card-reward
+#: screens captured from live, so the scale converts a score into the largest
+#: deck it is still worth joining. At scale 10 the median offer (2.50) is taken
+#: up to 25 cards and refused after.
+#:
+#: SKIP_THRESHOLD remains an absolute floor for cards that are bad at any size.
+#: It was 0.0 against observed scores of 1.00-5.90, so it never fired once and
+#: the agent took every card it was offered -- which is why act 1 boss decks were
+#: 21-22 cards with nine basic Strike/Defend still in them.
+QUALITY_BAR_SCALE = 10.0
+
+
+def card_is_worth_taking(score: float, deck_size: int) -> bool:
+    """Is this card good enough for a deck of this size? See QUALITY_BAR_SCALE."""
+    if score < SKIP_THRESHOLD:
+        return False
+    if deck_size <= 0:
+        return True
+    return (100.0 * score / QUALITY_BAR_SCALE) > deck_size
+
+
 def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
     """Choose a card reward, or return None when taking nothing is better.
 
@@ -1283,8 +1317,9 @@ def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
         logger.info("CARD_REWARD: deck reads as %s; picking %s",
                     direction.committed, _card_label(best_card))
 
-    deck_is_bloated = _read_deck_size(state) > CARD_REWARD_LARGE_DECK_SIZE
-    not_worth_it = best_score < SKIP_THRESHOLD
+    deck_size = _read_deck_size(state)
+    deck_is_bloated = deck_size > CARD_REWARD_LARGE_DECK_SIZE
+    not_worth_it = not card_is_worth_taking(best_score, deck_size)
 
     if can_skip and (not_worth_it or deck_is_bloated):
         logger.info(
