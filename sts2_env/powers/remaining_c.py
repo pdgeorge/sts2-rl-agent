@@ -1476,13 +1476,19 @@ class TangledPower(PowerInstance):
 # ---------------------------------------------------------------------------
 # TankPower
 # ---------------------------------------------------------------------------
+#: C# TankPower: DynamicVar("DamageIncrease", 1.5m). The class also carries a
+#: `damageDecrease = 0.5m` const, which is what makes 2.0 an easy misread -- the
+#: decrease is the Guarded it hands to teammates, not what the owner takes.
+TANK_DAMAGE_INCREASE = 1.5
+
+
 class TankPower(PowerInstance):
-    """Owner takes 2x damage from powered attacks but applies Guarded to
+    """Owner takes 1.5x damage from powered attacks but applies Guarded to
     all teammates (Amount block absorption).
 
     C# ref: TankPower.cs
     - AfterApplied: apply GuardedPower(Amount) to all player teammates.
-    - ModifyDamageMultiplicative: 2x for powered attacks targeting owner.
+    - ModifyDamageMultiplicative: 1.5x for powered attacks targeting owner.
     StackType.Single.
     """
 
@@ -1517,7 +1523,10 @@ class TankPower(PowerInstance):
             return 1.0
         if not props.is_powered_attack():
             return 1.0
-        return 2.0
+        # C# TankPower.CanonicalVars: DynamicVar("DamageIncrease", 1.5m), and
+        # ModifyDamageMultiplicative returns that. This was 2.0, so a Tanked
+        # creature took a third more than it should on every powered hit.
+        return TANK_DAMAGE_INCREASE
 
 
 # ---------------------------------------------------------------------------

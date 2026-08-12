@@ -1014,12 +1014,41 @@ _ATTACKER_DAMAGE_MODIFIERS = (
     # decompile precisely. Two false positives, not two bugs.
     PowerId.SHRINK,
 )
-_DEFENDER_DAMAGE_MODIFIERS = (PowerId.VULNERABLE,)
+#: Powers on the DEFENDER that change what a telegraphed hit lands for. Missing
+#: these turned a session's report into 23 "disparities" that were all correct
+#: modelling -- every halved row had the enemy Vulnerable and the player holding
+#: Colossus, which is precisely ColossusPower's condition:
+#:
+#:     if (!dealer.HasPower<VulnerablePower>()) return 1m;
+#:     return DynamicVars["DamageDecrease"].BaseValue;   // 0.5
+#:
+#: The simulator does that correctly. `CEREMONIAL_BEAST.STOMP sim=15 game=7`
+#: was the report not knowing why, on a constant that matches the decompile
+#: exactly. Guarded and Tank halve and raise the same way.
+_DEFENDER_DAMAGE_MODIFIERS = (
+    PowerId.VULNERABLE,
+    PowerId.COLOSSUS,
+    PowerId.GUARDED,
+    PowerId.TANK,
+)
+
+#: Attacker-side powers whose effect is monster-specific rather than a general
+#: modifier. They showed up in the same report as clean arithmetic --
+#: VITAL_SPARK2 was exactly +2, CRAB_RAGE exactly x1.5 -- so a telegraph
+#: carrying them is not evidence of a wrong constant.
+_ATTACKER_SPECIFIC_MODIFIERS = tuple(
+    p for p in (
+        getattr(PowerId, name, None) for name in (
+            "VITAL_SPARK", "CRAB_RAGE", "BACK_ATTACK_LEFT", "BACK_ATTACK_RIGHT",
+            "TERRITORIAL", "PERSONAL_HIVE", "BURROWED", "STEAM_ERUPTION",
+        )
+    ) if p is not None
+)
 
 
 def _damage_is_modified(combat: CombatState, enemy: Creature) -> bool:
     """Is anything scaling this enemy's attack away from its base value?"""
-    for power_id in _ATTACKER_DAMAGE_MODIFIERS:
+    for power_id in _ATTACKER_DAMAGE_MODIFIERS + _ATTACKER_SPECIFIC_MODIFIERS:
         if enemy.get_power_amount(power_id):
             return True
     player = getattr(combat, "player", None)
