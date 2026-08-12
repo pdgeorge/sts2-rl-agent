@@ -1152,8 +1152,19 @@ def _override_enemy_intent(
                 prior_damage = int(getattr(prior, "damage", 0) or 0)
                 prior_hits = int(getattr(prior, "hits", 1) or 1)
                 if prior_damage != damage:
+                    # POWERS IN THE LABEL. Without them an intent_damage report
+                    # cannot be acted on: ROCKET.PRECISION_BEAM sim=18 game=27
+                    # is a wrong constant if the enemy is clean and correct
+                    # arithmetic if it is holding 9 Strength, and the report as
+                    # written could not tell the two apart. `_damage_is_modified`
+                    # already suppresses the clear-cut cases; these are the ones
+                    # that got past it, which is exactly when the powers matter.
+                    powers = "/".join(
+                        f"{pid.name}{inst.amount}"
+                        for pid, inst in (enemy.powers or {}).items()
+                    ) or "clean"
                     report_disparity(
-                        "intent_damage", f"{enemy.monster_id}.{move_id}",
+                        "intent_damage", f"{enemy.monster_id}.{move_id}[{powers}]",
                         prior_damage, damage)
                 if prior_hits != hits:
                     report_disparity(

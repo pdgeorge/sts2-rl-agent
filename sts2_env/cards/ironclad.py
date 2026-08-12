@@ -1602,6 +1602,33 @@ def make_aggression(upgraded: bool = False) -> CardInstance:
 
 
 # --- Barricade ---
+# --- Not Yet ---
+# C# NotYet: base(2, Skill, Rare, Self), CanonicalVars HealVar(10),
+# OnUpgrade Heal.UpgradeValueBy(3). OnPlay heals the owner for Heal.BaseValue.
+#
+# Implemented because the live journals showed it drafted and then DROPPED from
+# the deck 149 times in one session -- it is in IroncladCardPool, the agent
+# picks it, and the searcher was planning without it. Cost/rarity/type come
+# from derived_values at construction; the literals here are documentation.
+@register_effect(CardId.NOT_YET)
+def not_yet(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
+    owner = _owner(card, combat)
+    owner.heal(card.effect_vars.get("heal", 10))
+
+
+def make_not_yet(upgraded: bool = False) -> CardInstance:
+    return CardInstance(
+        card_id=CardId.NOT_YET,
+        cost=2,
+        card_type=CardType.SKILL,
+        target_type=TargetType.SELF,
+        rarity=CardRarity.RARE,
+        effect_vars={"heal": 13 if upgraded else 10},
+        upgraded=upgraded,
+        instance_id=_get_next_id(),
+    )
+
+
 @register_effect(CardId.BARRICADE_CARD)
 def barricade(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
     combat.apply_power_to(_owner(card, combat), PowerId.BARRICADE, 1)
