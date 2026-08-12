@@ -79,6 +79,24 @@ def _deck(mgr) -> list[dict]:
             for c in getattr(player, "deck", [])]
 
 
+
+
+#: The run action space puts the card-reward skip immediately after the three
+#: card slots. `_pick_card_reward_index` returning None means "take nothing",
+#: and without a slot to express that offline the decision cannot be replayed.
+_CARD_REWARD_SKIP_OFFSET = 3
+
+
+def _skip_action(run_mask) -> int | None:
+    from sts2_env.gym_env.run_env import _CARD_RWD_START
+
+    slot = _CARD_RWD_START + _CARD_REWARD_SKIP_OFFSET
+    return int(slot) if slot < len(run_mask) and run_mask[slot] else None
+
+
+def _skip_offered(run_mask) -> bool:
+    return _skip_action(run_mask) is not None
+
 def noncombat_action(mgr, phase: str, run_mask, rng, *, layout=None) -> int | None:
     """The live agent's non-combat choice, as a run_env action index."""
     from sts2_env.gym_env.run_env import _CARD_RWD_START, _MAP_START, _REST_START
@@ -118,14 +136,39 @@ def noncombat_action(mgr, phase: str, run_mask, rng, *, layout=None) -> int | No
         chosen = _live._pick_rest_option(state)
         return offer(_REST_START + max(0, min(int(chosen), len(opts) - 1)))
 
-    # -- card reward: quality x archetype fit --------------------------------
+    # -- card reward: the LIVE chooser, not a copy of it ----------------------
     if phase == RunManager.PHASE_CARD_REWARD:
         picks = [a for a in actions if a.get("action") == "pick_card"]
         if picks:
-            from ab_archetype_picking import _pick_card_reward
-            got = _pick_card_reward(mgr, run_mask, rng, True)
-            if got is not None:
-                return got
+            # WHY NOT ab_archetype_picking._pick_card_reward. It was a second
+            # implementation, and the two had already drifted where it matters:
+            # both rank with `card_quality.rank_cards`, but the live side skips
+            # on `best_score < SKIP_THRESHOLD or deck_size > LARGE_DECK_SIZE`
+            # while the copy skipped only on `best_score <= 0` and had no
+            # deck-size rule at all. Deck size is what decides an act 1 boss
+            # fight, so the offline agent was measuring a deckbuilder the live
+            # agent is not.
+            #
+            # Keeping copies in step is not a plan; deleting them is.
+            state = {
+                "cards": [{"id": a.get("card_id")} for a in picks
+                          if a.get("card_id")],
+                "deck": _deck(mgr),
+                "deck_size": len(_deck(mgr)),
+                # The offline env exposes a skip slot, so offline can decline
+                # too -- which is the point, since the live mod can now click
+                # the game's Skip button.
+                "can_skip": _skip_offered(run_mask),
+                **_hp_fields(mgr),
+            }
+            chosen = _live._pick_card_reward_index(state)
+            if chosen is None:
+                skip = _skip_action(run_mask)
+                if skip is not None:
+                    return skip
+                chosen = 0
+            return offer(_CARD_RWD_START + max(0, min(int(chosen),
+                                                      len(picks) - 1)))
         return _fallback(mgr, phase, run_mask, rng)
 
     # -- shop / event / treasure / boss relic: still the old heuristic --------
