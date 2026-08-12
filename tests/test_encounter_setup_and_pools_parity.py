@@ -964,22 +964,27 @@ class TestAct3Pools:
         assert len(ACT3_ELITE) == 3
 
     def test_boss_encounter_count(self):
-        assert len(ACT3_BOSS) == 3
+        # Two, not three. Doormaker was removed from the game; Aeonglass, which
+        # the game has in its place, is not built yet.
+        assert len(ACT3_BOSS) == 2
 
     def test_all_act3_total(self):
-        assert len(ALL_ACT3_ENCOUNTERS) == 3 + 9 + 3 + 3  # 18
+        # 2 bosses, not 3: Doormaker was removed from the game and Aeonglass,
+        # which replaced it, is not built yet. See encounters/act3.py.
+        assert len(ALL_ACT3_ENCOUNTERS) == 3 + 9 + 3 + 2  # 17
 
     def test_act3_order_matches_original_glory_lists(self):
+        # Glory.BossDiscoveryOrder is Queen, TestSubject, Aeonglass. Doormaker
+        # is gone from the decompile entirely and no longer rolls; Aeonglass is
+        # not built yet, so this pool is knowingly two of three.
         assert [encounter.__name__ for encounter in ACT3_BOSS] == [
             "setup_queen_boss",
             "setup_test_subject_boss",
-            "setup_doormaker_boss",
         ]
         assert [encounter.__name__ for encounter in ALL_ACT3_ENCOUNTERS] == [
             "setup_axebots_normal",
             "setup_construct_menagerie_normal",
             "setup_devoted_sculptor_weak",
-            "setup_doormaker_boss",
             "setup_fabricator_normal",
             "setup_frog_knight_normal",
             "setup_globe_head_normal",
@@ -1091,8 +1096,10 @@ class TestAllActsHaveEncounters:
             len(ALL_ACT3_ENCOUNTERS) +
             len(ALL_ACT4_ENCOUNTERS)
         )
-        # 22 + 21 + 18 + 20 = 81
-        assert total == 81
+        # 22 + 21 + 17 + 20 = 80. Act 3 is 17 rather than 18 because Doormaker
+        # was removed from the game and Aeonglass, which replaced it, is not
+        # built yet -- so act 3 knowingly rolls two of its three bosses.
+        assert total == 80
 
     def test_each_act_has_all_tiers(self):
         """Each act should have weak, normal, elite, and boss encounters."""

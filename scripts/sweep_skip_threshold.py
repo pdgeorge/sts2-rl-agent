@@ -82,10 +82,18 @@ REPO = Path(__file__).resolve().parent.parent
 #: mean deck size column is in the report precisely so an arm that is not doing
 #: what its name says cannot pass unnoticed.
 ARMS: list[tuple[str, float]] = [
+    # Three arms, bracketing pd's stated optimum of 25-35 cards. The median
+    # offer (2.50) stops the deck at 100*2.5/scale:
+    #   take everything  never refuses          (today's behaviour)
+    #   scale 8          stops the median at 31 (inside the stated optimum)
+    #   scale 12         stops it at 20         (tighter than today's 21-22)
+    #
+    # The baseline is not a formality. A stricter bar does NOT remove the nine
+    # basic Strike/Defend already in the deck, so a smaller deck is a MORE basic
+    # deck -- 9 of 15 is 60% against 9 of 21 at 43%. Stricter could be actively
+    # worse, and this is the arm that would show it.
     ("take everything", 1e-9),
-    ("scale 6", 6.0),
     ("scale 8", 8.0),
-    ("scale 10", 10.0),
     ("scale 12", 12.0),
 ]
 

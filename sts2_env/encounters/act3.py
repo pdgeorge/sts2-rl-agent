@@ -167,6 +167,23 @@ ELITE_ENCOUNTERS: list[EncounterSetup] = [
 
 # ---- Boss Encounters ----
 
+#: NOT IN THE BOSS POOL. Doormaker was removed from the game -- neither Doormaker
+#: nor Door appears anywhere in the decompile, and Glory.BossDiscoveryOrder is
+#: Queen, TestSubject, Aeonglass. Rolling it meant a third of simulated act 3
+#: boss fights were against a boss that does not exist, while a third of real
+#: ones were against Aeonglass, which this simulator cannot roll at all. That is
+#: the act 1 variant bug again, where 57% of act 1 boss fights went unmodelled.
+#:
+#: Kept as a function rather than deleted because it is the record of a boss that
+#: did exist, and its tests still document that behaviour. It has appeared in
+#: three very different forms already, so if it returns it will be rebuilt from
+#: the decompile rather than restored from here -- but a dead function costs
+#: nothing and deleting it costs a test rewrite that buys no correctness.
+#:
+#: THE ACT 3 POOL IS NOW INCOMPLETE: two of the game's three bosses. Aeonglass
+#: exists in the decompile (Models.Monsters/Aeonglass.cs,
+#: Models.Encounters/AeonglassBoss.cs) and has to be built before any act 3
+#: measurement means anything. See ROADMAP.md.
 def setup_doormaker_boss(combat: CombatState, rng: Rng) -> None:
     door, door_ai = create_door(rng, ascension_level=getattr(combat, "ascension_level", 0))
     combat.add_enemy(door, door_ai)
@@ -188,7 +205,6 @@ def setup_test_subject_boss(combat: CombatState, rng: Rng) -> None:
 BOSS_ENCOUNTERS: list[EncounterSetup] = [
     setup_queen_boss,
     setup_test_subject_boss,
-    setup_doormaker_boss,
 ]
 
 
@@ -196,7 +212,6 @@ ALL_ACT3_ENCOUNTERS: list[EncounterSetup] = [
     setup_axebots_normal,
     setup_construct_menagerie_normal,
     setup_devoted_sculptor_weak,
-    setup_doormaker_boss,
     setup_fabricator_normal,
     setup_frog_knight_normal,
     setup_globe_head_normal,
