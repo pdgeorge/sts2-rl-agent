@@ -70,6 +70,8 @@ def _walk(job) -> dict:
     env.reset(seed=seed)
 
     boss = None
+    boss_deck: list = []
+    boss_hp = boss_max_hp = 0
     bosses: dict[int, str] = {}
     for _ in range(3000):
         mgr = env._mgr
@@ -85,6 +87,18 @@ def _walk(job) -> dict:
             # the first one seen keeps a later act's boss out of the numbers.
             if boss is None and last and "boss" in last[0]:
                 boss = last[0]
+                # THE DECK SHE BROUGHT. Offline wins 74% of act 1 boss fights
+                # and live wins 29%, and the two candidate causes -- a worse
+                # deck, or worse play -- need the deck recorded to separate.
+                # Captured at the moment the boss fight starts, which is the
+                # only point the comparison is about.
+                player = getattr(rs_live(mgr), "player", None)
+                boss_deck = [
+                    {"id": c.card_id.name, "upgraded": bool(getattr(c, "upgraded", False))}
+                    for c in (getattr(player, "deck", None) or [])
+                ]
+                boss_hp = int(getattr(player, "current_hp", 0) or 0)
+                boss_max_hp = int(getattr(player, "max_hp", 0) or 0)
             # EVERY act's boss, by act. Without this the only measurable
             # milestone is "cleared act N", and reach-versus-win cannot be
             # separated for act 2 or 3 -- which is the whole point of a funnel.
@@ -113,6 +127,9 @@ def _walk(job) -> dict:
         # {act_index: setup_name} for every boss fought, so reach and win can be
         # separated per act rather than only for act 1.
         "bosses": {str(k): v for k, v in bosses.items()},
+        "boss_deck": boss_deck,
+        "boss_hp": boss_hp,
+        "boss_max_hp": boss_max_hp,
     }
     env.close()
     return row
