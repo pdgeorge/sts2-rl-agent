@@ -83,6 +83,18 @@ def _state_type(state: dict[str, Any]) -> str:
     value = str(value)
     if value == "combat_action":
         room = str(state.get("room_type") or "?")
+        # PER FIGHT, not per room. A boss fight sends one state per decision --
+        # about thirty -- so a per-room quota of 60 captured TWO fights and then
+        # stopped, which is far too few to compare a win rate against. Keying on
+        # the encounter seed gives every distinct fight its own small quota, so
+        # the same budget samples thirty fights instead of two.
+        #
+        # `encounter_seed` is the game's own per-encounter roll, unique per
+        # fight and stable within one, and it is already sent because
+        # `CombatSituation` needs it to rebuild the enemies.
+        seed = state.get("encounter_seed")
+        if seed is not None:
+            return f"{value}:{room}:{seed}"
         return f"{value}:{room}"
     return value
 
