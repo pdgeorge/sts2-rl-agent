@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using Godot;
 using MegaCrit.Sts2.Core.AutoSlay.Handlers;
 using MegaCrit.Sts2.Core.AutoSlay.Helpers;
+using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
@@ -77,17 +78,21 @@ public class RlCardRewardScreenHandler : IScreenHandler, IHandler
         {
             ["type"] = NonCombatBridgeProtocol.CardRewardState,
             ["cards"] = cards,
-            // Advertised as false because the mod cannot actually skip a card
-            // reward. NCardRewardSelectionScreen has no skip control, the game's
-            // own CardRewardScreenHandler always picks, and TrySkipCardReward's
-            // reflection guesses (.Skip()/.Dismiss() on a type found by name) do
-            // not resolve -- observed live as "Skip action could not be executed"
-            // three times in a row while the screen re-presented and a deterministic
-            // policy chose skip again each time, until the run timed out.
+            // ASK THE SCREEN. The game adds a Skip alternative exactly when
+            // `cardReward.CanSkip`, and renders it under "UI/RewardAlternatives",
+            // so the button's presence IS the answer. This used to be hardcoded
+            // false because a reflection guess at a skip API did not resolve, and
+            // the conclusion drawn was that the game has no skip -- so the agent
+            // was forced to take every card reward for its entire existence, and
+            // arrives at floor 17 with 21-22 cards, nine of them still basic.
             //
-            // Claiming an action the game cannot perform is worse than not offering
-            // it: the mask offers it, the model learns to want it, and the run hangs.
-            ["can_skip"] = false,
+            // The old hazard is still real and still handled: claiming an action
+            // the game cannot perform hangs the run, because the screen
+            // re-presents and a deterministic policy asks for it again. That is
+            // why this reports the button rather than an assumption, and why the
+            // skip path falls through to taking a card if the button vanishes
+            // between the report and the click.
+            ["can_skip"] = FindSkipButton(screen) != null,
         };
 
         NCardHolder chosenHolder = null;
@@ -110,8 +115,11 @@ public class RlCardRewardScreenHandler : IScreenHandler, IHandler
                     if (action == NonCombatBridgeProtocol.SkipAction)
                     {
                         Logger.Log("[RlCardReward] Agent chose to skip");
-                        if (TrySkipCardReward())
+                        NButton skipButton = FindSkipButton(screen);
+                        if (skipButton != null)
                         {
+                            await UiHelper.Click(skipButton);
+                            Logger.Log("[RlCardReward] Skipped the card reward.");
                             return;
                         }
                         // Falling through to a pick rather than returning. Returning
@@ -130,9 +138,14 @@ public class RlCardRewardScreenHandler : IScreenHandler, IHandler
                         if (idx >= holders.Count)
                         {
                             Logger.Log("[RlCardReward] Agent chose to skip via out-of-range choose");
-                            if (!TrySkipCardReward())
-                                Logger.Log("[RlCardReward] Out-of-range skip action could not be executed");
-                            return;
+                            NButton outOfRangeSkip = FindSkipButton(screen);
+                            if (outOfRangeSkip != null)
+                            {
+                                await UiHelper.Click(outOfRangeSkip);
+                                return;
+                            }
+                            Logger.Log("[RlCardReward] No skip control; taking the first card.");
+                            chosenHolder = holders.Count > 0 ? holders[0] : null;
                         }
                         if (idx >= 0 && idx < holders.Count)
                         {
@@ -163,35 +176,58 @@ public class RlCardRewardScreenHandler : IScreenHandler, IHandler
         Logger.Log("[RlCardReward] Card reward screen handled");
     }
 
-    private static bool TrySkipCardReward()
+    /// <summary>The screen's own Skip button, or null when the reward cannot be skipped.</summary>
+    ///
+    /// THE SKIP WAS ALWAYS THERE. This used to hunt for a "RewardScreen" type by
+    /// name and call .Skip()/.Dismiss() on it by reflection; neither resolves, so
+    /// the mod concluded the game has no skip control and advertised
+    /// can_skip:false forever. The agent was therefore FORCED to take every card
+    /// reward for its entire existence, which is why it reaches floor 17 with 21
+    /// to 22 cards, nine of them still basic Strike/Defend, and cannot kill a
+    /// 173-222 HP boss.
+    ///
+    /// The game builds it as an ordinary button:
+    ///
+    ///     if (cardReward.CanSkip)
+    ///         list.Add(new CardRewardAlternative("Skip", EndSelectionAndDoNotCompleteReward));
+    ///
+    /// and NCardRewardSelectionScreen renders each alternative as an
+    /// NCardRewardAlternativeButton under "UI/RewardAlternatives", wired to
+    /// NClickableControl.Released. So it is found by walking that container, and
+    /// its ABSENCE is what "cannot skip" actually means -- the game omits the
+    /// button when CanSkip is false, which is the authority we should have been
+    /// reading all along.
+    private static NButton FindSkipButton(NCardRewardSelectionScreen screen)
     {
         try
         {
-            Type rewardType = FindGameType("RewardScreen") ?? FindGameType("CardRewardManager");
-            dynamic rs = rewardType?.GetProperty("Instance")?.GetValue(null);
-            if (rs == null)
-                return false;
+            Control container = screen?.GetNodeOrNull<Control>("UI/RewardAlternatives");
+            if (container == null)
+                return null;
 
-            try
+            foreach (Node child in container.GetChildren())
             {
-                rs.Skip();
-                return true;
+                if (child is not NButton button)
+                    continue;
+                // Match on the localised title's option id rather than the
+                // rendered text, so this does not depend on the client language.
+                string name = child.Name.ToString();
+                if (name.IndexOf("skip", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return button;
             }
-            catch { }
 
-            try
-            {
-                rs.Dismiss();
-                return true;
-            }
-            catch { }
+            // Fall back to the single alternative when only one exists and it is
+            // the skip -- Reroll and Sacrifice only appear with the relics that
+            // add them, so a lone alternative on a skippable reward is the skip.
+            var buttons = container.GetChildren().OfType<NButton>().ToList();
+            if (buttons.Count == 1)
+                return buttons[0];
         }
         catch (Exception ex)
         {
-            Logger.Log($"[RlCardReward] Skip helper error: {ex.Message}");
+            Logger.Log($"[RlCardReward] Skip button lookup failed: {ex.Message}");
         }
-
-        return false;
+        return null;
     }
 
     private static Type? FindGameType(string typeName)
