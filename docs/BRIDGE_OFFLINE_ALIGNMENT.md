@@ -10,14 +10,26 @@ closed rather than rediscovered.
 |---|---|---|---|
 | map node | `_pick_map_node` | `_pick_map_node` (same function) | YES |
 | rest site | `_pick_rest_option` | `_pick_rest_option` (same function) | YES |
-| card reward | `_pick_card_reward_index` | `ab_archetype_picking._pick_card_reward` | **NO -- copy** |
-| shop | `_pick_shop_option` | amateur fallback | **NO** |
-| event | `_pick_event_option` | amateur fallback | **NO** |
-| treasure | `_pick_treasure_option` | amateur fallback | **NO** |
-| boss relic | `_pick_boss_relic_option` | amateur fallback | **NO** |
+| card reward | `_pick_card_reward_index` | same function | YES |
+| shop | `_pick_shop_option` | same function | YES |
+| event | `_pick_event_option` | same function | YES |
+| treasure | `_pick_treasure_option` | same function | YES |
+| boss relic | `_pick_boss_relic_option` | same function | YES |
 | combat | `SearchAgent`, 20000 nodes / 3s | `SearchAgent`, 2000 nodes / 60s | **NO -- budget** |
 
-Two of eight agree. The fallback is `harvest_combat_benchmark._noncombat_action`,
+Seven of eight agree. Every non-combat decision now calls the same function on
+both sides; the delegation was mechanical because both already speak the same
+action vocabulary (`buy_relic`, `buy_card`, `buy_potion`, `remove_card`,
+`leave_shop`, `collect`, `pick_relic`, `event_choice` are identical strings on
+the wire and in RunManager), so `_bridge_options` relabels rather than
+translates.
+
+Exercised over 60 offline runs: MAP_CHOICE 324, CARD_REWARD 279, EVENT 43,
+SHOP 33, REST_SITE 24, TREASURE 7 decisions, with 17 of ~710 falling through to
+the old fallback -- all of them sub-screens that share a phase (the relic and
+potion pickers inside CARD_REWARD), not the decisions this is about.
+
+WAS: two of eight agreed. The fallback is `harvest_combat_benchmark._noncombat_action`,
 whose own docstring calls it "a plausible amateur's non-combat choice -- not an
 attempt at good play".
 

@@ -97,9 +97,49 @@ def _skip_action(run_mask) -> int | None:
 def _skip_offered(run_mask) -> bool:
     return _skip_action(run_mask) is not None
 
+
+def _bridge_options(actions: list) -> list[dict]:
+    """Offline actions in the shape the live choosers read.
+
+    Both sides use the same action strings, so this carries them through rather
+    than mapping them, and passes `label`/`description`/`price` where present --
+    the event heuristic reads the human text, and the shop one reads the price.
+    """
+    options = []
+    for i, action in enumerate(actions):
+        option = {
+            "index": i,
+            "action": action.get("action"),
+            "enabled": bool(action.get("enabled", True)),
+        }
+        for key in ("label", "description", "option_id", "price", "card_id",
+                    "relic_id", "potion_id", "id"):
+            if action.get(key) is not None:
+                option[key] = action[key]
+        options.append(option)
+    return options
+
+
+def _delegate(mgr, actions, chooser, start: int, run_mask):
+    """Ask a live chooser, and map its answer back to a run action index."""
+    if not actions:
+        return None
+    state = {"options": _bridge_options(actions), "deck": _deck(mgr),
+             **_hp_fields(mgr)}
+    try:
+        chosen = int(chooser(state))
+    except Exception:
+        return None
+    chosen = max(0, min(chosen, len(actions) - 1))
+    slot = start + chosen
+    return int(slot) if slot < len(run_mask) and run_mask[slot] else None
+
 def noncombat_action(mgr, phase: str, run_mask, rng, *, layout=None) -> int | None:
     """The live agent's non-combat choice, as a run_env action index."""
-    from sts2_env.gym_env.run_env import _CARD_RWD_START, _MAP_START, _REST_START
+    from sts2_env.gym_env.run_env import (
+        _BOSS_RELIC_START, _CARD_RWD_START, _EVENT_START, _MAP_START,
+        _REST_START, _SHOP_START, _TREASURE_START,
+    )
     from harvest_combat_benchmark import _noncombat_action as _fallback
 
     def offer(index: int) -> int | None:
@@ -171,5 +211,44 @@ def noncombat_action(mgr, phase: str, run_mask, rng, *, layout=None) -> int | No
                                                       len(picks) - 1)))
         return _fallback(mgr, phase, run_mask, rng)
 
-    # -- shop / event / treasure / boss relic: still the old heuristic --------
+    # -- shop, event, treasure, boss relic: the live choosers, not a stand-in --
+    #
+    # These were the last four running `harvest_combat_benchmark._noncombat_action`,
+    # whose own docstring calls it "a plausible amateur's non-combat choice --
+    # not an attempt at good play". So offline was scoring an agent that shopped,
+    # took events, opened chests and picked boss relics differently from the one
+    # that ships, on every run.
+    #
+    # The delegation is mechanical because both sides already speak the same
+    # action vocabulary -- buy_relic, buy_card, buy_potion, remove_card,
+    # leave_shop, collect, pick_relic, event_choice are the identical strings on
+    # the wire and in RunManager -- so the bridge shape is a relabelling of the
+    # offline actions rather than a translation.
+    table = {
+        RunManager.PHASE_SHOP: (_live._pick_shop_option, _SHOP_START),
+        RunManager.PHASE_TREASURE: (_live._pick_treasure_option, _TREASURE_START),
+        RunManager.PHASE_BOSS_RELIC: (_live._pick_boss_relic_option, _BOSS_RELIC_START),
+    }
+    if phase in table:
+        chooser, start = table[phase]
+        chosen = _delegate(mgr, actions, chooser, start, run_mask)
+        if chosen is not None:
+            return chosen
+        return _fallback(mgr, phase, run_mask, rng)
+
+    if phase == RunManager.PHASE_EVENT:
+        # `_pick_event_option` takes a `seen` map so it can refuse to take the
+        # same paid option seven times -- Hot Baths re-presents itself and
+        # charges more each time, which is what killed live run 1 (68 -> 41 HP
+        # and still going). The counter lives on the manager so it survives the
+        # per-decision calls within one event.
+        seen = getattr(mgr, "_live_policy_events_seen", None)
+        if seen is None:
+            seen = {}
+            setattr(mgr, "_live_policy_events_seen", seen)
+        chosen = _delegate(mgr, actions, lambda st: _live._pick_event_option(st, seen),
+                           _EVENT_START, run_mask)
+        if chosen is not None:
+            return chosen
+
     return _fallback(mgr, phase, run_mask, rng)
