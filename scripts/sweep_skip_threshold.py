@@ -71,10 +71,18 @@ REPO = Path(__file__).resolve().parent.parent
 #:
 #: `take everything` is the current behaviour and is included so that "taking
 #: every card was right all along" is allowed to win. It is expressed as a scale
-#: large enough that nothing is ever refused rather than as a special case, so
-#: every arm runs the same code path.
+#: so small that nothing is ever refused, rather than as a special case, so every
+#: arm runs the same code path.
+#:
+#: THE DIRECTION IS EASY TO GET BACKWARDS AND I DID. This arm was first written
+#: as 1e9 "large enough that nothing is refused", which is the strictest possible
+#: value: `100*score/1e9` is ~0, so it refused EVERY card. It ran 400 seeds that
+#: way before the deck size gave it away -- mean deck 10.5, the starter deck
+#: untouched, and 7.0% clear against the 47% the same agent gets normally. The
+#: mean deck size column is in the report precisely so an arm that is not doing
+#: what its name says cannot pass unnoticed.
 ARMS: list[tuple[str, float]] = [
-    ("take everything", 1e9),
+    ("take everything", 1e-9),
     ("scale 6", 6.0),
     ("scale 8", 8.0),
     ("scale 10", 10.0),
