@@ -14,6 +14,13 @@ class Intent:
     intent_type: IntentType
     damage: int = 0
     hits: int = 1
+    #: True when `damage` came from the live game's telegraph rather than from a
+    #: monster's base constant. The game shows the FINAL number, with Strength,
+    #: Weak and the player's Vulnerable already applied, so anything estimating
+    #: incoming damage must not apply them a second time. A simulator-built
+    #: intent carries the base and does need them applied. See
+    #: `turn_search._incoming_damage`.
+    pre_modified: bool = False
 
     @property
     def total_damage(self) -> int:

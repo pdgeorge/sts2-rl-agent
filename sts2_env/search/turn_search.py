@@ -202,7 +202,23 @@ def _is_power_card(card) -> bool:
 
 
 def _incoming_damage(combat: "CombatState") -> int:
-    """What the enemies have telegraphed for their next turn."""
+    """What the enemies have telegraphed, AS IT WILL LAND.
+
+    Summing the raw intent under-reads every buffed enemy. The hit itself has
+    always applied Strength, Weak and the player's Vulnerable -- verified: a
+    7-damage Chomp lands for 10 at +3 Strength, 5 under Weak, 10 into
+    Vulnerable, 15 for both -- but this estimate did not, so the rollout policy
+    decided whether it needed block from a number the turn would not produce.
+    It reads worst against exactly the enemies that scale: Crusher's Adapt,
+    Rocket's Charge Up, anything stacking Strength on the way to a boss turn.
+
+    A bridge-built intent is ALREADY the final number -- the game telegraphs
+    what will land -- so applying modifiers to it would double-count Strength on
+    the live path. That is what `pre_modified` distinguishes.
+    """
+    from sts2_env.core.damage import calculate_damage
+    from sts2_env.core.enums import ValueProp
+
     total = 0
     for enemy in combat.enemies:
         if not enemy.is_alive:
@@ -211,7 +227,19 @@ def _incoming_damage(combat: "CombatState") -> int:
         if ai is None:
             continue
         for intent in ai.current_move.intents:
-            total += (intent.damage or 0) * max(1, intent.hits or 1)
+            base = intent.damage or 0
+            if not base:
+                continue
+            hits = max(1, intent.hits or 1)
+            if getattr(intent, "pre_modified", False):
+                total += base * hits
+                continue
+            try:
+                landed = calculate_damage(
+                    base, enemy, combat.player, ValueProp.MOVE, combat)
+            except Exception:
+                landed = base
+            total += landed * hits
     return total
 
 

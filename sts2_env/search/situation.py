@@ -1068,7 +1068,11 @@ def _override_enemy_intent(
 
     damage = int(enemy_json.get("intent_damage", 0) or 0)
     hits = int(enemy_json.get("intent_hits", 1) or 1)
-    intent = Intent(intent_type=intent_type, damage=damage, hits=hits)
+    # pre_modified: the game telegraphs the FINAL number, Strength and the
+    # player's Vulnerable already in it. `_incoming_damage` must not apply
+    # them again on top.
+    intent = Intent(intent_type=intent_type, damage=damage, hits=hits,
+                    pre_modified=True)
 
     # Prefer the real MoveState in the AI's state dict -- it has a
     # follow_up_id and the simulator's full effect; we override only its
