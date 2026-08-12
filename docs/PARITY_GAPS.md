@@ -378,3 +378,31 @@ change existing test expectations, including the shuffle assertion above and
 some of the 149 currently-failing parity tests — in both directions. Worth
 doing, worth doing deliberately, and worth doing against a larger capture than
 three encounters.
+
+## Act 3's boss pool has a boss the game does not have, and lacks one it does
+
+`encounters/act3.py` (Glory) rolls:
+
+    setup_queen_boss, setup_test_subject_boss, setup_doormaker_boss
+
+`Glory.BossDiscoveryOrder` is:
+
+    QueenBoss, TestSubjectBoss, AeonglassBoss
+
+There is no Doormaker anywhere in the decompile -- not a monster, not an
+encounter. It is fabricated, the same way `setup_toadpoles_normal` was before it
+was rebuilt as SeapunkNormal. Aeonglass is real
+(`Models.Monsters/Aeonglass.cs`, `Models.Encounters/AeonglassBoss.cs`) and the
+simulator has neither the monster nor the encounter.
+
+So a third of simulated act 3 boss fights are against a boss that does not
+exist, and a third of real ones are against a boss the simulator cannot roll --
+exactly the shape of the act 1 variant bug, which cost 57% of act 1 boss fights
+being unmodelled.
+
+Not urgent while act 1 clear is the target: one live run in the last 90 has
+reached floor 33. It becomes blocking the moment act 2/3 is the goal, and it
+should be fixed BEFORE any act 3 measurement is trusted, not after.
+
+Act 2 (Hive) checks out: TheInsatiable, KnowledgeDemon, KaiserCrab, matching
+the simulator exactly.
