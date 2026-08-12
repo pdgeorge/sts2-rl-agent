@@ -916,3 +916,58 @@ never had it -- so it can only raise live toward offline, not lower offline.
 What remains is `scripts/replay_live_boss_fights.py`: play the boss positions
 the live agent actually faced, offline, with the live search budget. At n=2 the
 search won both fights live lost, which is a lead and not a result.
+
+---
+
+## card-reward quality bar — 2026-08-12 — declining cards made it WORSE
+
+pd's rule: take a card when `100 * score / QUALITY_BAR_SCALE > deck_size`, so the
+bar rises with the deck and size falls out of quality rather than being capped.
+A better-shaped rule than the flat threshold or flat deck cap it replaced, and it
+was implemented and swept rather than assumed.
+
+70 paired seeds per arm, max_nodes 800, deck-size rule disabled throughout:
+
+| arm | clear | act 2 reach | mean deck | paired vs baseline |
+|---|---|---|---|---|
+| take everything | 51.4% | 20.0% | 22.9 | — |
+| scale 8 | 45.7% | 22.9% | 21.1 | **-5.7% +/- 2.8% (-2.0 se)** |
+| scale 12 | 44.3% | 18.6% | 18.8 | **-7.1% +/- 4.2% (-1.7 se)** |
+
+Both arms negative, monotonic in strictness, and the stricter arm built the
+smaller deck. **Declining cards costs act 1 clear rate.**
+
+WHY, AND IT WAS PREDICTED IN ADVANCE
+
+A stricter bar does not remove the nine basic Strike/Defend already in the deck.
+It only stops new cards arriving, so a smaller deck is a MORE BASIC deck: 9 of 19
+is 47% basics against 9 of 23 at 39%. The mediocre card being declined was still
+better than the Strike it left in the draw pile.
+
+So the diagnosis was right and the remedy was wrong. Act 1 boss decks ARE bad --
+21-22 cards, 43% basics, losing to 173-222 HP bosses over 6-14 turns. But the
+problem is the nine basics, not the twelve additions, and the fix is REMOVAL and
+UPGRADES rather than declining.
+
+HOLDOUT DISAGREES WITH TUNING, AND THAT IS ALSO INFORMATIVE
+
+Applied post hoc (the split is deterministic and was not used to tune):
+
+| arm | tuning n=53 | holdout n=17 |
+|---|---|---|
+| scale 8 | -7.5% +/- 3.7% | +0.0% +/- 0.0% |
+| scale 12 | -11.3% +/- 5.2% | +5.9% +/- 5.9% |
+
+At n=17 the holdout half resolves almost nothing, so this is not evidence the
+effect is absent -- it is evidence that 70 seeds is too few to split. The honest
+reading is that the pooled -5.7% at -2.0 se is suggestive and not conclusive,
+and the direction is what matters: nothing here supports declining cards, and
+two independent arms agree on the sign.
+
+WHAT THIS CHANGES
+
+PHASE_TWO.md Track C moves from "what quality bar" to removal and upgrades --
+the work deferred as an act-3-stage concern, now promoted, because it targets
+the nine cards actually diluting the deck. `DeckDirection` is measured to steer
+21% of picks, so "remove the worst card FOR THIS DECK" is answerable now in a way
+it was not when the removal logic was written to take curses only.
