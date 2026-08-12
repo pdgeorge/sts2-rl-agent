@@ -61,8 +61,34 @@ def test_the_quota_keeps_the_first_n_of_each_type_and_counts_the_rest(tmp_path):
     assert any(s["type"] == "card_reward" for s in states)
 
     trailer = load_trailer(path)
-    assert trailer["seen"]["combat_action"] == 10
-    assert trailer["kept"]["combat_action"] == 2
+    # Combats bucket by room, so a state with no room_type lands in ":?".
+    assert trailer["seen"]["combat_action:?"] == 10
+    assert trailer["kept"]["combat_action:?"] == 2
+
+
+def test_a_boss_fight_has_its_own_quota(tmp_path):
+    """Bosses must not lose the quota to floor-1 monsters, which they always did.
+
+    Sharing one combat bucket meant the first N monster turns filled it and the
+    rare, late fight was never sampled: 590 combat states across eleven live
+    sessions and zero from a boss. That made replaying live boss fights offline
+    -- the one comparison that would explain a 67% offline win rate against 36%
+    live -- impossible for want of a single fight on disk.
+    """
+    path = tmp_path / "capture.jsonl"
+    capture = RawCapture(path, per_type=2)
+
+    for i in range(10):
+        capture.observe(_state("combat_action", step=i, room_type="Monster"))
+    for i in range(3):
+        capture.observe(_state("combat_action", step=100 + i, room_type="Boss"))
+    capture.close()
+
+    states = load_capture(path)
+    boss = [s for s in states if s.get("room_type") == "Boss"]
+    monster = [s for s in states if s.get("room_type") == "Monster"]
+    assert len(monster) == 2, "monster quota not enforced"
+    assert len(boss) == 2, "the boss fight was crowded out again"
 
 
 def test_observe_reports_whether_it_kept_the_state(tmp_path):

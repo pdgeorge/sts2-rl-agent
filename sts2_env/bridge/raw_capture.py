@@ -62,15 +62,29 @@ TRAILER_KEY = "__capture_trailer__"
 
 
 def _state_type(state: dict[str, Any]) -> str:
-    """The message type, falling back to a stable placeholder.
+    """The quota bucket for a state: its type, and for combats its room type.
 
     A state with no ``type`` is itself worth capturing -- an untyped screen is
     a protocol question -- so it gets a bucket rather than being dropped.
+
+    COMBATS ARE SPLIT BY ROOM. Quota'ing all combat under one bucket meant the
+    first 25 floor-1 monster turns filled it and nothing else was ever kept:
+    590 combat states captured across eleven sessions and ZERO from a boss.
+    Which made the one comparison worth running impossible -- replaying live
+    boss fights offline is how we find out why offline wins 67% of them and
+    live wins 36%, and there was not a single boss fight on disk to replay.
+
+    Bosses are also the rarest combat and the latest, so they lose a shared
+    quota by construction, every time.
     """
     value = state.get("type")
     if value is None or value == "":
         return "<untyped>"
-    return str(value)
+    value = str(value)
+    if value == "combat_action":
+        room = str(state.get("room_type") or "?")
+        return f"{value}:{room}"
+    return value
 
 
 class RawCapture:
