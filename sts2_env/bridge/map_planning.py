@@ -90,6 +90,30 @@ FATAL_HP_FRACTION = 0.34
 HP_TIEBREAK_WEIGHT = 2.0
 
 
+def _env_override() -> None:
+    """Let a sweep vary the two parameters that actually shape the route.
+
+    Read once at import, in the worker process, so each arm of a paired sweep
+    holds its own value for its whole life. A parent-side patch would be
+    inherited by every worker and silently collapse the sweep to one arm --
+    which has already voided two sweeps on this project.
+    """
+    import os
+    global FATAL_HP_FRACTION, HP_TIEBREAK_WEIGHT
+    elite = os.environ.get("STS2_PLAN_ELITE_VALUE")
+    if elite:
+        ROOM_VALUE["elite"] = float(elite)
+    fatal = os.environ.get("STS2_PLAN_FATAL_HP")
+    if fatal:
+        FATAL_HP_FRACTION = float(fatal)
+    tiebreak = os.environ.get("STS2_PLAN_HP_WEIGHT")
+    if tiebreak:
+        HP_TIEBREAK_WEIGHT = float(tiebreak)
+
+
+_env_override()
+
+
 @dataclass(frozen=True)
 class PlannedRoute:
     """The best route found, and the immediate step that starts it."""
