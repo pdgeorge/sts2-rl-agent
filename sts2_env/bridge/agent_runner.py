@@ -130,11 +130,20 @@ ROOM_PRIORITY_LOW_HP = (
     "boss",
 )
 CARD_REWARD_TYPE_PRIORITY = ("power", "attack", "skill")
+#: Removal FIRST, on measurement rather than taste. `removal_vs_relic.py` over
+#: 30 real live boss decks: a removal is worth ~3.3 points of act 1 boss win and
+#: a marginal relic ~2, and removal costs 75 gold against a shop relic's 150-300
+#: -- roughly four times the win rate per gold. It was last here, behind
+#: everything, and gated to curses.
+#:
+#: `buy_card` and `buy_potion` have NOT been priced against either, so their
+#: order relative to each other is unchanged and unjustified. Only the one
+#: comparison that was measured has been acted on.
 SHOP_PURCHASE_ACTION_PRIORITY = (
+    "remove_card",
     "buy_relic",
     "buy_card",
     "buy_potion",
-    "remove_card",
     "buy_item",
 )
 SHOP_LEAVE_ACTION = "leave_shop"
@@ -1172,6 +1181,62 @@ def _deck_has_curse(state: dict[str, Any]) -> bool:
     return any(_is_curse(c) for c in (state.get("deck") or []))
 
 
+#: Never thin a basic below this many copies. The whole risk in removing
+#: anything other than a curse is deleting the deck's last block, and a floor
+#: answers it structurally rather than by judgement -- `_pick_card_select_indexes`
+#: sees a card list and cannot know what the deck needs.
+#:
+#: 2 because that is the floor `scripts/removal_vs_relic.py` measured with. The
+#: policy that ships has to be the policy that was priced, or the number does
+#: not transfer.
+MIN_BASIC_COPIES_TO_KEEP = 2
+
+#: Strike before Defend, for the same reason: a deck that cannot block dies
+#: faster than one that cannot kill.
+REMOVAL_BASIC_ORDER = ("STRIKE_", "DEFEND_")
+
+
+def _removal_order(cards: list[Any]) -> list[int]:
+    """Indexes worth removing, worst first, or empty if nothing is safe to take.
+
+    Curses first -- unambiguously worth losing. Then surplus basics, Strike
+    before Defend, unupgraded copies before upgraded ones so a removal never
+    throws away a rest-site smith.
+
+    MEASURED, not assumed. `scripts/removal_vs_relic.py` ran exactly this order
+    over 30 real live boss decks: 40% -> 44% -> 46% -> 50% boss win at 0/1/2/3
+    removals (n=360 per cell, monotonic, 2.7 sigma end to end), against +2
+    points for a marginal relic. That is what justifies removal outranking
+    `buy_relic` in `SHOP_PURCHASE_ACTION_PRIORITY`, and it is why this is no
+    longer curses-only.
+
+    The old objection -- "pulling Strikes out of a strike-synergy deck weakens
+    it" -- is real but is now answered by measurement rather than caution: it
+    was priced across the decks this agent actually builds and came out ahead.
+    The other half of that objection, the last Defend, is answered by the floor.
+    """
+    out = [i for i, c in enumerate(cards) if _is_curse(c)]
+    for prefix in REMOVAL_BASIC_ORDER:
+        same = [i for i, c in enumerate(cards)
+                if _card_name(c).upper().startswith(prefix) and not _is_curse(c)]
+        surplus = len(same) - MIN_BASIC_COPIES_TO_KEEP
+        if surplus <= 0:
+            continue
+        same.sort(key=lambda i: (_is_upgraded(cards[i]), i))
+        out.extend(same[:surplus])
+    return out
+
+
+def _has_removal_target(state: dict[str, Any]) -> bool:
+    """Is there a card in the deck this policy would actually delete?
+
+    Asked at the SHOP, before spending gold, because the screen that follows
+    declines when it finds nothing worth taking -- and a removal bought against
+    a deck with nothing to remove is 75 gold burned for no card.
+    """
+    return bool(_removal_order(list(state.get("deck") or [])))
+
+
 def _worth_upgrading(card: Any) -> bool:
     return not _is_basic_card(card) and not _is_upgraded(card)
 
@@ -1206,16 +1271,19 @@ def _pick_card_select_indexes(state: dict[str, Any], *, removing: bool = False) 
     count = min(min_select, max_select, len(cards))
 
     if removing:
-        # Curses only. If the game opened a removal screen with no curse on it,
-        # take nothing rather than removing something the deck wants -- the
-        # runner should not have bought the removal in the first place.
-        curses = [i for i in range(len(cards)) if _is_curse(cards[i])]
-        if not curses:
+        # Curses first, then surplus basics above the floor. Declining is still
+        # the fallback: a screen with nothing safe on it means the runner should
+        # not have bought the removal, and taking a card the deck needs is worse
+        # than wasting the gold that is already spent.
+        targets = _removal_order(cards)
+        if not targets:
             logger.warning(
-                "CARD_SELECT: asked to remove from a deck with no curse; "
-                "declining rather than removing a card the deck may need.")
+                "CARD_SELECT: asked to remove, but every card is either a "
+                "non-basic or the last %d copies of a basic; declining rather "
+                "than removing a card the deck may need.",
+                MIN_BASIC_COPIES_TO_KEEP)
             return []
-        return [_read_index(cards[i], i) for i in curses[:count]]
+        return [_read_index(cards[i], i) for i in targets[:count]]
 
     # Stable ordering: real cards first, then basics, and curses last of all,
     # each keeping deck order so the choice stays reproducible.
@@ -1510,11 +1578,10 @@ def _pick_shop_option(state: dict[str, Any]) -> int:
     if not options:
         return DEFAULT_CHOICE_INDEX
     for action in SHOP_PURCHASE_ACTION_PRIORITY:
-        if action == "remove_card" and not _deck_has_curse(state):
-            # Card removal is only ever bought to delete a curse. Without one
-            # the screen that follows can only take something the deck wants,
-            # and there is no way to tell from it whether that Defend was the
-            # deck's only block.
+        if action == "remove_card" and not _has_removal_target(state):
+            # Nothing this policy would delete: no curse, and every basic is
+            # down to its last MIN_BASIC_COPIES_TO_KEEP. Buying the removal
+            # anyway spends 75 gold on a screen that will decline.
             continue
         option = _first_matching_option(options, actions=(action,))
         if option is not None:

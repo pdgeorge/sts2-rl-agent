@@ -239,10 +239,33 @@ Offline agrees with live here, so this can be tuned offline with confidence.
    knowing before re-fitting the gate, because it may be that the gate is the
    wrong variable rather than the wrong number.
 
-**Status:** B.1 is running as `scripts/ab_elite_gate.py` — 3 arms (0.80 / 0.60 /
-0.45) x 150 paired seeds, reporting elites, relics, reach and boss win
-separately so a gate that buys relics while losing runs cannot hide inside a
-single clear rate. 39% of live runs currently fight zero elites.
+**Status: B.1 is done and it is a NULL — the sixth consecutive tuning null.**
+`scripts/ab_elite_gate.py`, 3 arms x 150 paired seeds:
+
+| gate | elites | 0-elite | reach | win\|reach | clear |
+|---|---|---|---|---|---|
+| 0.80 (ships) | 1.12 | 32% | 54% | 72% | 39% +/- 4.6 |
+| 0.60 | 1.25 | 29% | 51% | 78% | 40% +/- 4.6 |
+| 0.45 | 1.34 | 27% | 50% | 79% | 40% +/- 4.6 |
+
+Paired: 0.60 gains 8 and loses 5 (McNemar p=0.58); 0.45 gains 9 and loses 6
+(p=0.61). Nothing.
+
+**The elites column is the finding.** Halving the gate bought 0.22 elites per
+run and moved zero-elite runs 32% -> 27%. **The HP gate was never what
+suppressed elite count** — the greedy path simply does not pass elites. So the
+live correlation behind this experiment (0/1/2+ elites -> 7%/9%/23% clear) was
+essentially all reverse causation, exactly as flagged before running it.
+
+This promotes B.4. Routing is now the only remaining explanation for 39% of live
+runs fighting no elites, and it is the impossibility-class item.
+
+Two methodological notes. Offline takes 1.12-1.34 elites against live's 1.28,
+which is good 1:1 evidence for the routing code. And **the holdout half is
+useless at this size** — 37 runs gave 62% clear against tuning's 39%. `seed % 4
+== 3` does NOT correlate with the act 1 variant (49.6% vs 50.8% underdocks over
+4000 seeds), so it is small-n variance, but future sweeps need more seeds or a
+larger holdout share for §3.4 to do its job.
 
 ### Track C — deck quality (running now)
 
@@ -267,11 +290,40 @@ act 1 problem**, so "are the decks shit" is answered: no, or at least no more
 than offline's, which clear 48%.
 
 The upgrade half of the fallback is also now measured, and also negative for act
-1. `scripts/upgrades_vs_hp.py` gives ~5 win points per upgrade against ~1 per 1%
-of max HP; a rest site heals 30% of max HP, so heal (~30 points) beats smith
-(~5) everywhere except within ~5% of full. **Loosening the smith gate would
-lose act 1 runs.** Upgrades still compound across acts 2–3 in a way this act-1
-grid cannot see, so this closes Track C for M1 only, not for the act 3 plan.
+1. `scripts/upgrades_vs_hp.py` (2160 fights, n=180/cell, no errors) gives ~5 win
+points per upgrade against ~1 per 1% of max HP; a rest site heals 30% of max HP,
+so heal (~30 points) beats smith (~5) everywhere except within ~5% of full.
+**Loosening the smith gate would lose act 1 runs.** Upgrades still compound
+across acts 2–3 in a way this act-1 grid cannot see, so this closes Track C for
+M1 only, not for the act 3 plan.
+
+**The removal half is POSITIVE, and is the one thing here that shipped.**
+`scripts/removal_vs_relic.py`, 2880 fights over 30 real live boss decks:
+
+| basics removed | deck | all relics | one fewer relic |
+|---|---|---|---|
+| 0 (live) | 20.2 | 40% +/- 3 | 39% +/- 3 |
+| -1 | 19.2 | 44% +/- 3 | 42% +/- 3 |
+| -2 | 18.2 | 46% +/- 3 | 44% +/- 3 |
+| -3 | 17.2 | 50% +/- 3 | 48% +/- 3 |
+
+A removal is worth ~3.3 points and a marginal relic ~2. Monotonic across all
+four levels, 2.7 sigma end to end. It is **linear, not compounding** — which was
+named in advance as the thing that would have made removal a priority rather
+than a nicety, and it did not happen.
+
+Removal also costs 75 gold against a shop relic's 150-300, so it is roughly 4x
+the win rate per gold. `remove_card` moved to the front of
+`SHOP_PURCHASE_ACTION_PRIORITY` and is no longer restricted to curses; it now
+takes curses first, then surplus basics, Strike before Defend, unupgraded first,
+never below 2 copies. `tests/test_shop_card_removal.py` pins that exact order,
+because the measurement only transfers if the shipped policy is the policy that
+was priced.
+
+**Honest magnitude: ~+4 boss-win points, ~+2 clear points.** A tool that makes
+good work better, not a route to 50%. It is a lower bound, though — the grid
+prices only the boss fight, and a thinner deck also helps every fight on the way
+there, which lands in reach and is uncounted.
 
 ### Track D — keep hunting impossibilities
 
