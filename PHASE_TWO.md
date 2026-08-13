@@ -196,6 +196,21 @@ now keys per fight, so one session yields ~30 fights and the answer.
 **Gate:** the gap is explained, or offline is formally restricted to reach-rate
 questions.
 
+**Status: partially answered, and the answer is not the one this section
+expected.** `scripts/deck_or_play.py` and the relic capture together give:
+
+| | relics at boss | HP at boss | boss win |
+|---|---|---|---|
+| offline | 2.8 | 91% | 74% |
+| live | 4.7 | 81% | 29% |
+
+Live and offline decks are equivalent relic-for-relic (27% vs 26% at a
+controlled 80% HP, both carrying exactly 9.0 basics). Offline wins carrying
+FEWER relics, so relic acquisition is not the gap. At the measured exchange rate
+of ~1 win point per 1% of max HP and ~4.5 per relic, HP and relics together
+account for ~19 of the 45 points. **~26 points remain unexplained**, and no
+current hypothesis covers them. The gate stays shut.
+
 ### Track B — reach rate, 54% -> 75%+
 
 Offline agrees with live here, so this can be tuned offline with confidence.
@@ -209,6 +224,25 @@ Offline agrees with live here, so this can be tuned offline with confidence.
    Elites are a minority of rooms and a plurality of deaths.
 3. **Scored on act 2 reach as well**, so a routing change that buys act 1 by
    starving act 2 cannot pass.
+4. **Routing has no lookahead at all, and that is an impossibility rather than a
+   tuning gap.** `_pick_map_node` ranks the immediately reachable nodes by room
+   type and takes the best one. It cannot plan a route, cannot set up an elite
+   followed by a rest site, and diverts to a recovery room whenever *any*
+   visible node is unaffordable — so it zigzags rather than committing to a
+   path. The game's own beginner guide opens with the opposite advice: plan
+   backward from the boss, and favour routes with intersections. By §2.1's
+   pattern this is the highest-yield category we have, and it was missing from
+   this plan until the gate work surfaced it.
+5. **The elite gate keys on HP; the guide keys on deck strength** — "fight
+   elites when your deck is strong enough, they drop game-changing relics".
+   There is no deck-strength signal in the routing decision at all. Worth
+   knowing before re-fitting the gate, because it may be that the gate is the
+   wrong variable rather than the wrong number.
+
+**Status:** B.1 is running as `scripts/ab_elite_gate.py` — 3 arms (0.80 / 0.60 /
+0.45) x 150 paired seeds, reporting elites, relics, reach and boss win
+separately so a gate that buys relics while losing runs cannot hide inside a
+single clear rate. 39% of live runs currently fight zero elites.
 
 ### Track C — deck quality (running now)
 
@@ -225,6 +259,19 @@ falls out of quality rather than being capped.
 already in the deck, so a smaller deck is a MORE basic deck — 9 of 15 is 60%
 against 9 of 21 at 43%. If stricter loses, the answer is removal and upgrades,
 not declining, and Track C becomes that instead.
+
+**Status: closed, negative — and the stated open risk is what happened.** The
+quality-bar sweep came back at -5.7%, and `deck_or_play.py` then showed live and
+offline decks winning identically relic-for-relic. **Deck composition is not the
+act 1 problem**, so "are the decks shit" is answered: no, or at least no more
+than offline's, which clear 48%.
+
+The upgrade half of the fallback is also now measured, and also negative for act
+1. `scripts/upgrades_vs_hp.py` gives ~5 win points per upgrade against ~1 per 1%
+of max HP; a rest site heals 30% of max HP, so heal (~30 points) beats smith
+(~5) everywhere except within ~5% of full. **Loosening the smith gate would
+lose act 1 runs.** Upgrades still compound across acts 2–3 in a way this act-1
+grid cannot see, so this closes Track C for M1 only, not for the act 3 plan.
 
 ### Track D — keep hunting impossibilities
 
