@@ -750,7 +750,19 @@ def run_agent(
                             action_int = live_search_agent.decide(
                                 state, prev_action=_live_search_last_action,
                             )
+                            # Attribute the fight, not just the run. A run with
+                            # search enabled can still have its BOSS played by
+                            # the trained model after two raises, and that was
+                            # unrecoverable from the old journals.
+                            try:
+                                journal.note_search()
+                            except Exception:  # noqa: BLE001 - never cost a run
+                                pass
                         except Exception as search_exc:
+                            try:
+                                journal.note_search(failed=True)
+                            except Exception:  # noqa: BLE001
+                                pass
                             # PERSIST IT, WITH THE STATE THAT CAUSED IT. This
                             # only ever went to the console via logger.exception,
                             # so the one thing that would let it be fixed -- the
@@ -2190,17 +2202,26 @@ def main() -> None:
     )
     parser.add_argument(
         "--live-search",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help=(
             "Use the SearchAgent turn planner for combat decisions instead of "
             "the trained model's single-step argmax. The search enumerates "
             "legal orderings this turn and lets the enemies reply on a clone, "
             "lifting boss win rate from 6.7%% to ~20%% on the harvested "
-            "benchmark (docs/MODELS.md:120). Requires the Phase 1.1 mod "
-            "patch from PR #6 to send encounter / encounter_seed / "
-            "combat_seed; without them, the first combat_action raises and "
-            "the runner logs + falls back to END_TURN every step until the "
-            "mod is rebuilt."
+            "benchmark (docs/MODELS.md:120).\n"
+            "\n"
+            "ON BY DEFAULT since 2026-08-14, and that is the fix for a "
+            "measurement error rather than a tuning choice. It was opt-in, so "
+            "only 93 of 508 recorded live runs -- 18%% -- actually used the "
+            "search. Every pooled number this project has quoted was therefore "
+            "dominated by the TRAINED MODEL, not by the agent under "
+            "development. Split apart, the search reaches the boss 58.4%% of "
+            "the time against the model's 45.4%%, and offline reaches 60.7%% -- "
+            "so offline was predicting live reach correctly all along and we "
+            "were comparing it against a different agent.\n"
+            "\n"
+            "Pass --no-live-search to run the trained model instead."
         ),
     )
 

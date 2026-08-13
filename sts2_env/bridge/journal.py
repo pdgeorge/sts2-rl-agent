@@ -64,6 +64,27 @@ def _options_for(state: dict[str, Any]) -> list:
 
 _COMBAT_STATES = {"combat_action", "combat"}
 
+#: States that appear DURING a fight as an overlay and must not end it.
+#:
+#: A card-select or potion screen mid-combat is not the fight finishing, but the
+#: naive "any non-combat state ends combat" rule counted it as one: the journal
+#: wrote combat_end with 0 turns and 0 damage, then combat_start again when the
+#: next combat_action arrived. 156 of 511 recorded act 1 boss "fights" were this
+#: artefact -- 31% -- and it silently corrupted every per-fight statistic
+#: computed from the journal, including a mean-turns figure quoted in analysis
+#: on 2026-08-14 before the cause was found.
+#:
+#: Reach and clear rate are NOT affected: those are derived from combat_start
+#: and run_end, and a duplicated combat_start does not change a boolean.
+#: Only genuine mid-fight PROMPTS belong here. `card_reward`, `reward_screen`
+#: and `card_bundle` legitimately follow a won fight and must still end it --
+#: including them broke `test_leaving_a_fight_records_what_it_cost`, which is
+#: the test doing its job.
+_COMBAT_OVERLAY_STATES = {
+    "card_select",
+    "crystal_sphere",
+}
+
 
 def _describe(option: Any) -> Any:
     """A readable summary of one offered option.
@@ -137,6 +158,13 @@ class RunJournal:
         self._combat_round: Any = None
         self._cards_this_combat = 0
         self._turns_this_combat = 0
+        # WHICH AGENT PLAYED THIS FIGHT. Live search is disabled per-combat
+        # after two exceptions and the fight silently continues on the trained
+        # model, so "the run had search enabled" does not mean "the boss fight
+        # was searched". That distinction is unrecoverable from the old logs
+        # and is exactly where the 42-point boss gap could be hiding.
+        self._searches_this_combat = 0
+        self._search_failures_this_combat = 0
 
     def start_run(self, run_index: int) -> None:
         self.run_index = run_index
@@ -220,7 +248,11 @@ class RunJournal:
         if in_combat and not self._in_combat:
             self._begin_combat(state)
         elif self._in_combat and not in_combat:
-            self._end_combat(state)
+            # An overlay is not the end of the fight. Ignore it and stay in
+            # combat; the fight ends when a state arrives that could only
+            # follow one.
+            if state_type not in _COMBAT_OVERLAY_STATES:
+                self._end_combat(state)
         elif in_combat:
             self._during_combat(state)
 
@@ -233,6 +265,13 @@ class RunJournal:
         self._combat_round = state.get("round")
         self._cards_this_combat = 0
         self._turns_this_combat = 0
+        # WHICH AGENT PLAYED THIS FIGHT. Live search is disabled per-combat
+        # after two exceptions and the fight silently continues on the trained
+        # model, so "the run had search enabled" does not mean "the boss fight
+        # was searched". That distinction is unrecoverable from the old logs
+        # and is exactly where the 42-point boss gap could be hiding.
+        self._searches_this_combat = 0
+        self._search_failures_this_combat = 0
         self._combat_enemies = [
             {"id": e.get("id"), "hp": e.get("hp"), "max_hp": e.get("max_hp")}
             for e in (state.get("enemies") or [])
@@ -280,8 +319,18 @@ class RunJournal:
             else None,
             cards_played=self._cards_this_combat,
             turns=self._turns_this_combat,
+            searches=self._searches_this_combat,
+            search_failures=self._search_failures_this_combat,
+            played_by=("search" if self._searches_this_combat else "model"),
             enemies=self._combat_enemies,
         )
+
+    def note_search(self, *, failed: bool = False) -> None:
+        """Record that the search was asked for this combat's next action."""
+        if failed:
+            self._search_failures_this_combat += 1
+        else:
+            self._searches_this_combat += 1
 
     # -- observing the decisions ------------------------------------------
 

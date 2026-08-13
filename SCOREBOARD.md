@@ -9,6 +9,8 @@ Not offline. Not "explained a gap". Not "shipped a change". Those can all be tru
 | date | n | reach boss | win \| reach | **clear** | what changed |
 |---|---|---|---|---|---|
 | 2026-08-13 | 496 | 48.0% +/- 4.4 | 26.5% +/- 5.6 | **12.7% +/- 2.9** | baseline, every live journal to date |
+| 2026-08-14 | 89 | 58.4% +/-10.2 | 25.0% +/-11.8 | **14.6% +/- 7.3** | the subset that actually ran the SEARCH |
+| 2026-08-14 | 410 | 45.4% +/- 4.8 | 26.9% +/- 6.4 | **12.2% +/- 3.2** | the subset that ran the v3 TRAINED MODEL |
 
 ## Target
 
@@ -25,8 +27,9 @@ This exists because the failure mode is mine and it is documented: quoting a fav
 | # | change | predicted effect | measured | verdict |
 |---|---|---|---|---|
 | 1 | shop card removal, curses -> worst-card | +2 clear points | pending | — |
-| 2 | reconstruction audit fixes | unknown until the audit runs; predict before fixing | pending | — |
-| 3 | map routing with lookahead (`map_planning.py`) | reach 48% -> 62% live; offline reach 54% -> 65% | pending | — |
+| 2 | reconstruction audit fixes | unknown until the audit runs; predict before fixing | audit clean at the boss (0/60 wrong); no fix needed | **CLOSED, no change** |
+| 4 | `--live-search` on by default | reach 45.4% -> 58.4% (the rate search already achieves on the 89 runs that used it) | pending | — |
+| 3 | map routing with lookahead (`map_planning.py`) | reach 48% -> 62% live; offline reach 54% -> 65% | offline reach 60.7% -> 56.0%; paired net -2, p=0.89; best of 5 variants +0, p=1.00 | **MISS** |
 
 ## Measurement rules
 
