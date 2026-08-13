@@ -138,6 +138,34 @@ public class RlMapHandler : IScreenHandler, IHandler
                 ["type"] = mp.Point.PointType.ToString(),
                 ["row"] = mp.Point.coord.row,
                 ["col"] = mp.Point.coord.col,
+                // Links this choice into the `map` graph below.
+                ["map_id"] = $"{mp.Point.coord.col},{mp.Point.coord.row}",
+            });
+        }
+
+        // THE WHOLE MAP, not just the next step. Without it the agent can only
+        // rank the adjacent rooms and take the best one, which is how 52% of
+        // live runs died before the boss and 39% fought no elite at all. The
+        // game's guide says to plan backward from the boss; `plan_route` does,
+        // and it needs the graph to do it. `allPoints` already holds every node,
+        // so this is serialisation, not extra work.
+        var mapNodes = new List<Dictionary<string, object>>();
+        string bossId = null;
+        foreach (NMapPoint mp in allPoints)
+        {
+            string id = $"{mp.Point.coord.col},{mp.Point.coord.row}";
+            string ptype = mp.Point.PointType.ToString();
+            if (ptype.Equals("Boss", StringComparison.OrdinalIgnoreCase))
+            {
+                bossId = id;
+            }
+            mapNodes.Add(new Dictionary<string, object>
+            {
+                ["id"] = id,
+                ["type"] = ptype,
+                ["children"] = mp.Point.Children
+                    .Select(c => $"{c.coord.col},{c.coord.row}")
+                    .ToList(),
             });
         }
 
@@ -145,6 +173,11 @@ public class RlMapHandler : IScreenHandler, IHandler
         {
             ["type"] = "map_select",
             ["nodes"] = nodes,
+            ["map"] = new Dictionary<string, object>
+            {
+                ["nodes"] = mapNodes,
+                ["boss_id"] = bossId,
+            },
             ["floor"] = runState.TotalFloor,
             ["act"] = runState.CurrentActIndex + 1,
         };
