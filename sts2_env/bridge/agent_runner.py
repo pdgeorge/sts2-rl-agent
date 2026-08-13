@@ -1071,6 +1071,49 @@ def required_hp_fraction(room_type: str) -> float:
     return ROOM_MIN_HP_FRACTION.get(_canonical_text(room_type), 0.0)
 
 
+def _plan_from_state(state: dict[str, Any], nodes: list[dict]) -> int | None:
+    """Route to the boss using the full map, or None if it was not sent.
+
+    The map arrives as `state["map"]` = {"nodes": [{"id", "type", "children"}]},
+    and each choosable node carries `map_id` linking it into that graph. Callers
+    that cannot supply it -- the live mod currently sends only the reachable
+    next nodes -- fall through to the greedy chooser unchanged, so this is
+    additive and cannot regress anything that does not opt in.
+    """
+    graph = state.get("map") or {}
+    map_nodes = graph.get("nodes") if isinstance(graph, dict) else None
+    if not map_nodes:
+        return None
+
+    by_id = {str(n.get("id")): n for n in map_nodes if isinstance(n, dict)}
+    starts = [(i, by_id.get(str(n.get("map_id")))) for i, n in enumerate(nodes)]
+    starts = [(i, n) for i, n in starts if n is not None]
+    if not starts:
+        return None
+
+    hp, max_hp = _read_hp_pair_from_state(state)
+    if not hp or not max_hp:
+        return None
+
+    from sts2_env.bridge.map_planning import plan_route
+
+    index_of = {id(n): i for i, n in starts}
+    route = plan_route(
+        children_of=lambda n: [by_id[c] for c in (n.get("children") or [])
+                               if c in by_id],
+        start_nodes=[n for _, n in starts],
+        room_type_of=lambda n: n.get("type"),
+        hp_fraction=hp / max_hp,
+    )
+    if route is None:
+        return None
+    chosen = index_of.get(id(route.first_step))
+    if chosen is None:
+        return None
+    logger.info("MAP: planned route -- %s", route.describe())
+    return _read_index(nodes[chosen], chosen)
+
+
 def _can_afford(state: dict[str, Any], node: dict[str, Any]) -> bool:
     """Is the player healthy enough for this room to be worth entering?"""
     hp, max_hp = _read_hp_pair_from_state(state)
@@ -1106,6 +1149,12 @@ def _pick_map_node(state: dict[str, Any]) -> int:
     nodes = list(state.get("nodes", []))
     if not nodes:
         return DEFAULT_CHOICE_INDEX
+
+    # PLAN THE WHOLE ROUTE when the map is available. Everything below this is
+    # the greedy fallback for callers that can only see the adjacent nodes.
+    planned = _plan_from_state(state, nodes)
+    if planned is not None:
+        return planned
 
     affordable = [node for node in nodes if _can_afford(state, node)]
     hp, _ = _read_hp_pair_from_state(state)

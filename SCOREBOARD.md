@@ -26,7 +26,7 @@ This exists because the failure mode is mine and it is documented: quoting a fav
 |---|---|---|---|---|
 | 1 | shop card removal, curses -> worst-card | +2 clear points | pending | — |
 | 2 | reconstruction audit fixes | unknown until the audit runs; predict before fixing | pending | — |
-| 3 | map routing with lookahead | reach 48% -> 62% | pending | — |
+| 3 | map routing with lookahead (`map_planning.py`) | reach 48% -> 62% live; offline reach 54% -> 65% | pending | — |
 
 ## Measurement rules
 

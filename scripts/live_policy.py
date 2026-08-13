@@ -60,6 +60,57 @@ def _boss_is_next(mgr) -> bool:
     return current_row + 1 >= int(boss_row)
 
 
+def _coord_id(coord) -> str | None:
+    """Stable id for a map coordinate, in the shape `_pick_map_node` expects."""
+    if coord is None:
+        return None
+    if isinstance(coord, (tuple, list)) and len(coord) >= 2:
+        return f"{int(coord[0])},{int(coord[1])}"
+    col = getattr(coord, "col", None)
+    row = getattr(coord, "row", None)
+    if col is None or row is None:
+        return None
+    return f"{int(col)},{int(row)}"
+
+
+def _map_graph(mgr) -> dict:
+    """The act map as plain JSON, matching what the mod will send live.
+
+    Deliberately a serialisable shape rather than the ActMap object: the live
+    bridge has to send this over the wire, and one function serving both paths
+    is only true if both are handed the same thing. Passing the live object
+    offline would let the planner quietly depend on attributes the bridge can
+    never supply.
+    """
+    # A/B switch. Withholding the map is exactly what the greedy arm is -- the
+    # planner falls back when the map is absent -- so both arms run the SAME
+    # shipping function and differ only in what they are told.
+    import os
+    if os.environ.get("STS2_NO_MAP_PLANNING") == "1":
+        return {}
+    rs = getattr(mgr, "run_state", None)
+    act_map = getattr(rs, "map", None)
+    grid = getattr(act_map, "_grid", None) if act_map is not None else None
+    if not grid:
+        return {}
+    nodes = []
+    for point in grid.values():
+        pid = _coord_id(getattr(point, "coord", None))
+        if pid is None:
+            continue
+        ptype = getattr(point, "point_type", None)
+        nodes.append({
+            "id": pid,
+            "type": getattr(ptype, "name", str(ptype)),
+            "children": [c for c in
+                         (_coord_id(getattr(ch, "coord", None))
+                          for ch in (getattr(point, "children", None) or []))
+                         if c],
+        })
+    boss = getattr(act_map, "boss_point", None)
+    return {"nodes": nodes, "boss_id": _coord_id(getattr(boss, "coord", None))}
+
+
 def _hp_fields(mgr) -> dict:
     """The HP/floor/act fields every live chooser reads off a bridge state."""
     rs = getattr(mgr, "run_state", None)
@@ -153,8 +204,15 @@ def noncombat_action(mgr, phase: str, run_mask, rng, *, layout=None) -> int | No
         if not moves:
             return None
         state = {
-            "nodes": [{"index": i, "type": a.get("point_type")}
+            "nodes": [{"index": i, "type": a.get("point_type"),
+                       "map_id": _coord_id(a.get("coord"))}
                       for i, a in enumerate(moves)],
+            # THE WHOLE MAP, so `_pick_map_node` can plan a route to the boss
+            # rather than pick the best adjacent room. The greedy chooser is
+            # what let 52% of live runs die before reaching the boss and 39%
+            # fight no elites at all; the game's own guide says to plan
+            # backward from the boss.
+            "map": _map_graph(mgr),
             **_hp_fields(mgr),
         }
         chosen = _live._pick_map_node(state)
