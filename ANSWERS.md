@@ -1,133 +1,115 @@
 # Is it the decks, or is it the play?
 
-Both. The deck is the bigger half, and the deck problem has one dominant cause
-that is a rule which almost never fires — the same shape as every other real bug
-this project has found.
+**Neither, mostly.** The decks are fine — offline's and live's are equivalent
+once measured fairly. What differs is the condition she arrives in, and the live
+path itself.
+
+I got this wrong at 1am and corrected it at 10am. The wrong version is in the
+git history; this is what the measurements actually support.
 
 ---
 
-## 1. The decomposition
+## 1. The decks are NOT the problem
 
-`scripts/deck_or_play.py` takes the decks LIVE actually carried to the act 1
-boss — 85 distinct decks read out of the captured protocol — and fights the six
-act 1 bosses with them offline, under the same search that plays live, at a
-controlled 80% HP (live's own measured mean at boss entry is 81%).
+`scripts/deck_or_play.py` fights the six act 1 bosses with real decks, under the
+same search that plays live, at a controlled 80% HP. Same search, same HP, same
+bosses — only the deck differs.
 
-841 fights:
-
-| | boss win rate |
+| deck | boss win |
 |---|---|
-| offline, its OWN decks | **74% +/- 3** |
-| offline, LIVE's decks | **46% +/- 2** |
-| live, live's decks | **29% +/- 3** |
+| live decks, with their real relics | **46% +/- 2** (n=841) |
+| live decks, relics stripped | **27% +/- 3** (n=243) |
+| offline decks, relics absent | **26% +/- 3** (n=201) |
 
-    74 -> 46   28 points lost to THE DECK   (same play, worse cards)
-    46 -> 29   17 points lost to THE PLAY   (same cards, live path)
+Relic-for-relic, **live's decks and offline's decks win at the same rate**
+(27% against 26%). Composition agrees too:
 
-So the decks cost roughly 1.6x what the play costs. Neither is small.
+| | size | basic Strike/Defend | upgraded | HP at boss |
+|---|---|---|---|---|
+| offline | 19.1 | 9.0 (47%) | 2.2 (12%) | **93%** |
+| live | 20.4 | 9.0 (44%) | 1.5 (7%) | **81%** |
 
-Caveat, stated rather than buried: the 74% figure comes from the funnel at
-`max_nodes=2000`, while the 46% run used live's own 20,000. The middle row
-therefore had the BETTER searcher and still won less, which strengthens the deck
-conclusion rather than weakening it — but the two are not a perfectly controlled
-pair.
+Identical basics. So "her decks are shit" is not what the data says — or rather,
+they are, but offline's are equally shit and offline wins 74%.
+
+### The mistake worth recording
+
+My first pass reported "offline decks are 20 points WORSE than live's". That was
+my own harness: `_offline_boss_decks` set `relics: []`, because the funnel
+captured `boss_deck` and not relics. Live decks fought with their real 4.7
+relics; offline decks fought bare. Stripping live's relics reproduces the entire
+difference (46% -> 27%), which is how the artifact was caught.
 
 ---
 
-## 2. Why the decks are bad
+## 2. What relics are worth: 22 points
 
-81 distinct live decks at floors 15-17:
+    live decks WITH relics    46%
+    live decks WITHOUT        27%
 
-| | |
-|---|---|
-| size | mean 20.4, median 21 |
-| basic Strike/Defend | **9.0 cards = 44% of the deck** |
-| **upgraded** | **1.5 cards = 7% of the deck** |
-
-Nine basics and one and a half upgrades, going into a 173-222 HP boss.
-
-The most-played cards in those fights were Defend (85) and Strike (80) out of
-385 total — she is playing 6-damage Strikes at a 200 HP boss because 44% of her
-deck is 6-damage Strikes.
+Live carries **4.7 relics** at the act 1 boss (n=488). Offline's count was never
+recorded — the funnel is capturing it now. **This is the single most important
+open number**, because relics are worth more than any deckbuilding change
+measured so far, and if offline accumulates more of them that is most of the gap
+on its own.
 
 ---
 
-## 3. The dominant cause: she can almost never upgrade
+## 3. The decomposition, corrected
 
-`_pick_rest_option` smiths only when `hp >= 0.8 * max_hp`. Measured over 137
-captured rest-site visits:
-
-    HP on arrival at a rest site:  p10 20%   median 42%   p90 82%
-
-| threshold | rest visits that would SMITH |
-|---|---|
-| **0.80 (current)** | **11%** |
-| 0.70 | 21% |
-| 0.60 | 27% |
-| 0.50 | 39% |
-| 0.40 | 55% |
-
-**Nine rest visits in ten are spent healing.** That is exactly the 7% upgraded
-deck, arrived at honestly: she cannot upgrade because she is never healthy
-enough at the moment the choice is offered.
-
-This is the same failure as the two before it — a rule set where its condition
-is nearly unreachable, so a policy that exists never influences a run:
-
-| rule | condition | how often it could fire |
+| | boss win | what differs from the row below |
 |---|---|---|
-| card reward skip | `score < 0.0` | 0 of 366 screens |
-| deck bloat skip | `deck > 30` | never; act 1 decks are 21-22 |
+| offline, its own everything | 74% | HP 93%, its own relic count (unknown) |
+| live decks + relics, at 80% HP, played offline | 46% | **28 points: arrival condition** |
+| live, actually playing | 29% | **17 points: the live path** |
+
+- **28 points are arrival condition** — HP (93% against 81%) and relics. Not
+  deck composition, which is equivalent.
+- **17 points are the live path** — identical deck, identical HP, identical
+  relics, and the offline search still wins more. That is reconstruction,
+  bridge, or execution.
+- **0 points are deck composition.**
+
+---
+
+## 4. The rest-site finding still stands, but its size is now unclear
+
+`_pick_rest_option` smiths only at `hp >= 0.8 * max_hp`, and she reaches rest
+sites at a median 42% HP, so **it can fire on 11% of visits** (15 of 137). That
+is real, and it is the same shape as every other genuine bug here — a rule whose
+condition is nearly unreachable:
+
+| rule | condition | could fire |
+|---|---|---|
+| card reward skip | `score < 0.0` | 0 of 366 |
+| deck bloat skip | `deck > 30` | never (decks are 21) |
 | **rest upgrade** | **`hp >= 80%`** | **11% of visits** |
 
----
+But the upgrade difference it explains is only 2.2 against 1.5 cards, and the
+decks perform the same. So fixing it may buy little. `scripts/upgrades_vs_hp.py`
+is measuring exactly that — win rate against upgrades (0/+2/+4/+6) crossed with
+HP (80/65/50%) — and an early n=144 sample suggested upgrades outrun the HP they
+cost by a wide margin. **Not yet trustworthy; the full grid is still running.**
 
-## 4. Why this is not the same as "just lower the threshold"
-
-The 0.80 came from somewhere real. Its docstring records that a flat
-`hp < 0.5 * max_hp` test "said SMITH 17 times at a median 49 HP — upgrading a
-card immediately before an act boss" and got runs killed. Healing before a boss
-is correct. The bug is that the SAME threshold is applied to every rest site,
-including the ones nowhere near a boss.
-
-`_boss_is_next` already exists and is already wired through
-(`agent_runner.py`, plumbed via `live_policy._boss_is_next`). It is currently
-used to pick between `required_hp_fraction("boss")` and `("elite")` — which are
-**both 0.80**, so the branch selects between two identical values and does
-nothing at all.
-
-So the fix is not a new threshold, it is making the existing branch mean
-something: heal before a boss, upgrade otherwise.
+`_boss_is_next` already exists and already branches, but between
+`required_hp_fraction("boss")` and `("elite")`, which are **both 0.80** — so it
+selects between two identical numbers and does nothing.
 
 ---
 
-## 5. What I would change, in order
+## 5. What I would do next, in order
 
-1. **Split the rest thresholds.** Boss-next stays at 0.80. Ordinary rest sites
-   drop to something that can actually fire. The sweep decides the value, and it
-   is a cheap one — it needs the same 3 arms x 70 seeds the last one used.
-2. **Then re-measure the deck.** Upgrades should move the 7% figure directly;
-   if they do not, this analysis is wrong and I want to know quickly.
-3. **Then the 17 points of play.** That is the offline/live gap and it is a
-   separate investigation, not a deckbuilding one.
+1. **Count offline's relics.** Running now. If offline carries meaningfully more
+   than 4.7, that plus the 12-point HP difference is the 28 points, and the work
+   is relic acquisition and HP economy — not deckbuilding at all.
+2. **Read the upgrade/HP grid.** It says whether the rest-site fix is worth
+   building before we spend a sweep on it.
+3. **Then the 17 points of live-path loss**, which is a separate investigation.
 
-## 6. What I am NOT proposing
+## 6. Loose end, now a real bug
 
-- **Removal.** You were right and the sweep agreed from the other direction:
-  declining cards made act 1 *worse* (-5.7% +/- 2.8%), because a smaller deck is
-  a more-basic deck when the basics are what is diluting it. Upgrades attack the
-  same problem from the side that works — they improve the cards already there
-  instead of refusing new ones.
-- **A new heuristic.** Everything above uses machinery that already exists and
-  is already plumbed. `_boss_is_next` is live and currently branches between two
-  equal numbers.
-
----
-
-## 7. Loose end found on the way
-
-`deck_or_play` died at 841/1020 with `CloneError: a turn-setup callback is
-pending`. That is the search failing to clone a legal position. It has not been
-seen live yet, but a raise inside `LiveSearch.decide` is exactly how a fight
-gets handed to the trained model, and that is part of the 17 points. Worth
-chasing after the rest-site work.
+`CloneError: a turn-setup callback is pending` killed two separate harness runs
+(841/1020 and 201/360). The search cannot clone certain legal positions. It has
+not been seen live yet, but a raise inside `LiveSearch.decide` is precisely how a
+fight gets handed to the trained model — and that mechanism is part of the 17
+points.

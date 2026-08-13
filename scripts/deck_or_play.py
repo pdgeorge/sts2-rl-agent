@@ -130,6 +130,34 @@ def _live_boss_decks(min_floor: int, max_floor: int) -> list[dict]:
     return list(seen.values())
 
 
+def _offline_boss_decks(path: Path) -> list[dict]:
+    """Decks the OFFLINE agent carried into the act 1 boss, from the funnel."""
+    seen: dict[tuple, dict] = {}
+    if not path.exists():
+        return []
+    with path.open(encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            deck = row.get("boss_deck")
+            max_hp = row.get("boss_max_hp")
+            if not deck or not max_hp:
+                continue
+            key = (tuple(sorted(c["id"] for c in deck)), max_hp)
+            seen.setdefault(key, {
+                "deck": [{"id": c["id"], "upgraded": bool(c.get("upgraded"))}
+                         for c in deck],
+                "hp": row.get("boss_hp", 0), "max_hp": max_hp,
+                "relics": [], "floor": 17,
+            })
+    return list(seen.values())
+
+
 def _fight(job) -> dict:
     entry, boss, trial, max_nodes, time_budget, hp_percent = job
 
@@ -185,6 +213,21 @@ def _pct(k: int, n: int) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--strip-relics", action="store_true",
+                    help=("Fight with no relics. Used to measure how much the "
+                          "relic-less offline capture distorts a deck "
+                          "comparison -- the funnel records boss_deck but not "
+                          "relics, so offline decks fight bare."))
+    ap.add_argument("--decks-from", default="live",
+                    choices=("live", "offline"),
+                    help=("live reads the captured protocol; offline reads the "
+                          "funnel's boss_deck capture. Running both at the SAME "
+                          "--hp-percent is the only way to separate deck quality "
+                          "from arrival HP -- offline naturally arrives at 93%% "
+                          "and live at 81%%, so an uncontrolled comparison "
+                          "attributes an HP difference to the deck."))
+    ap.add_argument("--offline-rows",
+                    default="output/funnel.deckcapture.rows.jsonl")
     ap.add_argument("--min-floor", type=int, default=15)
     ap.add_argument("--max-floor", type=int, default=17)
     ap.add_argument("--runs-per-deck", type=int, default=2,
@@ -200,7 +243,10 @@ def main() -> int:
     ap.add_argument("--out", default="output/deck_or_play.jsonl")
     args = ap.parse_args()
 
-    decks = _live_boss_decks(args.min_floor, args.max_floor)
+    if args.decks_from == "offline":
+        decks = _offline_boss_decks(Path(args.offline_rows))
+    else:
+        decks = _live_boss_decks(args.min_floor, args.max_floor)
     if args.max_decks:
         decks = decks[:args.max_decks]
     if not decks:
@@ -218,6 +264,9 @@ def main() -> int:
           f"fighting at {args.hp_percent:.0f}% of it")
     print()
 
+    if args.strip_relics:
+        for d in decks:
+            d["relics"] = []
     jobs = [(d, boss, t, args.max_nodes, args.time_budget, args.hp_percent)
             for d in decks for boss in ACT1_BOSSES
             for t in range(args.runs_per_deck)]

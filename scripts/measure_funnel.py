@@ -71,6 +71,7 @@ def _walk(job) -> dict:
 
     boss = None
     boss_deck: list = []
+    boss_relics: list = []
     boss_hp = boss_max_hp = 0
     bosses: dict[int, str] = {}
     for _ in range(3000):
@@ -99,6 +100,15 @@ def _walk(job) -> dict:
                 ]
                 boss_hp = int(getattr(player, "current_hp", 0) or 0)
                 boss_max_hp = int(getattr(player, "max_hp", 0) or 0)
+                # RELICS TOO. Leaving them out made an offline/live deck
+                # comparison meaningless: offline decks fought bare while live
+                # decks carried their real 4.7, and stripping relics costs 22
+                # points, so the harness reported a 20-point deck difference
+                # that was entirely its own omission.
+                boss_relics = [
+                    (r.name if hasattr(r, "name") else str(r))
+                    for r in (getattr(player, "relics", None) or [])
+                ]
             # EVERY act's boss, by act. Without this the only measurable
             # milestone is "cleared act N", and reach-versus-win cannot be
             # separated for act 2 or 3 -- which is the whole point of a funnel.
@@ -130,6 +140,7 @@ def _walk(job) -> dict:
         "boss_deck": boss_deck,
         "boss_hp": boss_hp,
         "boss_max_hp": boss_max_hp,
+        "boss_relics": boss_relics,
     }
     env.close()
     return row
