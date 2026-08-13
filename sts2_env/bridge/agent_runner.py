@@ -1092,6 +1092,20 @@ def _plan_from_state(state: dict[str, Any], nodes: list[dict]) -> int | None:
     next nodes -- fall through to the greedy chooser unchanged, so this is
     additive and cannot regress anything that does not opt in.
     """
+    # OFF BY DEFAULT: this was MEASURED WORSE and must not ship silently.
+    # 150 paired offline seeds, five parameter settings: reach 60.7% -> 56.0%,
+    # paired net -2 (McNemar p=0.89), best variant +0 (p=1.00). Recorded as a
+    # MISS in SCOREBOARD.md.
+    #
+    # The code stays because the mod now sends the map and the next attempt
+    # should not have to rebuild the plumbing -- the likely defect is that it
+    # routes on HP feasibility while the game's own guide keys on DECK
+    # strength, which is not modelled here at all. Set STS2_MAP_PLANNING=1 to
+    # try again. It stays off until a paired run beats greedy.
+    import os
+    if os.environ.get("STS2_MAP_PLANNING") != "1":
+        return None
+
     graph = state.get("map") or {}
     map_nodes = graph.get("nodes") if isinstance(graph, dict) else None
     if not map_nodes:
