@@ -1702,6 +1702,17 @@ _LOSE_HP = re.compile(r"lose\s+(\d+)\s+(max\s+)?hp", re.IGNORECASE)
 _HEAL_HP = re.compile(r"heal\s+(\d+)\s+hp", re.IGNORECASE)
 _SET_MAX_HP = re.compile(r"max\s+hp\s+(?:becomes|is set to|to)\s+(\d+)", re.IGNORECASE)
 
+#: "Pay 40 Gold". Events charge gold as readily as HP and the safety check only
+#: ever parsed HP, so a paid option read as free.
+#:
+#: Endless Conveyor is the case that found this. Every option is "Pay 40 Gold.
+#: <reward>. Continue feasting!" against one free alternative, "Observe the
+#: Chef". Nothing in the text mentions HP, so every grab scored as harmless and
+#: the agent fed the belt 120 gold in one visit -- most of a shop relic -- and
+#: on an earlier session answered the same event 83 times.
+_PAY_GOLD = re.compile(r"pay\s+(?:\[[^\]]*\])?\s*(\d+)\s*(?:\[[^\]]*\])?\s*gold",
+                       re.IGNORECASE)
+
 # Never walk out of an event below this much of your maximum. An event is worth
 # HP, but no event reward is worth arriving at the next elite unable to survive
 # its opening turn -- which is how these runs actually end.
@@ -1785,6 +1796,12 @@ def _event_option_text(option: dict[str, Any]) -> str:
     )
 
 
+def _event_gold_cost(option: dict[str, Any]) -> int:
+    """Gold this option charges, as far as the text admits."""
+    text = _event_option_text(option)
+    return sum(int(a) for a in _PAY_GOLD.findall(text))
+
+
 def _event_hp_cost(option: dict[str, Any]) -> tuple[int, int, int | None]:
     """(hp lost, max hp lost, max hp set to) as far as the text admits."""
     text = _event_option_text(option)
@@ -1849,7 +1866,7 @@ def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None
         return escape
 
     safe: list[tuple[int, dict]] = []
-    unsafe: list[tuple[int, int, dict]] = []       # (cost, index, option)
+    unsafe: list[tuple[int, int, int, dict]] = []  # (hp cost, gold cost, index, option)
 
     for i, option in enumerate(options):
         hp_lost, max_hp_lost, max_hp_set = _event_hp_cost(option)
@@ -1863,7 +1880,7 @@ def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None
                 "EVENT: refusing %r -- it segfaults the game (4 of 4 sessions). "
                 "This is a TEMPORARY workaround; see CRASHING_EVENT_OPTION_LABELS.",
                 option.get("label"))
-            unsafe.append((10 ** 6, index, option))
+            unsafe.append((10 ** 6, 10 ** 6, index, option))
             continue
         # >>> END TEMPORARY CRASH WORKAROUND <<<
 
@@ -1881,8 +1898,24 @@ def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None
         if hp_lost <= 0 and repeats > EVENT_MAX_REPEATS and not _event_option_is_exit(option):
             lethal = True
 
+        # ONE PAID OPTION PER EVENT. An option that charges gold is a purchase,
+        # and a screen that re-presents itself after each purchase is a shop
+        # with no exit sign. Endless Conveyor charges 40 a time and says
+        # "Continue feasting!"; taking it twice is a decision, taking it every
+        # time it is offered is how 120 gold left in one room.
+        #
+        # Deliberately not scaled by how much gold is held: the failure is
+        # buying REPEATEDLY, not buying once, and a threshold on gold would let
+        # a rich run empty itself just as thoroughly.
+        if repeats >= 1 and _event_gold_cost(option) > 0:
+            lethal = True
+
         if lethal:
-            unsafe.append((hp_lost, index, option))
+            # Gold is the SECOND key. When every option is unsafe the
+            # fallthrough takes the cheapest, and with hp cost tied at zero it
+            # used to break the tie on index -- which on Endless Conveyor is
+            # the 40-gold grab, sitting at index 0 ahead of the free option.
+            unsafe.append((hp_lost, _event_gold_cost(option), index, option))
         else:
             safe.append((index, option))
 
@@ -1904,7 +1937,7 @@ def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None
         "Every option in event %s looks harmful at %s HP; taking the cheapest.",
         event_id or "?", hp,
     )
-    return min(unsafe)[1]
+    return min(unsafe)[2]
 
 
 #: A single event may not be answered more times than this in one run.
