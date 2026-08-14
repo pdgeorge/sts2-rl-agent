@@ -81,6 +81,7 @@ Deck size, relics and max HP are all flat between winners and losers once measur
 
 **Still open:**
 
+- **Unmodelled content, found by the identifier audit on the newest capture.** `BATTLEWORN_DUMMY_EVENT_V1_ENCOUNTER` and `BATTLE_FRIEND_V1` do not resolve in this build. If a run enters that event the reconstruction raises, the search fails, and the fight falls back to the v3 model -- the exact failure this week was spent eliminating. Two red tests in `test_bridge_identifiers_resolve.py` mark it; they appeared because more was played, which is the audit working as designed.
 - **The mod's skip click does not consume the card reward.** Python works around it; the mod bug is real and unfixed.
 - **Endless Conveyor may still hang.** Three fixes in, and the two observed failures had different shapes (83 choices vs 3 choices then `run_complete` at full HP). The gold drain is certainly fixed; whether that was *the* hang is unknown.
 
