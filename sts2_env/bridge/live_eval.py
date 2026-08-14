@@ -304,7 +304,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--live-search",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help=(
             "Use the SearchAgent turn planner for combat decisions instead of "
             "the trained model's argmax. Lifts boss win rate from 6.7%% to ~20%% "
