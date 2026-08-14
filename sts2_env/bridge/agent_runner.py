@@ -1839,6 +1839,15 @@ def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None
 
     repeats = (seen or {}).get(event_id, 0)
 
+    # HARD CAP FIRST. Checked before any scoring, because the whole point is
+    # that it does not depend on understanding the options -- Endless Conveyor
+    # was answered 83 times by a scorer that understood every one of them.
+    escape = _event_escape_index(options, event_id, repeats)
+    if escape is not None:
+        if seen is not None and event_id:
+            seen[event_id] = repeats + 1
+        return escape
+
     safe: list[tuple[int, dict]] = []
     unsafe: list[tuple[int, int, dict]] = []       # (cost, index, option)
 
@@ -1896,6 +1905,49 @@ def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None
         event_id or "?", hp,
     )
     return min(unsafe)[1]
+
+
+#: A single event may not be answered more times than this in one run.
+#:
+#: The repeat guard above prefers an EXIT option once a screen has been seen
+#: twice, and that only works if an exit can be recognised. Endless Conveyor
+#: defeated it live on 2026-08-14: every option reads "Grab <food> off the
+#: Belt", none of them contains an exit word, so all of them were marked unsafe
+#: and the fallthrough kept picking one. The agent answered the same event 83
+#: times and the run ended at floor 4 on FULL HEALTH -- 84/84, no death, just a
+#: run that could not leave a room.
+#:
+#: The word list will always be incomplete; a hard cap does not depend on
+#: guessing the vocabulary. 8 is far above any legitimate event -- the longest
+#: real one is a handful of choices -- so tripping it means something is wrong,
+#: and it is logged as such.
+EVENT_HARD_CAP = 8
+
+
+def _event_escape_index(options: list[dict], event_id: str, count: int) -> int | None:
+    """The way out of an event we have answered too many times, or None.
+
+    Prefers a recognised exit, then the LAST option, which is where events
+    conventionally put "leave". Breaking out on the wrong option costs one bad
+    outcome; not breaking out costs the run.
+    """
+    if count < EVENT_HARD_CAP or not options:
+        return None
+    for i, option in enumerate(options):
+        if _event_option_is_exit(option):
+            logger.error(
+                "EVENT %s answered %d times -- taking the exit option %r. "
+                "The repeat guard should have caught this sooner.",
+                event_id or "?", count, option.get("label"))
+            return _read_index(option, i)
+    last_index = len(options) - 1
+    logger.error(
+        "EVENT %s answered %d times and NO option looks like an exit "
+        "(labels: %r). Taking the last option to break the loop -- this is a "
+        "hard cap, not a decision, and the event needs looking at.",
+        event_id or "?", count,
+        [o.get("label") for o in options][:6])
+    return _read_index(options[last_index], last_index)
 
 
 #: The last Crystal Sphere screen we answered. If the next one is identical, our
