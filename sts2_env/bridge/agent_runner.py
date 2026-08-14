@@ -1431,6 +1431,12 @@ def card_is_worth_taking(score: float, deck_size: int) -> bool:
     return (100.0 * score / QUALITY_BAR_SCALE) > deck_size
 
 
+#: Signature of the last card-reward screen this policy asked to skip. A
+#: deterministic policy that skips a screen the game re-presents will skip it
+#: forever; this is what lets it notice and break out.
+_last_card_reward_skipped: str | None = None
+
+
 def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
     """Choose a card reward, or return None when taking nothing is better.
 
@@ -1446,11 +1452,27 @@ def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
     So this only declines when the mod says a skip is real, and takes the least
     bad card otherwise -- and says so, because "took a card it rated as harmful"
     is worth seeing in the log rather than silently accepting.
+
+    AND IT SKIPS THE SAME SCREEN ONLY ONCE. `can_skip: true` means the game
+    renders a Skip button, NOT that clicking it consumes the reward. Live on
+    2026-08-14 the reward screen kept re-offering the same three cards
+    (UNMOVABLE / ANGER / CINDER) after every skip, and this function -- being
+    deterministic and, on the merits, right -- skipped it again, and again,
+    until the run was killed by hand. Same shape as the Crystal Sphere loop.
+
+    Taking a card we would rather decline costs a little deck quality. Hanging
+    the run costs the run. So the second time the identical screen appears, take
+    the best card and say so loudly, leaving the underlying mod bug visible
+    rather than absorbed.
     """
+    global _last_card_reward_skipped
     cards = list(state.get("cards", []))
     can_skip = bool(state.get("can_skip", False))
     if not cards:
         return None if can_skip else DEFAULT_CHOICE_INDEX
+
+    signature = json.dumps(cards, sort_keys=True, default=str)
+    already_skipped_this = (signature == _last_card_reward_skipped)
 
     deck = state.get("deck") or []
     direction = _deck_direction(state)
@@ -1464,12 +1486,22 @@ def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
     deck_is_bloated = deck_size > CARD_REWARD_LARGE_DECK_SIZE
     not_worth_it = not card_is_worth_taking(best_score, deck_size)
 
-    if can_skip and (not_worth_it or deck_is_bloated):
+    if can_skip and (not_worth_it or deck_is_bloated) and not already_skipped_this:
         logger.info(
             "CARD_REWARD: skipping (best was %s at %.2f, deck %d)",
             _card_label(best_card), best_score, _read_deck_size(state),
         )
+        _last_card_reward_skipped = signature
         return None
+
+    if already_skipped_this:
+        logger.error(
+            "CARD_REWARD: this screen was already skipped and the game is "
+            "still offering it -- the skip click is not consuming the reward. "
+            "Taking %s to break the loop; a hung run is worse than a bad card.",
+            _card_label(best_card),
+        )
+        _last_card_reward_skipped = None
 
     if not_worth_it:
         logger.warning(
