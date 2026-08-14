@@ -2142,9 +2142,24 @@ def _canonical_text(value: Any) -> str:
 
 
 def _reconnect_with_retry(
-    client: STS2GameClient, max_retries: int = 10, delay: float = 3.0
+    client: STS2GameClient, max_retries: int = 3, delay: float = 3.0
 ) -> None:
     """Attempt to reconnect to the game server with retries.
+
+    THREE, NOT TEN. Each attempt blocks on a ~58s socket connect timeout before
+    it raises, so `delay` is nearly irrelevant and ten attempts is ten minutes.
+    Measured on 2026-08-14: attempts landed at 16:16:46, 16:17:47, 16:18:48 --
+    61 seconds apart.
+
+    That ten minutes is spent waiting for a game that has already died and is
+    not coming back on its own. `--restart-on-crash` relaunches it via Steam and
+    the bridge is back up **10 seconds later** ("Bridge is back up; resuming",
+    16:25:57 -> 16:26:07). So the retry loop was costing seven minutes per crash
+    to avoid a fix that takes ten seconds, and an overnight session with several
+    crashes lost most of an hour to it.
+
+    Three attempts is still ~3 minutes, which is ample for a transient blip. A
+    real crash falls through to the restart that much sooner.
 
     Args:
         client: The game client to reconnect.
