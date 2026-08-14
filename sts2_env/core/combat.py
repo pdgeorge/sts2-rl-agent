@@ -176,6 +176,14 @@ class CombatState:
         self._pending_play: dict[str, object] | None = None
         self._pending_draw: dict[str, object] | None = None
         self._pending_turn_setup: Callable[[], None] | None = None
+        #: The same pending callback, as plain data, so a CLONE can rebuild it
+        #: bound to itself. `copy.deepcopy` returns functions by reference, so a
+        #: copied combat would otherwise hold a lambda closing over the
+        #: ORIGINAL -- resuming the copy would drive the real fight. That is why
+        #: cloning refused outright, which cost live runs: the search caught the
+        #: refusal, ended the turn, and the agent stood still for 8 turns while
+        #: Punch Construct killed it.
+        self._pending_turn_setup_spec: tuple | None = None
         self._end_turn_after_play: bool = False
         self.in_play_phase: bool = False
         self._damage_events_this_turn: list[tuple[Creature | None, Creature, ValueProp]] = []
@@ -919,6 +927,7 @@ class CombatState:
         fire_before_side_turn_start(CombatSide.PLAYER, self)
         if self.pending_choice is not None:
             self._pending_turn_setup = self._continue_player_turn_setup
+            self._pending_turn_setup_spec = ("player", 0, "block")
             return
         self._continue_player_turn_setup()
 
@@ -953,6 +962,7 @@ class CombatState:
                     fire_after_energy_reset(self, owner)
                     if self.pending_choice is not None:
                         self._pending_turn_setup = lambda idx=player_index: self._continue_player_turn_setup(idx, "before_hand_draw")
+                        self._pending_turn_setup_spec = ("player", player_index, "before_hand_draw")
                         return
                     stage = "before_hand_draw"
 
@@ -960,6 +970,7 @@ class CombatState:
                     fire_before_hand_draw(owner, self)
                     if self.pending_choice is not None:
                         self._pending_turn_setup = lambda idx=player_index: self._continue_player_turn_setup(idx, "card_before_hand_draw")
+                        self._pending_turn_setup_spec = ("player", player_index, "card_before_hand_draw")
                         return
                     stage = "card_before_hand_draw"
 
@@ -969,6 +980,7 @@ class CombatState:
                         return
                     if self.pending_choice is not None:
                         self._pending_turn_setup = lambda idx=player_index: self._continue_player_turn_setup(idx, "before_hand_draw_late")
+                        self._pending_turn_setup_spec = ("player", player_index, "before_hand_draw_late")
                         return
                     stage = "before_hand_draw_late"
 
@@ -978,6 +990,7 @@ class CombatState:
                         return
                     if self.pending_choice is not None:
                         self._pending_turn_setup = lambda idx=player_index: self._continue_player_turn_setup(idx, "draw")
+                        self._pending_turn_setup_spec = ("player", player_index, "draw")
                         return
                     stage = "draw"
 
@@ -987,6 +1000,7 @@ class CombatState:
                     self._draw_cards_for_creature(owner, draw_count, from_hand_draw=True)
                     if self.pending_choice is not None:
                         self._pending_turn_setup = lambda idx=player_index: self._continue_player_turn_setup(idx, "after_player_turn_start")
+                        self._pending_turn_setup_spec = ("player", player_index, "after_player_turn_start")
                         return
                     stage = "after_player_turn_start"
 
@@ -996,6 +1010,7 @@ class CombatState:
                         return
                     if self.pending_choice is not None:
                         self._pending_turn_setup = lambda idx=player_index: self._continue_player_turn_setup(idx, "post_after_player_turn_start")
+                        self._pending_turn_setup_spec = ("player", player_index, "post_after_player_turn_start")
                         return
                     stage = "post_after_player_turn_start"
 
@@ -1758,6 +1773,7 @@ class CombatState:
             move.perform(self)
             if self.pending_choice is not None:
                 self._pending_turn_setup = lambda enemy=enemy, index=index: self._finish_enemy_move_after_choice(enemy, index)
+                self._pending_turn_setup_spec = ("enemy", enemy.combat_id, index)
                 return
             ai.on_move_performed()
 
@@ -2622,6 +2638,7 @@ class CombatState:
         if self.pending_choice is None and self._pending_turn_setup is not None:
             pending_setup = self._pending_turn_setup
             self._pending_turn_setup = None
+            self._pending_turn_setup_spec = None
             pending_setup()
         self._check_combat_end()
         return True
