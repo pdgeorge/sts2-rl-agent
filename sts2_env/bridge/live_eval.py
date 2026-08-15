@@ -146,7 +146,7 @@ class LiveEvalRecorder:
             "",
         ]
 
-        buckets = [(1, 5), (6, 10), (11, 15), (16, 20), (21, 30), (31, 99)]
+        buckets = [(1, 5), (6, 10), (11, 16), (17, 20), (21, 30), (31, 99)]
         lines.append("floor reached:")
         for lo, hi in buckets:
             c = sum(1 for x in f if lo <= x <= hi)
