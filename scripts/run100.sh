@@ -36,6 +36,21 @@
 #                       is built from it.
 #   --console-log       Console-only output is how the LiveSearch tracebacks
 #                       were lost the first time.
+#   --capture-raw       The boss positions, verbatim, so they can be replayed
+#                       offline by scripts/replay_live_boss_fights.py. This is
+#                       the ONLY instrument for PHASE_TWO.md's Track A gate --
+#                       offline wins ~74% of act 1 bosses and live wins ~31%,
+#                       and ~26 of those 45 points are unexplained after HP and
+#                       relics are controlled for. It is the largest open number
+#                       in the project and 50% is 30 points away.
+#                       It was absent until 2026-08-16, so run100 and run100_2
+#                       threw away ~75 boss fights between them. Two earlier
+#                       bugs kept the capture useless and BOTH are already fixed
+#                       in raw_capture.py: the quota is now keyed per fight
+#                       (`combat_action:Boss:<encounter_seed>`), not per message
+#                       type -- which used to fill on 25 floor-1 monster turns
+#                       and keep zero bosses across eleven sessions.
+#                       Costs nothing: the session runs regardless.
 #
 # NOT passed, deliberately:
 #   --seed              Only for reproducing one run or pairing an A/B. A
@@ -52,7 +67,10 @@ MODEL=output/combat_v3_overnight/final_model.zip
 # A NEW TAG EACH SESSION. These files are appended to, and mixing a new
 # session into an old file is how a pooled rate quietly becomes two different
 # agents averaged together.
-for f in output/live_eval_${TAG}.jsonl output/live_journal_${TAG}.jsonl; do
+# RawCapture opens its file with "w", so it truncates. Tagged like everything
+# else here, or the next session silently erases the boss fights of the last.
+for f in output/live_eval_${TAG}.jsonl output/live_journal_${TAG}.jsonl \
+         output/bridge_boss_fights_${TAG}.jsonl; do
     if [ -e "$f" ]; then
         echo "REFUSING: $f already exists. Pass a fresh tag: $0 <tag>" >&2
         exit 1
@@ -69,4 +87,5 @@ exec $PY -m sts2_env.bridge.live_eval \
     --log "output/live_eval_${TAG}.jsonl" \
     --journal "output/live_journal_${TAG}.jsonl" \
     --console-log "output/live_console_${TAG}.log" \
-    --crash-log "output/crash_${TAG}.json"
+    --crash-log "output/crash_${TAG}.json" \
+    --capture-raw "output/bridge_boss_fights_${TAG}.jsonl"
