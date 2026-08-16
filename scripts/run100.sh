@@ -22,29 +22,13 @@
 #                       508 runs ever used the search, so every pooled number
 #                       for a month described the v3 model instead. Never
 #                       assume the default; state it.
-#   --restart-on-crash 30  SIZED FROM THE CRASH RATE, not picked. The
-#                       2026-08-16 session crashed 4 times in 36 runs -- once
-#                       per 9 -- so 100 runs needs about 12, and 4 ran out
-#                       after 5 sessions and 36 runs. 30 is that with headroom.
-#
-#                       Every crash is the same one and it is not ours:
-#                         [RlMap] Agent chose Unknown
-#                         Creating NCombatRoom mode=VisualOnly
-#                             encounter=PUNCH_OFF_EVENT_ENCOUNTER
-#                         EventRoom.EnterInternal -> PunchOff.AfterEventStarted
-#                             -> PunchEachOther -> CreatureCmd.TriggerAnim
-#                             -> NCreature.SetAnimationTrigger_Patch1
-#                         ERROR: Signal '_internal_spine_objects_invalidated'
-#                                is already connected
-#                       `_Patch1` is BaseLib's Harmony patch against a game
-#                       build it predates (BaseLib.dll Jul 31 09:59, game .pck
-#                       Jul 31 19:28, 3.4.0 is the newest published). Cleared
-#                       of being our AnimationSpeedPatch on 2026-08-11 by
-#                       removing that patch and reproducing anyway. PunchOff
-#                       fires PunchEachOther from AfterEventStarted, so there
-#                       is no choice the agent could make differently -- a `?`
-#                       room that rolls Punch Off kills the game on entry.
-#                       Restarting is the only lever we hold.
+#   --restart-on-crash 4  pd's call, 2026-08-16, and it stays 4. A restart
+#                       only ever happens AFTER the game has crashed and the
+#                       run in flight is already lost, so raising it does not
+#                       save runs -- it just keeps relaunching. The crash that
+#                       triggers it is the known Punch Off one; see
+#                       docs/KNOWN_ISSUES.md, do NOT re-diagnose it, and do not
+#                       spend time fixing it before the clear rate hits 50%.
 #                       Needs `steam` on PATH.
 #   --journal           Per-room, per-fight, per-card record. The run log says
 #                       a run reached floor 11; the journal says what happened
@@ -81,7 +65,7 @@ exec $PY -m sts2_env.bridge.live_eval \
     --model-path "$MODEL" \
     --runs 100 \
     --live-search \
-    --restart-on-crash 30 \
+    --restart-on-crash 4 \
     --log "output/live_eval_${TAG}.jsonl" \
     --journal "output/live_journal_${TAG}.jsonl" \
     --console-log "output/live_console_${TAG}.log" \
