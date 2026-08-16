@@ -129,7 +129,19 @@ ROOM_PRIORITY_LOW_HP = (
     "elite",
     "boss",
 )
-CARD_REWARD_TYPE_PRIORITY = ("power", "attack", "skill")
+#: DELETED: `CARD_REWARD_TYPE_PRIORITY = ("power", "attack", "skill")`. It was
+#: defined here and referenced by nothing -- `_pick_card_reward_index` has
+#: scored cards through `card_quality.rank_cards` since the rule it describes
+#: was replaced (see that function's docstring: type-priority took
+#: BLIGHT_STRIKE over SUNDER because it was listed first).
+#:
+#: Left as a comment because a stale constant is not harmless. Reading it as
+#: live policy, the 43% rate at which live runs take a Power when one is on
+#: offer looks like a bug -- the policy says Powers come first, so why 43%? It
+#: is not a bug: `rank_cards` weighs a Power's SCALING_BONUS against what else
+#: is on the table and often prefers the other card. Deleting the constant
+#: removes the wrong answer rather than leaving it to be found again.
+
 #: Removal FIRST, on measurement rather than taste. `removal_vs_relic.py` over
 #: 30 real live boss decks: a removal is worth ~3.3 points of act 1 boss win and
 #: a marginal relic ~2, and removal costs 75 gold against a shop relic's 150-300

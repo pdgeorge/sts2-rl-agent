@@ -243,37 +243,243 @@ def _incoming_damage(combat: "CombatState") -> int:
     return total
 
 
+def _incoming_damage_by_enemy(combat: "CombatState") -> dict[int, int]:
+    """`_incoming_damage`, kept per enemy, so a kill can be priced.
+
+    Killing the thing that is about to hit you removes its damage every turn
+    that follows; blocking removes it once. The playout could not tell those
+    apart while it only knew the total.
+    """
+    from sts2_env.core.damage import calculate_damage
+    from sts2_env.core.enums import ValueProp
+
+    per_enemy: dict[int, int] = {}
+    for enemy in combat.enemies:
+        if not enemy.is_alive:
+            continue
+        ai = combat.enemy_ais.get(enemy.combat_id)
+        if ai is None:
+            continue
+        total = 0
+        for intent in ai.current_move.intents:
+            base = intent.damage or 0
+            if not base:
+                continue
+            hits = max(1, intent.hits or 1)
+            if getattr(intent, "pre_modified", False):
+                total += base * hits
+                continue
+            try:
+                landed = calculate_damage(
+                    base, enemy, combat.player, ValueProp.MOVE, combat)
+            except Exception:
+                landed = base
+            total += landed * hits
+        per_enemy[enemy.combat_id] = total
+    return per_enemy
+
+
+def _effective_hp(creature) -> int:
+    """What has to be removed to kill it, block included."""
+    return max(0, (creature.current_hp or 0)) + max(0, (creature.block or 0))
+
+
+def _landed_damage(combat: "CombatState", base: int, victim) -> int:
+    """A card's damage AS IT WILL LAND, for deciding whether it is lethal.
+
+    The same correction `_incoming_damage` documents, pointed the other way. A
+    6-damage Strike is 8 at +2 Strength and 12 into Vulnerable, so reading
+    `base_damage` alone under-reads exactly the swings that finish an enemy --
+    and the whole point of pricing a kill is knowing when one is available.
+    """
+    from sts2_env.core.damage import calculate_damage
+    from sts2_env.core.enums import ValueProp
+
+    try:
+        return calculate_damage(base, combat.player, victim, ValueProp.MOVE, combat)
+    except Exception:
+        return base
+
+
+def _player_damage_per_turn(combat: "CombatState") -> float:
+    """A rough read of how fast the player is closing the fight.
+
+    Sum of the attack damage sitting in hand, which is what a turn can spend.
+    It only has to be the right order of magnitude: it is the denominator of
+    `_hp_per_damage`, where it converts damage dealt into HP saved.
+    """
+    total = 0
+    for card in combat.hand:
+        if (card.base_damage or 0) > 0:
+            total += card.base_damage
+    return float(max(1, total))
+
+
+#: The least an point of damage may be worth. A floor, and it is load-bearing:
+#: `_incoming_damage` reads only what is telegraphed for THIS turn, so an enemy
+#: spending the turn buffing or defending reports zero -- and without a floor
+#: every attack, including a lethal one, scored exactly nothing and the playout
+#: stopped. It will attack again, and a fight is won by removing HP either way.
+MIN_HP_PER_DAMAGE = 0.05
+
+
+def _hp_per_damage(combat: "CombatState", incoming: int) -> float:
+    """How much HP one point of damage dealt is worth. DERIVED, not tuned.
+
+    Enemies holding H HP between them and dealing D a turn, against a player
+    dealing P a turn, will land D * H/P before they die. Removing one point of
+    that H shortens the fight by 1/P turns and so saves D/P HP.
+
+    This is the whole of pd's thesis in one line, and it is why the old playout
+    could not see it: the value of an attack depends on how hard the enemies hit
+    and how long they will live, and the old policy scored it at face value. In
+    a hallway fight D/P is small and blocking wins; in an elite it is large and
+    killing wins. Nothing here is a knob -- both terms are read off the board.
+    """
+    return max(MIN_HP_PER_DAMAGE, incoming / _player_damage_per_turn(combat))
+
+
+#: How many attacks a turn a Strength point gets to apply to, for pricing a
+#: Power. Two is the median attacks played per turn across the 13,251 live card
+#: plays of the 2026-08-15 session, not a guess.
+ATTACKS_PER_TURN = 2.0
+
+#: Per-turn HP value for a Power whose `effect_vars` say nothing this function
+#: knows how to read. Small and positive: an unreadable Power is still usually
+#: worth playing early in a long fight and not worth it in a short one, and
+#: multiplying by the horizon is what expresses that.
+UNKNOWN_POWER_HP_PER_TURN = 1.5
+
+
+def _power_hp_per_turn(card, hp_per_damage: float) -> float:
+    """What a Power is worth per turn, in HP, from its own declared amounts.
+
+    Read off `effect_vars` rather than a card-name table, so it covers every
+    character rather than the Ironclad list someone happened to write down.
+    Strength converts through `hp_per_damage` because its payoff is damage;
+    block-per-turn powers are already in HP.
+    """
+    effect_vars = getattr(card, "effect_vars", None) or {}
+    value = 0.0
+    readable = False
+    for name, amount in effect_vars.items():
+        if not isinstance(amount, (int, float)) or amount <= 0:
+            continue
+        readable = True
+        key = str(name).lower()
+        if "strength" in key or "dexterity" in key:
+            value += amount * ATTACKS_PER_TURN * hp_per_damage
+        else:
+            # FeelNoPain's `power`, Juggernaut's `juggernaut_power` and friends
+            # pay out in block or in damage-on-a-trigger. Counting the amount as
+            # HP a turn is crude and is still enormously closer than the flat
+            # 0.5 that made every Power rank last.
+            value += float(amount)
+    # The fallback is for a Power this function could not read AT ALL, not for
+    # one it read and priced low. Applying it to the latter overrode the honest
+    # answer with a bigger guess, and Inflame beat a Strike on the last turn of
+    # the horizon -- exactly the "powers are always good" failure this is meant
+    # to avoid.
+    return value if readable else UNKNOWN_POWER_HP_PER_TURN
+
+
 #: A rollout policy: given a combat and its legal action mask, return the action
 #: to play, or None to fall back to the built-in heuristic for that step.
 #: `SearchAgent(playout_policy=...)` threads one through to the playouts.
 PlayoutPolicy = "Callable[[CombatState, np.ndarray], int | None]"
 
 
-def _heuristic_playout_action(combat: "CombatState", actions: list[int]) -> int | None:
-    """Block when a hit is coming and there is block to be had, else hit back.
+def _heuristic_playout_action(
+    combat: "CombatState",
+    actions: list[int],
+    turns_remaining: int = 1,
+) -> int | None:
+    """Score every legal play in ONE unit -- HP -- and take the best.
 
     Split out of `_playout` so a pluggable policy can fall back to it per step
     rather than per playout -- a trained model that declines to act on one
     state should not cost the whole rollout its continuation.
+
+    WHAT THIS REPLACED, AND WHY IT MATTERED MORE THAN DEPTH
+    ------------------------------------------------------
+    The old policy scored a card as `block if a hit is coming else damage` and
+    gave every Power a flat 0.5, which ranked it below the worst attack in the
+    deck. Three things followed, and all three are visible in the 13,251 live
+    card plays of 2026-08-15:
+
+    - Block and damage were compared as though they were the same unit, so a
+      6-damage Strike beat a 5-block Defend on a turn that needed block. 6 > 5.
+    - A Power was played only when nothing else was legal, so a playout whose
+      entire purpose was to reveal a scaling card's payoff never once saw one
+      used. The power-play rate came out FLAT in fight length -- 2.32% in
+      1-2 turn fights against 2.25% in 8+ turn fights, where the long fights
+      are exactly the ones a Power is for.
+    - Nothing distinguished killing an enemy from chipping it, so the agent
+      blocked its way through 5.2-turn elite fights at 7.2 damage a turn
+      instead of closing them.
+
+    `MODELS.md:97` and `DEFAULT_TOP_K` both record the attempt to fix this with
+    depth instead. It moved the win rate +0.5% +/- 1.1% and left the power rate
+    just as flat, because a deeper rollout of a policy that never plays a Power
+    still never plays a Power.
+
+    THE UNIT IS HP, FOR EVERY CARD
+    ------------------------------
+    - block: `min(block, unblocked)`. Block past the telegraphed hit saves
+      nothing, which is the same thing `EvalWeights.block_unused` says.
+    - a killing blow: the dead enemy's own damage, for every turn left in the
+      horizon. This is pd's thesis priced -- an enemy on 6 HP intending 5 is
+      worth 5 HP a turn forever, where blocking it is worth 5 once.
+    - any other attack: damage * `_hp_per_damage`, which is derived from the
+      board rather than tuned.
+    - a Power: its declared per-turn value times the turns left to collect it.
+
+    Every term is HP, so they can be compared, which is the thing the old
+    version could not do.
     """
     from sts2_env.gym_env.action_space import action_to_card_and_target
 
-    need_block = _incoming_damage(combat) > combat.player.block
-    best_action, best_value = None, -1.0
+    incoming = _incoming_damage(combat)
+    unblocked = max(0, incoming - (combat.player.block or 0))
+    per_enemy = _incoming_damage_by_enemy(combat)
+    hp_per_damage = _hp_per_damage(combat, incoming)
+    horizon = max(1, turns_remaining)
+
+    enemies_by_id = {e.combat_id: e for e in combat.enemies if e.is_alive}
+
+    best_action, best_value = None, 0.0
     for action in actions:
-        hand_index, _ = action_to_card_and_target(action)
+        hand_index, target = action_to_card_and_target(action)
         if hand_index is None or hand_index >= len(combat.hand):
             continue
         card = combat.hand[hand_index]
-        block = card.base_block or 0
         damage = card.base_damage or 0
-        value = float(block if need_block and block else damage)
-        # A Power has neither damage nor block, so scoring it on those alone
-        # rates it zero -- and stopping the playout there hid the very payoff
-        # this lookahead exists to reveal. Ranked last, but played rather than
-        # treated as a reason to stop.
-        if value <= 0 and _is_power_card(card):
-            value = 0.5
+        block = card.base_block or 0
+
+        value = 0.0
+        if block:
+            value += float(min(block, unblocked))
+        if damage:
+            victim = None
+            if target is not None and 0 <= target < len(combat.enemies):
+                candidate = combat.enemies[target]
+                if candidate.is_alive:
+                    victim = candidate
+            if victim is None and len(enemies_by_id) == 1:
+                victim = next(iter(enemies_by_id.values()))
+            value += damage * hp_per_damage
+            if victim is not None and _landed_damage(
+                    combat, damage, victim) >= _effective_hp(victim):
+                # ON TOP of the damage, not instead of it: the kill is worth
+                # what the corpse stops doing for the rest of the horizon. This
+                # term is zero for an enemy that is not attacking this turn,
+                # which is why it adds to the damage value rather than
+                # replacing it -- replacing it priced a lethal blow against a
+                # buffing enemy at nothing at all.
+                value += per_enemy.get(victim.combat_id, 0) * horizon
+        if not damage and not block and _is_power_card(card):
+            value += _power_hp_per_turn(card, hp_per_damage) * horizon
+
         if value > best_value:
             best_action, best_value = action, value
 
@@ -303,9 +509,13 @@ def _playout(combat: "CombatState", turns: int, policy=None) -> None:
     does not help; whether a *trained* one does is the open question this hook
     exists to let someone answer.
     """
-    for _ in range(turns):
+    for turn_index in range(turns):
         if combat.is_over:
             return
+        # How many turns are left to collect a Power's payoff, this one included.
+        # A Power on the last turn of the horizon buys nothing, and the old
+        # policy had no way to know that either.
+        turns_remaining = turns - turn_index
 
         for _ in range(MAX_PLAYOUT_ACTIONS_PER_TURN):
             if combat.is_over:
@@ -332,7 +542,8 @@ def _playout(combat: "CombatState", turns: int, policy=None) -> None:
                     best_action = int(chosen)
 
             if best_action is None:
-                best_action = _heuristic_playout_action(combat, actions)
+                best_action = _heuristic_playout_action(
+                    combat, actions, turns_remaining)
 
             if best_action is None:
                 break
@@ -612,6 +823,9 @@ class SearchAgent:
             f"top_k={top_k})")
 
         self._plan: list[int] = []
+        self._plan_round: int | None = None
+        """The `round_number` `_plan` was searched for. A plan is only valid for
+        its own turn; see `act`."""
         self._last_gap: float | None = None
         self.searches = 0
         self.total_nodes = 0
@@ -647,6 +861,20 @@ class SearchAgent:
 
     def act(self, combat: "CombatState") -> int:
         mask = get_action_mask(combat)
+
+        # A PLAN BELONGS TO THE TURN IT WAS MADE FOR. `search_turn` returns the
+        # card plays for one turn, and the only thing stopping a leftover play
+        # from being popped into the next one was "is that index still legal" --
+        # which it usually is, on a completely different card. Offline the plan
+        # always emptied before the turn ended so it never bit; live, where
+        # `LiveSearch.decide` rebuilds the position from the bridge on every
+        # call, a turn can advance underneath a plan that still has actions in
+        # it. Cheap to guard, and the failure would be silent -- the same shape
+        # as the CloneError that had the agent standing still for 8 turns.
+        round_number = getattr(combat, "round_number", None)
+        if round_number != self._plan_round:
+            self._plan = []
+            self._plan_round = round_number
 
         # Rules of thumb first, for the potions the evaluator is blind to. See
         # potion_policy for why, and for the standing instruction to replace any

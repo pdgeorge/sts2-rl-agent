@@ -27,6 +27,29 @@ Mean arrival is ~82% and has been flat across every session all day. Winners tak
 
 **What is verified:** the search takes the kill in the simple single-enemy case, 8 positions out of 8, finishing on 50→50 HP with zero damage taken.
 
+### 2026-08-16: the mechanism, found. It was the playout, not the searcher.
+
+The n=100 session confirmed the cliff (below 80% HP on boss arrival: **1 win in 31**; at or above: **19 in 35**) and then named the cause. Across all 13,251 live card plays:
+
+| fight length | plays | power | attack | skill |
+|---|---|---|---|---|
+| 1–2 turns | 2416 | **2.32%** | 77.2% | 20.4% |
+| 3–4 turns | 5456 | **3.06%** | 66.0% | 30.2% |
+| 5–7 turns | 3247 | **3.60%** | 58.6% | 36.6% |
+| 8+ turns | 2132 | **2.25%** | 54.6% | 41.0% |
+
+The power-play rate is **flat in fight length**. In an 8-turn fight a Power should go down on turn 1 nearly every time. Instead the agent's entire answer to a long fight is to block more — skills 20% → 41% — so it defends its way through 5.2-turn elite fights at 7.2 gross damage a turn instead of closing them.
+
+`turn_search.py` already contained the diagnosis: the playout that scores the 2-turn lookahead ranked every card as `block if a hit is coming else damage` and gave a Power a flat **0.5**, below the worst attack in the deck. So the rollout whose entire purpose was to reveal a scaling card's payoff never played one. It also compared block and damage as though they shared a unit — a 6-damage Strike beat a 5-block Defend on a turn needing block, because 6 > 5 — and had no term at all distinguishing a kill from a chip. `DEFAULT_TOP_K` records the earlier attempt to fix this with depth: +0.5% ± 1.1%, power rate just as flat, because a deeper rollout of a policy that never plays a Power still never plays a Power.
+
+The replacement prices every card in one unit, HP: block at `min(block, unblocked)`, a kill at the dead enemy's damage for every remaining turn, any other attack at `damage × D/P` (derived from the board — enemies dealing D a turn against a player dealing P), and a Power at its declared per-turn value times the turns left to collect it. Pinned in `tests/test_playout_policy.py`.
+
+### Two corrections to the numbers above
+
+**`damage_taken` is net of Burning Blood.** The journal computes it as `hp_before - hp_after`, and `hp_after` is read after the relic's +6 fires (visible directly: `hp 55→61, dmg -6`, and `78→80, dmg -2` where it caps at max). Burning Blood works — `decompiled/MegaCrit.Sts2.Core.Models.Relics/BurningBlood.cs` heals 6 on `AfterCombatVictory` and the live game does it. Every chip figure in this repo dated before 2026-08-16 is therefore 6 HP too low per won fight. Gross act 1 pre-boss: elite **37.9** over 5.2 turns, monster **11.6** over 3.1.
+
+**Fewer elites is the wrong lever.** Elite rooms end 23% of the runs entering them against 2.0% for monsters, and the first reading of that was to route around them. The [map guide](https://sts2.untapped.gg/en/guides/how-to-make-the-best-map-choices-in-slay-the-spire-2) says target **2–3 elites in act 1** and that avoiding them to preserve HP is a trap, because relics are what carries a run past act 1 — and we take **0.87 a run** already. The 23% measures how badly we play elites, not whether to enter them. Logged as WITHDRAWN in `SCOREBOARD.md`.
+
 **What is NOT verified, and is the likely site of the observed failures:** the multi-enemy case, where the agent must choose *which* enemy to kill and whether to split damage. That has never been tested. It is the first thing to test on Monday, and it is cheap — the same harness shape as the Bash and kill tests already written.
 
 ### Why this is not a fool's errand

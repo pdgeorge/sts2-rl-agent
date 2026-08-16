@@ -730,6 +730,17 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
     if not isinstance(player_json, dict):
         return
 
+    # WHICH TURN IT IS. The mod has always sent this and the mid-fight rebuild
+    # has always dropped it, so every reconstructed position claimed to be
+    # round 1 no matter how long the fight had run. The simulator branches on
+    # `round_number` in several places, and `SearchAgent` uses it to know that a
+    # planned line belongs to the turn it was planned for -- which it cannot do
+    # if the number never moves.
+    round_number = state.get("round", crash.get("round"))
+    if isinstance(round_number, int) and round_number > 0:
+        combat.round_number = round_number
+        combat.turn_count = max(combat.turn_count, round_number - 1)
+
     # -- player HP / block / energy / powers / hand -------------------------
     pcard = combat.primary_player
     if "hp" in player_json:
