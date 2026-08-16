@@ -37,17 +37,7 @@ def test_map_policy_prefers_rest_when_hp_is_low() -> None:
     assert _pick_map_node(state) == 1
 
 
-def test_map_policy_takes_the_monster_over_the_elite_even_when_healthy() -> None:
-    """The reverse of what this test used to assert, on 100 live runs.
-
-    Act 1, pre-boss: 82 elite entries ended 19 runs (23%) at a mean 31.8 chip;
-    705 monster entries ended 14 (2.0%) at 6.3. An elite is 11x more likely to
-    end the run and costs five times the HP, and boss win falls off a cliff at
-    80% HP on arrival -- 3% below it (1/31) against 54% at or above (19/35).
-
-    It used to prefer the elite for the relic. Relics were then measured and are
-    not the gap: offline carries FEWER relics (2.8 vs 4.7) and wins more.
-    """
+def test_map_policy_prefers_elite_when_hp_is_healthy() -> None:
     state = {
         "player": {"hp": 70, "max_hp": 80},
         "nodes": [
@@ -57,7 +47,7 @@ def test_map_policy_takes_the_monster_over_the_elite_even_when_healthy() -> None
         ],
     }
 
-    assert _pick_map_node(state) == 1
+    assert _pick_map_node(state) == 2
 
 
 def test_card_reward_policy_prefers_power_and_skips_large_decks() -> None:
@@ -215,23 +205,18 @@ def test_map_policy_replays_the_floor_45_death() -> None:
     assert _pick_map_node(state) == 0
 
 
-def test_map_policy_still_takes_the_elite_when_it_is_the_only_fight() -> None:
-    """Demoted, not deleted -- and this is the case that matters most.
-
-    58 of the 87 live elite picks had NO non-elite alternative on the adjacent
-    nodes; only 29 did. So demotion recovers about a third of the elites, and
-    the rest need a route planner that can see the whole graph several floors
-    ahead. Refusing to move is not an option the game offers.
-    """
+def test_map_policy_still_takes_elites_when_genuinely_healthy() -> None:
+    """Caution must not cost the relics. Elites are the whole relic engine."""
     state = {
         "player": {"hp": 93, "max_hp": 93},
         "nodes": [
             {"index": 0, "type": "RestSite"},
-            {"index": 1, "type": "Elite"},
+            {"index": 1, "type": "Monster"},
+            {"index": 2, "type": "Elite"},
         ],
     }
 
-    assert _pick_map_node(state) == 1
+    assert _pick_map_node(state) == 2
 
 
 def test_map_policy_treats_unknown_as_a_fight() -> None:

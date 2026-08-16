@@ -63,30 +63,10 @@ TERMINAL_PHASES = frozenset({
     BridgeStateType.RUN_COMPLETE,
 })
 
-#: ELITE SITS BELOW MONSTER, and it used to sit above it. Over the 100-run live
-#: session of 2026-08-15, act 1 pre-boss:
-#:
-#:     room      entries   ended the run   mean chip
-#:     elite          82       19 (23%)       31.8
-#:     monster       705       14 (2.0%)       6.3
-#:
-#: An elite room is 11x more likely to end the run than a monster room and costs
-#: five times the HP. 19 of the 34 pre-boss deaths were elites. Among the runs
-#: that DID survive to the boss, elites accounted for 22 of the ~55 HP missing --
-#: which is most of the distance to the 80% cliff, where boss win goes from 3%
-#: (1/31) to 54% (19/35).
-#:
-#: The old ordering was justified by "elites are where relics come from". Relics
-#: were then measured and are not the gap: offline carries FEWER relics (2.8 vs
-#: 4.7) and wins more (WEEKEND_DECISIONS.md section 3). So this was paying a 23%
-#: run-loss rate for a reward with no measured value.
-#:
-#: NOT deleted, only demoted. A map position offering nothing but an elite still
-#: takes it, which is the same fallback that already exists below.
 ROOM_PRIORITY_HEALTHY = (
     "boss",
-    "monster",
     "elite",
+    "monster",
     "event",
     "unknown",
     "treasure",
