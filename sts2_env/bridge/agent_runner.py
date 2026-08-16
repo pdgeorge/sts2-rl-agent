@@ -714,6 +714,10 @@ def run_agent(
                     milestones.reset()
                     journal.start_run(run_index + 1)
                     events_seen.clear()
+                    # The pending "what did that choice cost" comparison only,
+                    # not the learned costs -- an option that charges gold in
+                    # one run charges it in the next.
+                    _reset_event_gold_learning()
                     run_started = time.monotonic()
                     continue
                 if phase == MSG_TYPE_ERROR:
@@ -1834,6 +1838,157 @@ def _event_option_is_exit(option: dict[str, Any]) -> bool:
     return any(word in text for word in _EXIT_WORDS)
 
 
+# ===========================================================================
+# ENDLESS CONVEYOR
+# ===========================================================================
+# Read off `decompiled/MegaCrit.Sts2.Core.Models.Events/EndlessConveyor.cs`
+# rather than guessed at, because three rounds of guarding by text guessed
+# wrong three times.
+#
+#   GenerateInitialOptions() -> [ GrabSomethingOffTheBelt, ObserveChef ]
+#
+#   GrabSomethingOffTheBelt(): LoseGold(40) unless the dish is GOLDEN_FYSH,
+#       runs the dish, rolls a new one, then SetEventState(...) with
+#       [ GrabSomethingOffTheBelt, Leave ]. It re-opens. Forever.
+#
+#   ObserveChef(): upgrades a random upgradable card and SetEventFinished().
+#       Free, and it ENDS the event.
+#
+#   GenerateGrabSomethingOffTheBeltOption(): once Gold < 40 this returns an
+#       option whose action is NULL, labelled `...options.LOCKED`.
+#
+# So index 0 is always the grab and index 1 is always the way out, and the
+# right play is never to grab:
+#
+#   - Observe the Chef is a FREE card upgrade, measured in this repo at ~5
+#     points of act 1 boss win, and it leaves immediately.
+#   - A grab is 40 gold for one weighted roll over +4 max HP, an upgrade, a
+#     transform, a colourless card, a potion or a 10 heal. A free upgrade is
+#     already at the top of that distribution.
+#   - 40 gold is over half a shop card removal (75), which `removal_vs_relic.py`
+#     puts at ~3.3 points of boss win.
+#   - GOLDEN_FYSH is the one free dish and RollDish only adds it once
+#     NumOfGrabs > 1, so it cannot be reached without paying first.
+#
+# WHY THE EXISTING GUARDS ALL MISSED IT. Every one of them is reactive --
+# `repeats >= 1`, `EVENT_MAX_REPEATS`, `EVENT_HARD_CAP` -- and this costs the
+# run on the FIRST answer. The gold guard never fires because the mod sends
+# `label` = "Grab Suspicious Condiment off the Belt" with the 40 gold nowhere
+# in the text, so `_event_gold_cost` reads 0, both options score as safe, and
+# `safe[0][0]` returns index 0. Live 2026-08-16, floor 11, 250 gold: grabbed,
+# rolled SUSPICIOUS_CONDIMENT, which calls RewardsCmd.OfferCustom -- a reward
+# screen nested inside a still-open event -- and the run ended 30s later at
+# full HP.
+
+#: `option.Event.Id.Entry` for this event, normalised by `_normalised_event_id`.
+#: Both spellings are accepted because the mod sends the game's id and the
+#: simulator uses its own (`sts2_env/events/act2.py:222` -> "EndlessConveyor"),
+#: and no capture of the live value exists -- the journal has never recorded
+#: `event_id`. Matching on the id is preferred over the label because the label
+#: is English; the label is the fallback, not the primary.
+ENDLESS_CONVEYOR_EVENT_IDS = frozenset({"ENDLESSCONVEYOR"})
+
+#: Every grab option is "Grab <dish> off the Belt". The dish changes each roll,
+#: the tail does not. Only used when the event id does not resolve.
+_CONVEYOR_GRAB_MARKER = "off the belt"
+
+
+def _normalised_event_id(value: Any) -> str:
+    """An event id comparable across the mod's spelling and the simulator's."""
+    return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+
+def _is_endless_conveyor(event_id: str, options: list[dict[str, Any]]) -> bool:
+    if _normalised_event_id(event_id) in ENDLESS_CONVEYOR_EVENT_IDS:
+        return True
+    for option in options:
+        if _normalised_event_id(option.get("event_id")) in ENDLESS_CONVEYOR_EVENT_IDS:
+            return True
+    # Fallback for a build whose id we do not recognise: the belt names itself.
+    return any(
+        _CONVEYOR_GRAB_MARKER in _event_option_text(option).lower()
+        for option in options
+    )
+
+
+def _endless_conveyor_index(options: list[dict[str, Any]]) -> int | None:
+    """The option that leaves the belt: Observe the Chef, or Leave.
+
+    Anything that is not a grab ends the event, so this takes the first
+    non-grab rather than trying to tell Observe and Leave apart.
+    """
+    for i, option in enumerate(options):
+        if _CONVEYOR_GRAB_MARKER not in _event_option_text(option).lower():
+            return _read_index(option, i)
+    return None
+
+
+# ===========================================================================
+# LEARNING WHAT THE MOD DOES NOT SEND
+# ===========================================================================
+# `_event_gold_cost` can only read a cost the option text admits to, and the
+# conveyor proves the text does not have to admit to anything. The gold total
+# does not lie, so watch it: remember what was chosen and how much gold was
+# held, and when the next event state arrives with less gold, record that
+# option as a purchase.
+#
+# Generic on purpose. It is not a second conveyor patch -- it catches any event
+# that charges gold silently and re-presents itself, which is the shape of the
+# whole failure class, and it needs no vocabulary.
+
+#: (normalised event id, option label) seen to reduce gold, this process.
+_event_options_that_charged_gold: set[tuple[str, str]] = set()
+
+#: What the last event choice was, so the next state can price it.
+#: (normalised event id, option label, gold held before choosing).
+_last_event_choice: tuple[str, str, int] | None = None
+
+
+def _reset_event_gold_learning() -> None:
+    """Between runs. The learned set is deliberately NOT cleared -- an option
+    that charges gold in one run charges it in the next -- but the pending
+    comparison is, because the next state belongs to a different run."""
+    global _last_event_choice
+    _last_event_choice = None
+
+
+def _price_the_previous_event_choice(event_id: str, gold: Any) -> None:
+    """Charge the last choice with whatever gold went missing since."""
+    global _last_event_choice
+    pending = _last_event_choice
+    if pending is None or not isinstance(gold, int):
+        return
+    previous_event, label, gold_before = pending
+    _last_event_choice = None
+    if previous_event != _normalised_event_id(event_id):
+        return  # a different event; the gold difference is not attributable
+    if gold < gold_before:
+        if (previous_event, label) not in _event_options_that_charged_gold:
+            logger.info(
+                "EVENT %s: %r cost %d gold, which its text never said. "
+                "Not taking it again in this session.",
+                event_id or "?", label, gold_before - gold)
+        _event_options_that_charged_gold.add((previous_event, label))
+
+
+def _remember_event_choice(event_id: str, option: dict[str, Any], gold: Any) -> None:
+    global _last_event_choice
+    if isinstance(gold, int):
+        _last_event_choice = (
+            _normalised_event_id(event_id),
+            str(option.get("label") or ""),
+            gold,
+        )
+
+
+def _event_option_charges_gold(event_id: str, option: dict[str, Any]) -> bool:
+    """Either the text says so, or we have watched it happen."""
+    if _event_gold_cost(option) > 0:
+        return True
+    key = (_normalised_event_id(event_id), str(option.get("label") or ""))
+    return key in _event_options_that_charged_gold
+
+
 def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None) -> int:
     """Choose an event option, refusing the ones that end the run.
 
@@ -1868,7 +2023,32 @@ def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None
 
     repeats = (seen or {}).get(event_id, 0)
 
-    # HARD CAP FIRST. Checked before any scoring, because the whole point is
+    # Price whatever we chose last time against the gold now on the screen,
+    # before deciding anything. See _price_the_previous_event_choice.
+    _price_the_previous_event_choice(event_id, state.get("gold"))
+
+    # ENDLESS CONVEYOR, ANSWERED FROM THE DECOMPILED SOURCE. Ahead of every
+    # other guard because they are all reactive and this one costs the run on
+    # the FIRST answer. See the block above ENDLESS_CONVEYOR_EVENT_IDS.
+    if _is_endless_conveyor(event_id, options):
+        exit_index = _endless_conveyor_index(options)
+        if exit_index is not None:
+            logger.info(
+                "EVENT: Endless Conveyor -- leaving the belt. Every grab is 40 "
+                "gold for one roll and re-opens the event; the other option is "
+                "a free card upgrade that ends it.")
+            if seen is not None and event_id:
+                seen[event_id] = repeats + 1
+            return exit_index
+        # Only grabs on offer means the belt has already been ridden and the
+        # Leave option is missing or disabled. Nothing safe to pick; fall
+        # through to the guards below rather than grab by default.
+        logger.error(
+            "EVENT: Endless Conveyor is offering only grab options (%r). "
+            "Falling through to the generic guards.",
+            [o.get("label") for o in options][:4])
+
+    # HARD CAP NEXT. Checked before any scoring, because the whole point is
     # that it does not depend on understanding the options -- Endless Conveyor
     # was answered 83 times by a scorer that understood every one of them.
     escape = _event_escape_index(options, event_id, repeats)
@@ -1919,7 +2099,10 @@ def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None
         # Deliberately not scaled by how much gold is held: the failure is
         # buying REPEATEDLY, not buying once, and a threshold on gold would let
         # a rich run empty itself just as thoroughly.
-        if repeats >= 1 and _event_gold_cost(option) > 0:
+        # `_event_option_charges_gold` rather than `_event_gold_cost`, so an
+        # option we have WATCHED take gold counts even when its text is silent
+        # about it. That silence is exactly what let the conveyor through.
+        if repeats >= 1 and _event_option_charges_gold(event_id, option):
             lethal = True
 
         if lethal:
@@ -1940,7 +2123,17 @@ def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None
         if repeats > EVENT_MAX_REPEATS:
             for index, option in safe:
                 if _event_option_is_exit(option):
+                    _remember_event_choice(event_id, option, state.get("gold"))
                     return index
+        # A free option beats a paying one at equal safety, and on the FIRST
+        # visit the guard above has not fired yet. This is what makes the
+        # learned gold cost worth anything: without it the knowledge would only
+        # ever be applied on a repeat, and the conveyor is decided on visit one.
+        for index, option in safe:
+            if not _event_option_charges_gold(event_id, option):
+                _remember_event_choice(event_id, option, state.get("gold"))
+                return index
+        _remember_event_choice(event_id, safe[0][1], state.get("gold"))
         return safe[0][0]
 
     # Everything on offer is dangerous. Take the cheapest rather than the first,
@@ -1949,7 +2142,9 @@ def _pick_event_option(state: dict[str, Any], seen: dict[str, int] | None = None
         "Every option in event %s looks harmful at %s HP; taking the cheapest.",
         event_id or "?", hp,
     )
-    return min(unsafe)[2]
+    cheapest = min(unsafe)
+    _remember_event_choice(event_id, cheapest[3], state.get("gold"))
+    return cheapest[2]
 
 
 #: A single event may not be answered more times than this in one run.

@@ -4,6 +4,35 @@ Current known issues, bugs, and limitations of the STS2 RL Agent project.
 
 ---
 
+## STOP. Read this before investigating a crash.
+
+### The Punch Off crash — KNOWN, NOT OURS, DO NOT RE-INVESTIGATE
+
+This has now been diagnosed from scratch at least twice, and the second time cost most of a session. **It is closed. If you see this signature, the answer is "known Punch Off crash" and nothing else needs looking at.**
+
+```
+[RlMap] Agent chose node N: Unknown
+Creating NCombatRoom with mode=VisualOnly encounter=PUNCH_OFF_EVENT_ENCOUNTER
+EventRoom.EnterInternal -> PunchOff.AfterEventStarted -> PunchOff.PunchEachOther
+  -> CreatureCmd.TriggerAnim -> NCreature.SetAnimationTrigger_Patch1
+  -> MegaSpineBinding.Call
+ERROR: Signal '_internal_spine_objects_invalidated' is already connected
+```
+
+Python then reports `Connection lost` / `Connection refused` — the game process is gone.
+
+**What it is.** `_Patch1` is **BaseLib's** Harmony patch on `NCreature.SetAnimationTrigger`, against a game build BaseLib predates (BaseLib.dll Jul 31 09:59, game `.pck` Jul 31 19:28; 3.4.0 is the newest published, and it already throws `MissingFieldException` on `NTreasureRoom._chestNode` in every treasure room).
+
+**It is not our mod.** Cleared on 2026-08-11 by removing `AnimationSpeedPatch` from the patch list entirely and reproducing the crash anyway on forced seed `6D038P4FSM2F`. See the comment at `bridge_mod/MainFile.cs:53`. Note that `--speed normal` is **not** that test: it sets the multiplier to 1.0 while the prefix stays installed.
+
+**There is nothing the agent can do.** `PunchOff` calls `PunchEachOther` from `AfterEventStarted`, so the crash happens on room entry with no option presented, and a `?` room's contents cannot be read from the map beforehand.
+
+**The only lever is restarting.** Measured rate: **4 crashes in 36 runs, one per nine** (2026-08-16). `scripts/run100.sh` therefore passes `--restart-on-crash 30`, sized from that rate. If a session is ending early, check that number before checking anything else.
+
+Repro seed for the same crash: `VHHTGKTPEZWF`.
+
+---
+
 ## Live-run failure modes
 
 How a live run actually stops. Kept as a list because twice now a run was
