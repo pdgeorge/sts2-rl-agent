@@ -11,6 +11,11 @@ Not offline. Not "explained a gap". Not "shipped a change". Those can all be tru
 | 2026-08-13 | 496 | 48.0% +/- 4.4 | 26.5% +/- 5.6 | **12.7% +/- 2.9** | baseline, every live journal to date |
 | 2026-08-14 | 89 | 58.4% +/-10.2 | 25.0% +/-11.8 | **14.6% +/- 7.3** | the subset that actually ran the SEARCH |
 | 2026-08-14 | 410 | 45.4% +/- 4.8 | 26.9% +/- 6.4 | **12.2% +/- 3.2** | the subset that ran the v3 TRAINED MODEL |
+| 2026-08-15 | 100 | 66.0% +/- 9.3 | 30.3% +/-11.1 | **20.0% +/- 7.8** | `live_journal_overnight.jsonl`, the standing baseline |
+| 2026-08-16 | 89 | 59.6% +/-10.2 | 32.1% +/-12.6 | **19.1% +/- 8.2** | `run100_2`, after the playout rewrite and the Endless Conveyor fix |
+| 2026-08-16 | **189** | 63.0% +/- 6.9 | 31.1% +/- 8.3 | **19.6% +/- 5.7** | **pooled, both 100-run sessions of the current agent** |
+
+`run100_2` is not distinguishable from the baseline it followed: clear z=0.16 (p=0.88), reach z=0.92 (p=0.36). It stopped at 89 of 100 on a manual interrupt at 19:28, not on exhausted restarts. Nothing shipped since 2026-08-15 has moved the number.
 
 ## Target
 
@@ -32,6 +37,50 @@ This exists because the failure mode is mine and it is documented: quoting a fav
 | 3 | map routing with lookahead (`map_planning.py`) | reach 48% -> 62% live; offline reach 54% -> 65% | offline reach 60.7% -> 56.0%; paired net -2, p=0.89; best of 5 variants +0, p=1.00 | **MISS** |
 | 5 | demote `elite` below `monster` in `ROOM_PRIORITY_HEALTHY` | reach 66% -> 72%, clear 20% -> 25% | never measured -- **withdrawn and reverted before it ran** | **WITHDRAWN, wrong direction** |
 | 6 | playout policy priced in HP (`_heuristic_playout_action`) | power-play rate stops being flat in fight length and rises with it; damage per elite fight falls; live clear 20% -> 28% | offline paired A/B, 150 situations: wins 134 -> 134, damage/fight 13.03 -> 12.69, power rate 0.82/1.21/1.10/1.71% -> 1.30/1.62/1.01/1.23% by fight length. Power-holding decks only (n=73): wins 54 -> 54, damage/fight 19.79 -> 19.23, power rate 7.25/4.28/4.11/5.41% -> 10.96/4.66/4.39/4.62% | **MISS on the behavioural gate** |
+
+| 7 | multi-enemy target selection: does the searcher take an available kill on the enemy telegraphing the most damage? | **behavioural gate, no change yet.** Predict the kill is MISSED in >= 30% of positions where it is available and affordable, against 8/8 taken in the verified single-enemy case; and predict the miss rate RISES with enemy count, because `evaluate` scores `kill` as `0.10 * dead/len(killable)` so one corpse out of three is worth a third of one corpse out of one. If the kill is taken >= 90% of the time and shows no trend in enemy count, the hypothesis is dead and nothing gets built. | `scripts/probe_multi_enemy_kill.py`, 124 positions over 31 encounters: kill taken **92.7%** with several bodies on the table against 96.0% for the same victim alone. By enemy count 92.2% / 91.7% / 100.0% at 2 / 3 / 4 -- no trend, and the 4-enemy cell is perfect | **MISS, on both halves** |
+| 8 | the same question with the kill and the block made mutually exclusive: 1 energy, so Strike-the-threat and Defend cannot both be played | 7 gave the searcher 3 energy against a 5 HP victim, so it killed AND blocked and never had to choose -- it measures "does it notice a free kill", not the valuation. Predict the kill is taken in < 60% of positions once it costs the block, because `evaluate` is the only judge of the leaf and it prices a kill's future through `player_hp` over a 3-turn window while a block is banked immediately and certainly | same 124 positions at 1 energy: kill taken **91.1%**, against 93.5% solo. By enemy count 93.8% / 85.4% / 100.0% | **MISS** |
+
+### 7 and 8: multi-enemy targeting is CLEAN, and that closes it
+
+`WEEKEND_DECISIONS.md` §1 named the multi-enemy case "NOT verified, and the likely site of the observed failures... the first thing to test on Monday". It is now tested, by `scripts/probe_multi_enemy_kill.py`, and it is not the site of anything. The searcher takes the kill on the enemy telegraphing the most damage in **91-93%** of positions where one is available, whether or not taking it costs the block, and the small residual is the same in the one-enemy control (93-96%). It is not a multi-enemy effect.
+
+Both halves of my prediction were wrong and the reason is worth keeping. `evaluate` runs **after** `end_player_turn()` and after a 2-turn playout, so an enemy killed this turn stops attacking for the whole scored window and that value lands in `player_hp`. Killing a 5-damage enemy is therefore worth roughly 15 HP over the window against a block's 5 once -- the kill wins by a wide margin without the `kill` term contributing much at all, which is why dividing that term by `len(killable)` never mattered. **I reasoned about the weights and not about when the evaluation is called.** The 4:1 block-over-damage arithmetic in the original lead has the same hole.
+
+The three encounters that account for most of the residual (`setup_turret_operator_weak`, `setup_inklets_normal`, `setup_corpse_slugs_normal`) miss the kill in the solo control too, so they are not a targeting question either.
+
+### Verified against the decompile and DECLINED: the Pact's End play-gate
+
+`PACTS_END` was taken **27 times across the 189 pooled runs and played 0 times** in 25,043 card plays -- the exact signature of the 68 unplayable cards. It is a real disparity: `decompiled/MegaCrit.Sts2.Core.Models.Cards/PactsEnd.cs` declares only `ShouldGlowGoldInternal => CanDealDamage`, which is the gold-glow **display hint**, and overrides `IsPlayable` nowhere -- so the game always lets you play the card and `OnPlay` simply deals no damage when the exhaust pile is short. We implement that hint as a hard `register_playability_hook`, which masks the card out of the action space.
+
+The audit generalises and comes back otherwise clean. All four of our playability hooks, against the decompile:
+
+| card | game | ours | verdict |
+|---|---|---|---|
+| `CLASH` | `IsPlayable => all hand cards are Attack` | same | correct |
+| `GRAND_FINALE` | `IsPlayable => draw pile empty` | same | correct |
+| `HIGH_FIVE` | `IsPlayable => !Owner.IsOstyMissing` | osty alive | correct |
+| `PACTS_END` | **no `IsPlayable`; `ShouldGlowGold` only** | hard gate | **wrong** |
+
+**Not fixing it, because fixing it cannot help.** Only **3.0% of fights (57 of 1897)** ever reach the 3 exhausted cards the damage needs; our sim already permits the play in those. In the other 97% the game's own `OnPlay` deals zero, so removing the gate buys the searcher the option to waste a card. Correct-in-effect, wrong-in-mechanism, and worth nothing at the number.
+
+**What it does expose is a card-selection defect**, and that one is real: 26 runs spent a reward on a 0-cost 18-damage AoE rare whose enabling condition was met in **8 fights out of 1897**. The scorer reads damage and cost and cannot see that a ~4%-exhaust-density Ironclad deck never turns it on -- the same blindness as `docs/KNOWN_ISSUES.md` TODO 7. Honest magnitude: 26 of 1305 real cards taken, **2.0% of picks**. A fraction of a clear point, not a lever.
+
+### 8 is not a lead: `enemy_hp` is already measured, twice, and it hurts
+
+The standing "EvalWeights is biased 4:1 toward blocking, sweep `enemy_hp`" lead **has already been run** and is in `output/sweep_eval_weights_v2.txt`, 120 paired seeds an arm:
+
+| arm | clear | vs baseline (paired) |
+|---|---|---|
+| baseline | 33% | — |
+| `enemy_hp` 0.35 | 29% | **-4.2% +/- 2.5 (-1.7 se)** |
+| `enemy_hp` 0.50 | 26% | **-7.5% +/- 2.9 (-2.6 se)** |
+| `block_unused` 0 | 34% | +0.8% +/- 0.8 (+1.0 se) |
+| `turn` -0.005 | 32% | -0.8% +/- 1.4 (-0.6 se) |
+
+Monotone in the wrong direction, and the earlier n=60 sweeps that read positive (`output/sweep_eval_weights.txt`, +5.0% then +1.7%) are the small-n noise this project keeps buying. `PHASE_TWO.md:68` already logs it as a null. **Do not re-run it.**
+
+The 4:1 arithmetic behind the lead also omits the horizon, which is where the kill value actually lives. `evaluate` is called *after* `end_player_turn()` and after a 2-turn playout, so an enemy killed this turn stops attacking for the whole scored window and that lands in `player_hp`, not in `enemy_hp`. Blocking 5 scores 0.0625 once; killing a 5-damage enemy scores roughly 15 HP of prevented damage across the window. Damage-vs-block is priced. **What is not priced is which enemy dies** — `kill` is a flat count and `per_enemy` damage appears nowhere in `evaluate`, only in the playout policy rewritten under prediction 6. That is the gap prediction 7 tests, and it is an impossibility question rather than a weight.
 
 ### Why 6 missed, and what the diagnosis got wrong
 

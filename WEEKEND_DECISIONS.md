@@ -50,7 +50,9 @@ The replacement prices every card in one unit, HP: block at `min(block, unblocke
 
 **Fewer elites is the wrong lever.** Elite rooms end 23% of the runs entering them against 2.0% for monsters, and the first reading of that was to route around them. The [map guide](https://sts2.untapped.gg/en/guides/how-to-make-the-best-map-choices-in-slay-the-spire-2) says target **2–3 elites in act 1** and that avoiding them to preserve HP is a trap, because relics are what carries a run past act 1 — and we take **0.87 a run** already. The 23% measures how badly we play elites, not whether to enter them. Logged as WITHDRAWN in `SCOREBOARD.md`.
 
-**What is NOT verified, and is the likely site of the observed failures:** the multi-enemy case, where the agent must choose *which* enemy to kill and whether to split damage. That has never been tested. It is the first thing to test on Monday, and it is cheap — the same harness shape as the Bash and kill tests already written.
+**~~What is NOT verified, and is the likely site of the observed failures:~~ TESTED 2026-08-16, and it is clean.** The multi-enemy case — which enemy to kill — was the open item here. `scripts/probe_multi_enemy_kill.py` puts the enemy telegraphing the most damage in reach of the hand across 124 positions and 31 encounters, plays the searcher's own line out, and looks for the body: the kill is taken **92.7%** of the time with three energy and **91.1%** with one, where one energy makes the kill and the block mutually exclusive. The one-enemy control on the same victim is 96.0% / 93.5%, so the residual is not a multi-enemy effect, and there is no trend in enemy count.
+
+The reason the worry was misplaced: `evaluate` is called *after* `end_player_turn()` and after a 2-turn playout, so a corpse stops attacking for the whole scored window and that value arrives through `player_hp`. The kill is priced at roughly its damage times the horizon already — which is exactly what §1.3 above asks for — and it is priced there rather than in the `kill` term. Logged as predictions 7 and 8 in `SCOREBOARD.md`, both MISS.
 
 ### Why this is not a fool's errand
 
