@@ -47,6 +47,18 @@ _MODULES = (
     "sts2_env.monsters.act2",
     "sts2_env.monsters.act3",
     "sts2_env.monsters.act4",
+    # LAST, so an act module's definition still wins the "first definition
+    # wins" rule below and nothing here can shadow act 1 content.
+    #
+    # Omitted until 2026-08-17, which hid SIXTEEN monsters this simulator fully
+    # models -- among them TORCH_HEAD_AMALGAM (the act 3 boss's partner, which
+    # killed the deepest run on record) and BATTLE_FRIEND_V1, carried in
+    # WEEKEND_DECISIONS.md section 4 since 2026-08-14 as "unmodelled content the
+    # audit just caught". It was never unmodelled. It is implemented right here
+    # in shared.py and the factory simply never looked in this module, which is
+    # the FLAME_BARRIER against FLAME_BARRIER_CARD shape the audit's own failure
+    # message warns about.
+    "sts2_env.monsters.shared",
 )
 
 

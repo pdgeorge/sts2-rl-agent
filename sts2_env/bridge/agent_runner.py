@@ -1594,12 +1594,17 @@ def _log_combat_options(journal: Any, live_search_agent: Any, state: dict[str, A
             "combat_options",
             room_type=state.get("room_type"),
             turn=state.get("round") or state.get("turn"),
-            hp=(state.get("player") or {}).get("current_hp", state.get("hp")),
-            block=(state.get("player") or {}).get("block", state.get("block")),
-            energy=(state.get("player") or {}).get("energy", state.get("energy")),
+            # The mod sends `player.hp` and `enemy.hp`, NOT `current_hp` -- the
+            # first version of this guessed and logged `hp: None` for a whole
+            # session. Field names verified against a captured combat_action.
+            hp=(state.get("player") or {}).get("hp"),
+            max_hp=(state.get("player") or {}).get("max_hp"),
+            block=(state.get("player") or {}).get("block"),
+            energy=(state.get("player") or {}).get("energy"),
             enemies=[
-                {"id": e.get("id"), "hp": e.get("current_hp", e.get("hp")),
-                 "intent": e.get("intent"), "intent_damage": e.get("intent_damage")}
+                {"id": e.get("id"), "hp": e.get("hp"), "block": e.get("block"),
+                 "intent": e.get("intent"), "intent_damage": e.get("intent_damage"),
+                 "intent_hits": e.get("intent_hits")}
                 for e in enemies
             ],
             options=options,

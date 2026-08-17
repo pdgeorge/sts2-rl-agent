@@ -83,3 +83,40 @@ def test_nothing_is_written_when_the_search_had_nothing_to_say():
 
     _log_combat_options(Journal(), Agent(), {"enemies": []})
     assert written == []
+
+
+def test_the_position_is_logged_with_the_mods_own_field_names():
+    """`player.hp`, not `player.current_hp`.
+
+    The first version guessed `current_hp` and logged `hp: None` for an entire
+    100-run session -- the scores were right and the position beside them was
+    empty. Field names here are taken from a real captured `combat_action`:
+    player has hp/max_hp/block/energy, enemies have hp/block/intent.
+    """
+    from sts2_env.bridge.agent_runner import _log_combat_options
+
+    rows = []
+
+    class Journal:
+        def write(self, event, **fields):
+            rows.append((event, fields))
+
+    class Agent:
+        last_options = [{"score": 0.5, "line": ["STRIKE_IRONCLAD->0"], "chosen": True}]
+
+    _log_combat_options(Journal(), Agent(), {
+        "room_type": "Boss",
+        "round": 4,
+        "player": {"hp": 53, "max_hp": 80, "block": 7, "energy": 2},
+        "enemies": [{"id": "WATERFALL_GIANT", "hp": 120, "block": 0,
+                     "intent": "ATTACK", "intent_damage": 18, "intent_hits": 1}],
+    })
+
+    assert len(rows) == 1
+    event, f = rows[0]
+    assert event == "combat_options"
+    assert (f["hp"], f["max_hp"], f["block"], f["energy"]) == (53, 80, 7, 2)
+    assert f["turn"] == 4 and f["room_type"] == "Boss"
+    assert f["enemies"] == [{"id": "WATERFALL_GIANT", "hp": 120, "block": 0,
+                             "intent": "ATTACK", "intent_damage": 18,
+                             "intent_hits": 1}]

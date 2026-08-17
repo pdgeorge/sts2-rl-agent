@@ -16,7 +16,30 @@ Not offline. Not "explained a gap". Not "shipped a change". Those can all be tru
 | 2026-08-16 | **189** | 63.0% +/- 6.9 | 31.1% +/- 8.3 | **19.6% +/- 5.7** | **pooled, both 100-run sessions of the current agent** |
 
 | 2026-08-17 | 100 | 68.0% +/- 9.1 | 45.6% +/-11.8 | **31.0% +/- 9.1** | `postfix`, the bridge power-hook fix (`policy_version` v001, git sha 6b2c141 + uncommitted tree) |
-| 2026-08-17 | **289** | 64.7% +/- 5.5 | 36.4% +/- 6.9 | **23.5% +/- 4.9** | **pooled, every 100-run session of the current agent** |
+| 2026-08-17 | 100 | 75.0% +/- 8.5 | 58.7% +/-11.1 | **44.0% +/- 9.7** | `boss_telemetry`, sha 2e4cc4a. Same act 1 play as `postfix` |
+| 2026-08-17 | **200** | 71.5% +/- 6.3 | 52.4% +/- 8.2 | **37.5% +/- 6.7** | **POOLED, the agent since the power-hook fix** |
+
+### The power-hook fix is confirmed, and it is the biggest move this project has measured
+
+| | n | reach | win \| reach | clear |
+|---|---|---|---|---|
+| before the fix (`overnight` + `run100_2`) | 189 | 63.0% +/- 6.9 | 31.1% +/- 8.3 | **19.6% +/- 5.7** |
+| after (`postfix` + `boss_telemetry`) | 200 | 71.5% +/- 6.3 | 52.4% +/- 8.2 | **37.5% +/- 6.7** |
+| | | z=1.79, p=0.073 | **z=3.48, p=0.0005** | **z=3.90, p=0.0001** |
+
+**Win-given-reach is what moved, and reach is not resolvable.** That is precisely the signature a boss-execution fix should leave, and it is the shape prediction 9 was written against. Prediction 9 asked for +2 to +5 clear points and got **+17.9**.
+
+The two post-fix sessions differ by 13 points (31.0% against 44.0%, z=1.90, p=0.058) on **identical act 1 decision code** -- the only changes between them were act 3 parity constants and instrumentation. That difference is variance, and it is a standing reminder that a single 100-run session still carries +/-9: neither 31% nor 44% is the number, 37.5% +/- 6.7 is.
+
+**The Waterfall gate, re-tested at n=200 and no longer flat**, though still not resolved on its own:
+
+| | pre-fix (44 fights) | post-fix (23 fights) |
+|---|---|---|
+| Waterfall win rate | 32% | **48%** (z=1.29, p=0.198) |
+| eruption reached -> run died | 58% | **42%** |
+| zero-block eruption turns | 23/34 = 68% | 11/19 = 58% |
+
+All three move together and none resolves alone, which is what an under-powered but real effect looks like. The headline result is what carries the fix; the per-boss attribution stays provisional.
 
 `run100_2` is not distinguishable from the baseline it followed: clear z=0.16 (p=0.88), reach z=0.92 (p=0.36). It stopped at 89 of 100 on a manual interrupt at 19:28, not on exhausted restarts.
 
@@ -48,6 +71,8 @@ This exists because the failure mode is mine and it is documented: quoting a fav
 | 7 | multi-enemy target selection: does the searcher take an available kill on the enemy telegraphing the most damage? | **behavioural gate, no change yet.** Predict the kill is MISSED in >= 30% of positions where it is available and affordable, against 8/8 taken in the verified single-enemy case; and predict the miss rate RISES with enemy count, because `evaluate` scores `kill` as `0.10 * dead/len(killable)` so one corpse out of three is worth a third of one corpse out of one. If the kill is taken >= 90% of the time and shows no trend in enemy count, the hypothesis is dead and nothing gets built. | `scripts/probe_multi_enemy_kill.py`, 124 positions over 31 encounters: kill taken **92.7%** with several bodies on the table against 96.0% for the same victim alone. By enemy count 92.2% / 91.7% / 100.0% at 2 / 3 / 4 -- no trend, and the 4-enemy cell is perfect | **MISS, on both halves** |
 | 8 | the same question with the kill and the block made mutually exclusive: 1 energy, so Strike-the-threat and Defend cannot both be played | 7 gave the searcher 3 energy against a 5 HP victim, so it killed AND blocked and never had to choose -- it measures "does it notice a free kill", not the valuation. Predict the kill is taken in < 60% of positions once it costs the block, because `evaluate` is the only judge of the leaf and it prices a kill's future through `player_hp` over a 3-turn window while a block is banked immediately and certainly | same 124 positions at 1 energy: kill taken **91.1%**, against 93.5% solo. By enemy count 93.8% / 85.4% / 100.0% | **MISS** |
 | 9 | bridge power reconstruction returns the registry class (`situation._bridge_power_instance`), so hooked powers -- first among them Waterfall Giant's STEAM_ERUPTION detonation -- exist in every live-search lookahead | the mid-fight clone installed bare `PowerInstance`s, so the eruption never fired in search and every kill on the giant scored a clean win. Predict: **zero further live deaths where the killing blow on Waterfall Giant is followed by lethal eruption damage** (run 7 sunday died exactly this way at 37 HP against a ~37 bank); Waterfall's live boss record lifts off 4/28; pooled clear +2 to +5 points depending on boss incidence. Prediction written before the fix is measured live; the offline behavioural gates (search holds a fatal kill, takes a survivable one) already pass | **clear 19.6% -> 31.0% +/- 9.1 (z=2.18, p=0.029), inside the predicted direction but 2x the predicted size.** Both behavioural gates FAIL: 5 further eruption-phase deaths, not zero (56% of eruptions against 58% pre-fix), and Waterfall's record is 4/12 = 33% against a pooled pre-fix 14/44 = **32%**, z=0.10, p=0.92 -- the "4/28 = 14%" baseline the prediction was written against does not reconcile with the journals | **MISS on both gates; the clear rate moved and the named mechanism did not** |
+
+| 10 | boss counterfactuals (`scripts/boss_counterfactuals.py`): replay the lost act 1 boss arrivals under arms that change either how she PLAYS the fight or what she ARRIVED with | **Written before the run.** Predict `think_10x` converts **fewer than 20%** of the positions the baseline loses on every reshuffle -- i.e. most losses are arrival, not search depth, and the 3s budget is not what is costing them. Predict the arrival arms (`hp_plus_15`, `minus_2_basics`) each convert **more** positions than any play arm. If `think_10x` clears 20%+, search budget becomes a live lever and the measured 42%-at-full-HP is a play ceiling we can actually reach | pending | — |
 
 ### 9: the fix is real, the gate is flat, and the attribution is unproven
 
