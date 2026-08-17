@@ -72,7 +72,32 @@ This exists because the failure mode is mine and it is documented: quoting a fav
 | 8 | the same question with the kill and the block made mutually exclusive: 1 energy, so Strike-the-threat and Defend cannot both be played | 7 gave the searcher 3 energy against a 5 HP victim, so it killed AND blocked and never had to choose -- it measures "does it notice a free kill", not the valuation. Predict the kill is taken in < 60% of positions once it costs the block, because `evaluate` is the only judge of the leaf and it prices a kill's future through `player_hp` over a 3-turn window while a block is banked immediately and certainly | same 124 positions at 1 energy: kill taken **91.1%**, against 93.5% solo. By enemy count 93.8% / 85.4% / 100.0% | **MISS** |
 | 9 | bridge power reconstruction returns the registry class (`situation._bridge_power_instance`), so hooked powers -- first among them Waterfall Giant's STEAM_ERUPTION detonation -- exist in every live-search lookahead | the mid-fight clone installed bare `PowerInstance`s, so the eruption never fired in search and every kill on the giant scored a clean win. Predict: **zero further live deaths where the killing blow on Waterfall Giant is followed by lethal eruption damage** (run 7 sunday died exactly this way at 37 HP against a ~37 bank); Waterfall's live boss record lifts off 4/28; pooled clear +2 to +5 points depending on boss incidence. Prediction written before the fix is measured live; the offline behavioural gates (search holds a fatal kill, takes a survivable one) already pass | **clear 19.6% -> 31.0% +/- 9.1 (z=2.18, p=0.029), inside the predicted direction but 2x the predicted size.** Both behavioural gates FAIL: 5 further eruption-phase deaths, not zero (56% of eruptions against 58% pre-fix), and Waterfall's record is 4/12 = 33% against a pooled pre-fix 14/44 = **32%**, z=0.10, p=0.92 -- the "4/28 = 14%" baseline the prediction was written against does not reconcile with the journals | **MISS on both gates; the clear rate moved and the named mechanism did not** |
 
-| 10 | boss counterfactuals (`scripts/boss_counterfactuals.py`): replay the lost act 1 boss arrivals under arms that change either how she PLAYS the fight or what she ARRIVED with | **Written before the run.** Predict `think_10x` converts **fewer than 20%** of the positions the baseline loses on every reshuffle -- i.e. most losses are arrival, not search depth, and the 3s budget is not what is costing them. Predict the arrival arms (`hp_plus_15`, `minus_2_basics`) each convert **more** positions than any play arm. If `think_10x` clears 20%+, search budget becomes a live lever and the measured 42%-at-full-HP is a play ceiling we can actually reach | pending | — |
+| 10 | boss counterfactuals (`scripts/boss_counterfactuals.py`): replay the lost act 1 boss arrivals under arms that change either how she PLAYS the fight or what she ARRIVED with | **Written before the run.** Predict `think_10x` converts **fewer than 20%** of the positions the baseline loses on every reshuffle -- i.e. most losses are arrival, not search depth, and the 3s budget is not what is costing them. Predict the arrival arms (`hp_plus_15`, `minus_2_basics`) each convert **more** positions than any play arm. If `think_10x` clears 20%+, search budget becomes a live lever and the measured 42%-at-full-HP is a play ceiling we can actually reach | 84 arrivals x 7 arms x 6 reshuffles, 3528 replays. `think_10x` rescued **1 of the 11** positions the baseline loses outright = **9%**, and moved the pooled rate **+1.8 +/- 2.4 (not resolvable)**. Arrival arms did NOT each beat every play arm: `hp_plus_15` rescued 2 and `minus_2_basics` 1, against `lookahead_4`'s 2 | **HIT on the ceiling, MISS on the ordering** |
+
+### 10: MISPLAYS ARE NOT THE PROBLEM. This is the most useful null this project has bought.
+
+| arm | offline rate | paired vs baseline | better / worse / tied (of 84) |
+|---|---|---|---|
+| baseline | 69.8% | — | — |
+| `think_10x` | 71.6% | +1.8 +/- 2.4 | 11 / 5 / 68 |
+| `lookahead_4` | 68.7% | -1.2 +/- 3.3 | 15 / 14 / 55 |
+| `rollouts_on` | 72.1% | +1.4 +/- 3.1 | 16 / 13 / 54 |
+| **`no_potions`** | 57.7% | **-12.1 +/- 4.8** | **1 / 25 / 58** |
+| **`hp_plus_15`** | 74.4% | **+4.6 +/- 2.4** | **17 / 2 / 65** |
+| `minus_2_basics` | 71.6% | +1.8 +/- 3.5 | 19 / 14 / 51 |
+
+**Not one play arm is resolvable.** Ten times the thinking, twice the horizon, and rollouts switched back on all sit inside their own error bars. If the 42%-at-full-HP losses were misplays, more search would convert them, and it does not -- `think_10x` changes 16 positions of 84 and ties on 68. **The remaining boss losses are not a search problem**, which retires search depth, `lookahead_turns` and `DEFAULT_TOP_K` as levers for 50% and means the 49%-of-decisions-are-ties finding is a curiosity rather than a lead.
+
+**Two arms did resolve, and both are arrival, not play:**
+
+- **Potions are worth 12.1 points.** Switching them off is the single largest effect in the grid -- 1 position better, **25 worse**. The potion rules are load-bearing, which is the opposite of the `WEEKEND_DECISIONS.md` section 1 reading that potion use was "currently backwards". They are carrying the boss fight.
+- **15 HP is worth +4.6 +/- 2.4**, 17 better against 2 worse. pd's chip-damage thesis, priced on real lost positions rather than on a correlation, and it is clean.
+
+**And 6 of the 11 outright-lost positions are rescued by nothing at all.** Those were decided before the fight began.
+
+Read together: the boss fight is played about as well as this searcher can play it, and the remaining act 1 gap is in what she brings to it -- HP, potions, deck. `PHASE_TWO.md` section 2.1's pattern holds once more, from the other side: tuning the search is the sixth, seventh and eighth null, and the two things that moved are both resources.
+
+One data hygiene note: `TEST_SUBJECT` appears as a boss lineup in 28 captured states. A test monster reaching a live act 1 boss room is either an event encounter mislabelled `Boss` or real content named like a fixture, and it is worth a look before it contaminates a per-boss table.
 
 ### 9: the fix is real, the gate is flat, and the attribution is unproven
 
