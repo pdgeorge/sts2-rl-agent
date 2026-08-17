@@ -260,7 +260,10 @@ def run_agent(
     search_rollout_model: bool = False,
     capture_raw_path: str | None = None,
     capture_raw_per_type: int = 25,
+    capture_raw: "RawCapture | None" = None,
     force_seed: str | None = None,
+    policy_path: str | None = None,
+    on_journal_event: "Callable[[dict[str, Any]], None] | None" = None,
 ) -> None:
     """Main agent loop.
 
@@ -298,6 +301,17 @@ def run_agent(
     model = load_model(model_path)
     adapter = StateAdapter()
 
+    # THE POLICY IS A FILE, NOT THE GLOBALS. The module constants hold the
+    # shipped defaults; the decision path runs whatever this file says, and the
+    # journal stamps it. See sts2_env/policy_config.py for why nothing may
+    # patch a global instead.
+    from sts2_env.policy_config import PolicyConfig
+    policy = PolicyConfig.load(policy_path)
+    from sts2_env.policy_config import set_active_policy
+    set_active_policy(policy)
+    logger.info("policy %s loaded from %s (git %s)",
+                policy.policy_version, policy.source_path, policy.git_sha)
+
     # The SearchAgent-backed combat decider, opt-in. Constructed once and
     # reset on each fight's combat_start by the main loop. Kept in scope
     # along with the previous combat action index so the local sim mirrors
@@ -306,7 +320,7 @@ def run_agent(
     if live_search:
         from sts2_env.bridge.live_search import LiveSearch
 
-        live_search_agent = LiveSearch()
+        live_search_agent = LiveSearch(weights=policy.eval_weights)
         logger.info("LiveSearch enabled: combat decisions use the SearchAgent "
                     "planner instead of the trained model's argmax. Requires "
                     "the Phase 1.1 mod patch; if the mod does not send "
@@ -433,12 +447,29 @@ def run_agent(
         identical_states = 0
         _pending_removal = False
         stuck_log = "output/stuck_states.jsonl"
-        journal = RunJournal(journal_path, model=model_path)
+        journal = RunJournal(journal_path, model=model_path,
+                             policy_version=policy.policy_version,
+                             git_sha=policy.git_sha,
+                             on_event=on_journal_event)
         journal.start_run(1)
+        # The journal line doubles as the telemetry event downstream: which
+        # policy loaded, stamped with the sha of the code playing it.
+        journal.write("policy_version_loaded",
+                      policy_version=policy.policy_version,
+                      git_sha=policy.git_sha, source=policy.source_path)
         # The journal records decisions and drops the state behind them. This
         # keeps whole states, verbatim, so the bridge parsers can be replayed
         # against what the mod really sends rather than what we assumed.
-        raw_capture = (
+        # A caller that spans several `run_agent` calls -- `live_eval`'s
+        # restart-on-crash loop -- passes ITS capture in, because
+        # `RawCapture` opens with "w" and constructing one per call truncates
+        # the file on every relaunch. That cost the 2026-08-17 `postfix`
+        # session all 68 of its boss fights: five segments, four restarts, and
+        # the file left holding the last segment's single run. Sharing the
+        # instance also shares the quota counters, so a crash-heavy session
+        # cannot re-fill its floor-1 buckets once per segment either.
+        owns_capture = capture_raw is None
+        raw_capture = capture_raw or (
             RawCapture(capture_raw_path, per_type=capture_raw_per_type)
             if capture_raw_path else None
         )
@@ -929,6 +960,9 @@ def run_agent(
                             if msg_type == BridgeStateType.REWARD_SCREEN
                             else _pick_card_reward_index(state)
                         )
+                        if msg_type == BridgeStateType.CARD_REWARD:
+                            # What she considered, not only what she chose.
+                            _log_card_reward_options(journal, state, choice)
                         if verbose:
                             logger.info("CARD_REWARD: choosing option %s", choice)
                         _send_choice_or_skip(client, choice)
@@ -1022,7 +1056,13 @@ def run_agent(
                 # In the finally so a Ctrl-C or a lost connection still lands
                 # the trailer -- the counts of what was seen versus kept are
                 # how you tell a rare screen from a truncated one.
-                raw_capture.close()
+                #
+                # Only if we opened it. A borrowed capture belongs to a caller
+                # that will keep using it after this run_agent returns, and
+                # closing it here would land the trailer mid-session and drop
+                # every state from the segments that follow.
+                if owns_capture:
+                    raw_capture.close()
                 logger.info("Raw protocol capture: %s", raw_capture.summary)
             cyra.close()
             if isinstance(client, BridgeReplayRecorder):
@@ -1527,6 +1567,32 @@ def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
         )
 
     return _read_index(best_card, best_index)
+
+
+def _log_card_reward_options(journal: Any, state: dict[str, Any], choice: int | None) -> None:
+    """Log every option she considered, with scores, not only the choice.
+
+    PHASE_TWO section 3.3: the 68 unplayable cards would have been obvious the
+    moment an option list was logged, because a card that cannot resolve is
+    conspicuously ABSENT from every offer it should appear in -- and absence is
+    invisible in a chosen-only log. Same scoring path as the decision itself
+    (`rank_cards` over the same state), so the numbers here are the numbers she
+    actually ranked by. Never raises: a log line cannot cost the run.
+    """
+    try:
+        cards = list(state.get("cards", []))
+        if not cards:
+            return
+        ranked = rank_cards(cards, state.get("deck") or [], _deck_direction(state))
+        options = [{"index": index, "card": _card_label(card),
+                    "score": round(score, 3)}
+                   for score, index, card in ranked]
+        journal.write("card_reward_options", options=options,
+                      deck_size=_read_deck_size(state),
+                      can_skip=bool(state.get("can_skip", False)),
+                      chosen=choice, skipped=choice is None)
+    except Exception:
+        logger.debug("card_reward_options logging failed", exc_info=True)
 
 
 def _state_fingerprint(state: dict[str, Any]) -> tuple | None:

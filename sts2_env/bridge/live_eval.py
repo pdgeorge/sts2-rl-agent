@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Any
 
 from sts2_env.bridge.agent_runner import run_agent
+from sts2_env.bridge.raw_capture import RawCapture
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +69,12 @@ def _cleared_act_1(run: dict[str, Any]) -> bool:
 class LiveEvalRecorder:
     """Accumulates finished runs, writes them out, and reports the summary."""
 
-    def __init__(self, log_path: Path | None, model_path: str):
+    def __init__(self, log_path: Path | None, model_path: str, *,
+                 policy_version: str = "", git_sha: str = ""):
         self.runs: list[dict[str, Any]] = []
         self.model_path = model_path
+        self.policy_version = policy_version
+        self.git_sha = git_sha
         self.started = time.monotonic()
         self._fh = None
         if log_path is not None:
@@ -82,6 +86,8 @@ class LiveEvalRecorder:
     def __call__(self, summary: dict[str, Any]) -> None:
         summary = dict(summary)
         summary["model"] = self.model_path
+        summary["policy_version"] = self.policy_version
+        summary["git_sha"] = self.git_sha
         summary["wall_clock"] = round(time.monotonic() - self.started, 1)
         self.runs.append(summary)
 
@@ -288,10 +294,22 @@ def main() -> None:
                              "short --runs 1 session is enough to pin the protocol.")
     parser.add_argument("--capture-raw-per-type", type=int, default=25,
                         help="States kept per message type (default 25).")
+    parser.add_argument("--policy", default=None,
+                        help="Policy config: a version name under policies/ or a "
+                             "path to a JSON file. Default is policies/v001. The "
+                             "version and the git sha are stamped on every run "
+                             "summary and journal run_start.")
     parser.add_argument("--tell-cyra", action="store_true",
                         help="Publish run milestones to cyra_brain over RabbitMQ. "
                              "Needs cyra_game reachable (CYRA_GAME_PATH) and a "
                              "broker; without either it logs once and plays on.")
+    parser.add_argument("--telemetry", action="store_true",
+                        help="Publish the run's milestone events (run_start, "
+                             "boss_beaten, elite_beaten, died, run_end, ...) to "
+                             "the sts2.events RabbitMQ topic exchange. Broker at "
+                             "STS2_TELEMETRY_URL (default amqp://guest:guest@"
+                             "127.0.0.1:5672/); a missing broker degrades to one "
+                             "log line and plays on.")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument(
         "--combat-policy",
@@ -390,11 +408,41 @@ def main() -> None:
         logger.info("Console log also being written to %s", args.console_log)
 
     recorder = LiveEvalRecorder(Path(args.log) if args.log else None, args.model_path)
+    from sts2_env.policy_config import PolicyConfig
+    policy = PolicyConfig.load(args.policy)
+    recorder.policy_version = policy.policy_version
+    recorder.git_sha = policy.git_sha
+    logger.info("policy %s from %s (git %s)",
+                policy.policy_version, policy.source_path, policy.git_sha)
+
+    telemetry_publisher = None
+    on_journal_event = None
+    if args.telemetry:
+        from sts2_env.bridge.telemetry import TelemetryPublisher
+        telemetry_publisher = TelemetryPublisher()
+        on_journal_event = telemetry_publisher.observe
     logger.info("Live eval: up to %d runs, logging to %s", args.runs, args.log)
     logger.info("Ctrl-C stops and prints the summary.")
 
     # Restart loop. `recorder` accumulates across restarts, so the report and
     # the JSONL cover the whole session rather than the last fragment of it.
+    #
+    # The raw capture has to accumulate for exactly the same reason, and until
+    # 2026-08-17 it did not: `run_agent` built its own, `RawCapture` opens with
+    # "w", and so every relaunch truncated the file. `postfix` restarted four
+    # times and its capture was left holding the final one-run segment -- 0 boss
+    # states from a session that fought 68 act 1 bosses, which is the whole
+    # input to PHASE_TWO Track A. Built here, once, and passed in.
+    raw_capture = (
+        RawCapture(args.capture_raw, per_type=args.capture_raw_per_type)
+        if args.capture_raw else None
+    )
+
+    def _close_capture() -> None:
+        if raw_capture is not None:
+            raw_capture.close()
+            logger.info("Raw protocol capture: %s", raw_capture.summary)
+
     restarts_left = max(0, args.restart_on_crash)
     while True:
       try:
@@ -412,8 +460,9 @@ def main() -> None:
             combat_policy_path=args.combat_policy,
             live_search=args.live_search,
             search_rollout_model=args.search_rollout_model,
-            capture_raw_path=args.capture_raw or None,
-            capture_raw_per_type=args.capture_raw_per_type,
+            capture_raw=raw_capture,
+            policy_path=args.policy,
+            on_journal_event=on_journal_event,
             force_seed=args.seed,
         )
       except KeyboardInterrupt:
@@ -427,6 +476,8 @@ def main() -> None:
             "error_type": type(exc).__name__,
             "error_message": str(exc),
             "model": args.model_path,
+            "policy_version": policy.policy_version,
+            "git_sha": policy.git_sha,
             "combat_policy": args.combat_policy,
             "runs_completed": len(recorder.runs),
             "last_run": recorder.runs[-1] if recorder.runs else None,
@@ -448,11 +499,17 @@ def main() -> None:
                 continue
         print(recorder.report())
         recorder.close()
+        _close_capture()
+        if telemetry_publisher is not None:
+            telemetry_publisher.close()
         sys.exit(1)
       break
 
     print(recorder.report())
     recorder.close()
+    _close_capture()
+    if telemetry_publisher is not None:
+        telemetry_publisher.close()
 
 
 if __name__ == "__main__":

@@ -346,7 +346,7 @@ from sts2_env.monsters.shared import (
     TORCH_HEAD_AMALGAM_BEAM_MOVE,
     TORCH_HEAD_AMALGAM_MINION,
     TORCH_HEAD_AMALGAM_MONSTER_ID,
-    TORCH_HEAD_AMALGAM_TACKLE_1_MOVE,
+    TORCH_HEAD_AMALGAM_STRONG_TACKLE_MOVE,
     TORCH_HEAD_AMALGAM_TACKLE_3_MOVE,
     create_battle_friend_v2,
     create_battle_friend_v3,
@@ -749,8 +749,8 @@ DOORMAKER_DOOR_HP_SCALE_A8 = 25
 DOORMAKER_DOOR_STRENGTH_SCALE_A9 = 4
 TORCH_HEAD_AMALGAM_BASE_HP = 199
 TORCH_HEAD_AMALGAM_A8_HP = 211
-TORCH_HEAD_AMALGAM_TACKLE_DAMAGE_A9 = 19
-TORCH_HEAD_AMALGAM_WEAK_TACKLE_DAMAGE_A9 = 15
+TORCH_HEAD_AMALGAM_STRONG_TACKLE_DAMAGE_A9 = 32
+TORCH_HEAD_AMALGAM_WEAK_TACKLE_DAMAGE_A9 = 16
 TORCH_HEAD_AMALGAM_SOUL_BEAM_DAMAGE = 8
 TORCH_HEAD_AMALGAM_SOUL_BEAM_HITS = 3
 QUEEN_BASE_HP = 400
@@ -902,14 +902,14 @@ FABRICATOR_A8_HP = 155
 FABRICATOR_FABRICATING_STRIKE_DAMAGE_A9 = 21
 FABRICATOR_DISINTEGRATE_DAMAGE_A9 = 13
 FABRICATOR_MINION = 1
-ZAPBOT_A8_HP_RANGE = (24, 29)
+ZAPBOT_A8_HP_RANGE = (19, 24)
 ZAPBOT_ZAP_DAMAGE_A9 = 15
 ZAPBOT_HIGH_VOLTAGE = 2
-STABBOT_A8_HP_RANGE = (24, 29)
+STABBOT_A8_HP_RANGE = (19, 24)
 STABBOT_STAB_DAMAGE_A9 = 12
 STABBOT_STAB_FRAIL = 1
 GUARDBOT_A8_HP_RANGE = (22, 26)
-NOISEBOT_A8_HP_RANGE = (24, 29)
+NOISEBOT_A8_HP_RANGE = (19, 24)
 FROG_KNIGHT_BASE_HP = 191
 FROG_KNIGHT_A8_HP = 199
 FROG_KNIGHT_BASE_PLATING = 15
@@ -954,7 +954,11 @@ THE_FORGOTTEN_A8_HP = 111
 THE_FORGOTTEN_STOLEN_DEXTERITY = 2
 THE_FORGOTTEN_MIASMA_BLOCK = 8
 THE_FORGOTTEN_POSSESS_SPEED = 1
-THE_FORGOTTEN_DREAD_DAMAGE_A9 = 17
+# At DeadlyEnemies the base is 15, and Dread adds the creature's own
+# Dexterity on top -- 0 on a freshly built monster, which is what these
+# assertions look at. It was 17 here: the base with two Miasmas of
+# self-Dexterity silently folded in.
+THE_FORGOTTEN_DREAD_DAMAGE_A9 = 15
 TOUGH_EGG_MULTIPLAYER_INITIAL_HP = 16
 TOUGH_EGG_MULTIPLAYER_HATCHLING_HP = 20
 TOUGH_EGG_BASE_INITIAL_HP_RANGE = (14, 18)
@@ -5676,7 +5680,7 @@ class TestFixedRotation:
 
         assert amalgam.max_hp == TORCH_HEAD_AMALGAM_BASE_HP
         assert amalgam.get_power_amount(PowerId.MINION) == TORCH_HEAD_AMALGAM_MINION
-        assert amalgam_ai.current_move.state_id == TORCH_HEAD_AMALGAM_TACKLE_1_MOVE
+        assert amalgam_ai.current_move.state_id == TORCH_HEAD_AMALGAM_STRONG_TACKLE_MOVE
         assert queen.max_hp == QUEEN_BASE_HP
         assert queen_ai.current_move.state_id == QUEEN_PUPPET_STRINGS_MOVE
 
@@ -5742,11 +5746,11 @@ class TestFixedRotation:
         assert queen.monster_id == QUEEN_MONSTER_ID
         assert queen.max_hp == QUEEN_A8_HP
 
-        tackle = amalgam_ai.states[TORCH_HEAD_AMALGAM_TACKLE_1_MOVE]
-        assert tackle.intents[0].damage == TORCH_HEAD_AMALGAM_TACKLE_DAMAGE_A9
+        tackle = amalgam_ai.states[TORCH_HEAD_AMALGAM_STRONG_TACKLE_MOVE]
+        assert tackle.intents[0].damage == TORCH_HEAD_AMALGAM_STRONG_TACKLE_DAMAGE_A9
         player_hp_before_tackle = combat.player.current_hp
         tackle.perform(combat)
-        assert combat.player.current_hp == player_hp_before_tackle - TORCH_HEAD_AMALGAM_TACKLE_DAMAGE_A9
+        assert combat.player.current_hp == player_hp_before_tackle - TORCH_HEAD_AMALGAM_STRONG_TACKLE_DAMAGE_A9
 
         beam = amalgam_ai.states[TORCH_HEAD_AMALGAM_BEAM_MOVE]
         assert beam.intents[0].damage == TORCH_HEAD_AMALGAM_SOUL_BEAM_DAMAGE
@@ -7969,3 +7973,89 @@ class TestCooldown:
                 assert "A" not in window, (
                     f"A appeared within cooldown at index {i}: {moves[i:i+4]}"
                 )
+
+
+class TestDisparitiesFoundLive:
+    """Constants the live game contradicted, pinned at the decompiled values.
+
+    All four came out of one 100-run session's `disparity_summary()`. Each is
+    quoted from `decompiled/MegaCrit.Sts2.Core.Models.Monsters/` rather than
+    from the observed number, because a fix fitted to one telegraph is how the
+    Dread constant got wrong in the first place.
+    """
+
+    def test_the_bots_share_the_games_hp_window(self):
+        """Zapbot/Stabbot/Noisebot: 18-23, and 19-24 on ToughEnemies.
+
+        Was 23-28 / 24-29 -- every bound exactly +5, with the simulator's MIN
+        sitting on the game's MAX, which is a window transcribed one step up.
+        Live saw NOISEBOT 18, STABBOT 19, ZAPBOT 22: all inside the real range
+        and all below the old one, so every roll disagreed.
+        """
+        from sts2_env.monsters.act3 import (
+            NOISEBOT_BASE_MIN_HP, NOISEBOT_BASE_MAX_HP,
+            NOISEBOT_TOUGH_MIN_HP, NOISEBOT_TOUGH_MAX_HP,
+            STABBOT_BASE_MIN_HP, STABBOT_BASE_MAX_HP,
+            STABBOT_TOUGH_MIN_HP, STABBOT_TOUGH_MAX_HP,
+            ZAPBOT_BASE_MIN_HP, ZAPBOT_BASE_MAX_HP,
+            ZAPBOT_TOUGH_MIN_HP, ZAPBOT_TOUGH_MAX_HP,
+        )
+        for base_min, base_max, tough_min, tough_max in (
+            (NOISEBOT_BASE_MIN_HP, NOISEBOT_BASE_MAX_HP,
+             NOISEBOT_TOUGH_MIN_HP, NOISEBOT_TOUGH_MAX_HP),
+            (STABBOT_BASE_MIN_HP, STABBOT_BASE_MAX_HP,
+             STABBOT_TOUGH_MIN_HP, STABBOT_TOUGH_MAX_HP),
+            (ZAPBOT_BASE_MIN_HP, ZAPBOT_BASE_MAX_HP,
+             ZAPBOT_TOUGH_MIN_HP, ZAPBOT_TOUGH_MAX_HP),
+        ):
+            assert (base_min, base_max) == (18, 23)
+            assert (tough_min, tough_max) == (19, 24)
+
+    def test_the_amalgam_opens_on_the_strong_tackle(self):
+        """`GenerateMoveStateMachine` starts on STRONG_TACKLE_MOVE at 26.
+
+        We modelled that slot as `TACKLE_1_MOVE` at 18 -- so the state id the
+        bridge sent did not exist here (10 occurrences in one session) and the
+        act 3 boss's opening hit was under-modelled by 8. The deepest run this
+        project has recorded died on this fight.
+        """
+        from sts2_env.core.rng import Rng
+        from sts2_env.monsters.shared import (
+            create_torch_head_amalgam, TORCH_HEAD_AMALGAM_STRONG_TACKLE_MOVE)
+
+        _, ai = create_torch_head_amalgam(Rng(1))
+        assert ai.current_move.state_id == TORCH_HEAD_AMALGAM_STRONG_TACKLE_MOVE
+        assert ai.states[TORCH_HEAD_AMALGAM_STRONG_TACKLE_MOVE].intents[0].damage == 26
+
+        # The full chain, exactly as the C# wires the FollowUpStates.
+        chain = {sid: st.follow_up_id for sid, st in ai.states.items()}
+        assert chain == {
+            "STRONG_TACKLE_MOVE": "TACKLE_2_MOVE",
+            "TACKLE_2_MOVE": "BEAM_MOVE",
+            "BEAM_MOVE": "TACKLE_3_MOVE",
+            "TACKLE_3_MOVE": "TACKLE_4_MOVE",
+            "TACKLE_4_MOVE": "BEAM_MOVE",
+        }
+
+    def test_dread_scales_with_the_forgottens_own_dexterity(self):
+        """`DreadDamage => base + GetPowerAmount<DexterityPower>()`.
+
+        Miasma gives the creature +2 Dexterity a cycle, so Dread grows all
+        fight. We had it flat at 15 -- the base with two Miasmas baked in, which
+        matches one mid-fight telegraph and no other. Live caught it at
+        DEXTERITY 4: we said 15, the game said 17.
+        """
+        from sts2_env.core.enums import PowerId
+        from sts2_env.core.rng import Rng
+        from sts2_env.monsters.act3 import (
+            create_the_forgotten, THE_FORGOTTEN_BASE_DREAD_DAMAGE,
+            THE_FORGOTTEN_DREAD_MOVE)
+
+        assert THE_FORGOTTEN_BASE_DREAD_DAMAGE == 13
+
+        creature, ai = create_the_forgotten(Rng(1))
+        assert ai.states[THE_FORGOTTEN_DREAD_MOVE].intents[0].damage == 13
+
+        # The exact position the live disparity was reported from.
+        creature.apply_power(PowerId.DEXTERITY, 4, applier=creature)
+        assert creature.get_power_amount(PowerId.DEXTERITY) == 4

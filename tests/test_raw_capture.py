@@ -76,7 +76,7 @@ def test_a_boss_fight_has_its_own_quota(tmp_path):
     live -- impossible for want of a single fight on disk.
     """
     path = tmp_path / "capture.jsonl"
-    capture = RawCapture(path, per_type=2)
+    capture = RawCapture(path, per_type=2, boss_quota=2)
 
     for i in range(10):
         capture.observe(_state("combat_action", step=i, room_type="Monster"))
@@ -89,6 +89,26 @@ def test_a_boss_fight_has_its_own_quota(tmp_path):
     monster = [s for s in states if s.get("room_type") == "Monster"]
     assert len(monster) == 2, "monster quota not enforced"
     assert len(boss) == 2, "the boss fight was crowded out again"
+
+
+def test_boss_fights_get_a_larger_quota_than_the_shared_default(tmp_path) -> None:
+    """A boss fight is sampled per state, and fights outlast the old quota.
+
+    The 2026-08-16 session replayed two Waterfall Giant fights that ran eleven
+    turns at about five states a round; the shared quota of 25 cut both
+    captures at round five -- exactly when the fights started being lost. The
+    boss bucket therefore keeps its own budget, large enough for a full fight.
+    """
+    path = tmp_path / "capture.jsonl"
+    capture = RawCapture(path, per_type=2)  # boss_quota stays the default
+
+    for i in range(60):
+        capture.observe(_state("combat_action", step=i, room_type="Boss"))
+    capture.close()
+
+    assert len(load_capture(path)) == 60, (
+        "a full boss fight must survive its own capture; the quota cut the "
+        "sunday session's Waterfall Giant fights at round five")
 
 
 def test_observe_reports_whether_it_kept_the_state(tmp_path):
@@ -228,3 +248,69 @@ def test_a_captured_combat_action_feeds_the_bridge_parsers(tmp_path):
     combat = situation.to_combat_mid_fight(replayed)
 
     assert combat.enemies, "replayed payload built a fight with no enemies"
+
+
+def test_a_shared_capture_survives_a_restart_and_keeps_its_quota(tmp_path):
+    """The bug that cost `postfix` all 68 of its boss fights.
+
+    `live_eval` restarts the game on a crash and calls `run_agent` again. Until
+    2026-08-17 `run_agent` built its own `RawCapture` each time, and the class
+    opens with "w" -- so every relaunch truncated the file and the session was
+    left with whatever the final segment happened to see. `postfix` restarted
+    four times, its last segment was one run, and a session that fought 68 act 1
+    bosses ended with zero boss states on disk.
+
+    Two things have to hold, and the second is why appending was not the fix.
+    The states from earlier segments must survive, AND the quota counters must
+    carry over -- a per-segment counter re-fills its floor-1 buckets once per
+    crash, which is the original pathology that made the capture useless.
+    """
+    path = tmp_path / "capture.jsonl"
+    capture = RawCapture(path, per_type=3)
+
+    # Segment one: fills the monster bucket, then reaches a boss.
+    for _ in range(5):
+        capture.observe({"type": "combat_action", "room_type": "Monster",
+                         "encounter_seed": 1})
+    capture.observe({"type": "combat_action", "room_type": "Boss",
+                     "encounter_seed": 99, "floor": 17})
+
+    # The game dies here and `live_eval` calls `run_agent` again with the SAME
+    # capture. Nothing reopens the file.
+    for _ in range(5):
+        capture.observe({"type": "combat_action", "room_type": "Monster",
+                         "encounter_seed": 2})
+    capture.observe({"type": "combat_action", "room_type": "Boss",
+                     "encounter_seed": 100, "floor": 17})
+    capture.close()
+
+    states = load_capture(path)
+    rooms = [s.get("room_type") for s in states]
+
+    # The first segment's boss is still there. This is the whole point.
+    assert rooms.count("Boss") == 2, (
+        "a restart truncated the capture and lost the earlier segment's boss")
+
+    # And the quota did not reset: seed 1 and seed 2 are distinct fights, so
+    # each gets its own 3, but neither gets a fresh allowance per segment.
+    assert rooms.count("Monster") == 6
+    seeds = [s.get("encounter_seed") for s in states if s.get("room_type") == "Monster"]
+    assert seeds.count(1) == 3 and seeds.count(2) == 3
+
+
+def test_run_agent_does_not_close_a_capture_it_was_handed(tmp_path):
+    """A borrowed capture stays open, or the trailer lands mid-session.
+
+    `run_agent`'s `finally` closes the capture so a Ctrl-C still writes the
+    counts. When the capture belongs to the caller that must not fire, because
+    `live_eval` will keep feeding it through every remaining restart.
+    """
+    import inspect
+    from sts2_env.bridge import agent_runner
+
+    source = inspect.getsource(agent_runner.run_agent)
+    assert "owns_capture" in source, "run_agent must track whether it owns the capture"
+    assert "if owns_capture:" in source, "the close must be guarded by ownership"
+
+    # And the seam exists at all: a caller can hand one in.
+    assert "capture_raw" in inspect.signature(agent_runner.run_agent).parameters

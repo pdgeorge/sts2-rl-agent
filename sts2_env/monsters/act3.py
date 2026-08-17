@@ -294,10 +294,10 @@ def create_axebot(
 # ---- Fabricator (HP 150 / 155 asc) + bots ----
 
 ZAPBOT_MONSTER_ID = "ZAPBOT"
-ZAPBOT_BASE_MIN_HP = 23
-ZAPBOT_BASE_MAX_HP = 28
-ZAPBOT_TOUGH_MIN_HP = 24
-ZAPBOT_TOUGH_MAX_HP = 29
+ZAPBOT_BASE_MIN_HP = 18
+ZAPBOT_BASE_MAX_HP = 23
+ZAPBOT_TOUGH_MIN_HP = 19
+ZAPBOT_TOUGH_MAX_HP = 24
 ZAPBOT_BASE_ZAP_DAMAGE = 14
 ZAPBOT_DEADLY_ZAP_DAMAGE = 15
 ZAPBOT_HIGH_VOLTAGE_AMOUNT = 2
@@ -348,10 +348,10 @@ def create_zapbot(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Monster
 
 
 STABBOT_MONSTER_ID = "STABBOT"
-STABBOT_BASE_MIN_HP = 23
-STABBOT_BASE_MAX_HP = 28
-STABBOT_TOUGH_MIN_HP = 24
-STABBOT_TOUGH_MAX_HP = 29
+STABBOT_BASE_MIN_HP = 18
+STABBOT_BASE_MAX_HP = 23
+STABBOT_TOUGH_MIN_HP = 19
+STABBOT_TOUGH_MAX_HP = 24
 STABBOT_BASE_STAB_DAMAGE = 11
 STABBOT_DEADLY_STAB_DAMAGE = 12
 STABBOT_STAB_FRAIL = 1
@@ -444,10 +444,10 @@ def create_guardbot(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Monst
 
 
 NOISEBOT_MONSTER_ID = "NOISEBOT"
-NOISEBOT_BASE_MIN_HP = 23
-NOISEBOT_BASE_MAX_HP = 28
-NOISEBOT_TOUGH_MIN_HP = 24
-NOISEBOT_TOUGH_MAX_HP = 29
+NOISEBOT_BASE_MIN_HP = 18
+NOISEBOT_BASE_MAX_HP = 23
+NOISEBOT_TOUGH_MIN_HP = 19
+NOISEBOT_TOUGH_MAX_HP = 24
 NOISEBOT_DAZED_TO_DISCARD = 1
 NOISEBOT_DAZED_TO_DRAW = 1
 NOISEBOT_NOISE_MOVE = "NOISE_MOVE"
@@ -1088,8 +1088,15 @@ THE_FORGOTTEN_TOUGH_HP = 111
 THE_FORGOTTEN_MIASMA_DEXTERITY = -2
 THE_FORGOTTEN_MIASMA_BLOCK = 8
 THE_FORGOTTEN_MIASMA_SELF_DEXTERITY = 2
-THE_FORGOTTEN_BASE_DREAD_DAMAGE = 15
-THE_FORGOTTEN_DEADLY_DREAD_DAMAGE = 17
+# Dread is `base + the monster's OWN Dexterity`, which is why these read low
+# against the numbers a live fight shows. `TheForgotten.cs`:
+#     int v = GetValueIfAscension(DeadlyEnemies, 15, 13);
+#     return v + base.Creature.GetPowerAmount<DexterityPower>();
+# Miasma gives itself +2 Dexterity every cycle, so Dread grows all fight. The
+# constants here were 15/17 -- the base with two Miasmas already baked in, which
+# matched a mid-fight telegraph and nothing else.
+THE_FORGOTTEN_BASE_DREAD_DAMAGE = 13
+THE_FORGOTTEN_DEADLY_DREAD_DAMAGE = 15
 THE_FORGOTTEN_POSSESS_SPEED = 1
 THE_FORGOTTEN_MIASMA_MOVE = "MIASMA"
 THE_FORGOTTEN_DREAD_MOVE = "DREAD"
@@ -1165,22 +1172,25 @@ def create_the_forgotten(rng: Rng, ascension_level: int = 0) -> tuple[Creature, 
         )
         _gain_block(creature, THE_FORGOTTEN_MIASMA_BLOCK, combat)
         creature.apply_power(PowerId.DEXTERITY, THE_FORGOTTEN_MIASMA_SELF_DEXTERITY, applier=creature)
+        # Dread's telegraph has to move with it. `SingleAttackIntent(() =>
+        # DreadDamage)` re-reads on every look in the game; here Miasma is the
+        # only thing that changes the input, and Dread is always what follows.
+        for intent in states[THE_FORGOTTEN_DREAD_MOVE].intents:
+            intent.damage = _dread_damage(_combat_ascension_level(combat))
 
-    def dread(combat: CombatState) -> None:
-        dread_dmg = _ascension_value(
-            _combat_ascension_level(combat),
+    def _dread_damage(level: int) -> int:
+        return _ascension_value(
+            level,
             DEADLY_ENEMIES_ASCENSION_LEVEL,
             THE_FORGOTTEN_DEADLY_DREAD_DAMAGE,
             THE_FORGOTTEN_BASE_DREAD_DAMAGE,
-        )
-        _deal_damage_to_player(combat, creature, dread_dmg)
+        ) + creature.get_power_amount(PowerId.DEXTERITY)
 
-    dread_intent_damage = _ascension_value(
-        ascension_level,
-        DEADLY_ENEMIES_ASCENSION_LEVEL,
-        THE_FORGOTTEN_DEADLY_DREAD_DAMAGE,
-        THE_FORGOTTEN_BASE_DREAD_DAMAGE,
-    )
+    def dread(combat: CombatState) -> None:
+        _deal_damage_to_player(
+            combat, creature, _dread_damage(_combat_ascension_level(combat)))
+
+    dread_intent_damage = _dread_damage(ascension_level)
 
     states: dict[str, MonsterState] = {
         THE_FORGOTTEN_MIASMA_MOVE: MoveState(

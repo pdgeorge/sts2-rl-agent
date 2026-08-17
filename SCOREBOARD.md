@@ -15,7 +15,14 @@ Not offline. Not "explained a gap". Not "shipped a change". Those can all be tru
 | 2026-08-16 | 89 | 59.6% +/-10.2 | 32.1% +/-12.6 | **19.1% +/- 8.2** | `run100_2`, after the playout rewrite and the Endless Conveyor fix |
 | 2026-08-16 | **189** | 63.0% +/- 6.9 | 31.1% +/- 8.3 | **19.6% +/- 5.7** | **pooled, both 100-run sessions of the current agent** |
 
-`run100_2` is not distinguishable from the baseline it followed: clear z=0.16 (p=0.88), reach z=0.92 (p=0.36). It stopped at 89 of 100 on a manual interrupt at 19:28, not on exhausted restarts. Nothing shipped since 2026-08-15 has moved the number.
+| 2026-08-17 | 100 | 68.0% +/- 9.1 | 45.6% +/-11.8 | **31.0% +/- 9.1** | `postfix`, the bridge power-hook fix (`policy_version` v001, git sha 6b2c141 + uncommitted tree) |
+| 2026-08-17 | **289** | 64.7% +/- 5.5 | 36.4% +/- 6.9 | **23.5% +/- 4.9** | **pooled, every 100-run session of the current agent** |
+
+`run100_2` is not distinguishable from the baseline it followed: clear z=0.16 (p=0.88), reach z=0.92 (p=0.36). It stopped at 89 of 100 on a manual interrupt at 19:28, not on exhausted restarts.
+
+**`postfix` is the first session since 2026-08-15 that moved the number.** Against the pooled 189-run baseline: clear +11.4 points, **z=2.18, p=0.029**; win-given-reach +14.5 points, **z=1.98, p=0.047**; reach flat at +5.0, z=0.85, p=0.39. The shape is the one a boss-execution fix should have -- the win half moves and reach does not.
+
+Two cautions on it, both required by the rules above. The session summary quotes `31.0% +/- 4.6%`, which is **one standard error**; the 95% interval is **+/- 9.1** (Wilson 22.8 to 40.6) and that is the number this file takes. And p=0.029 is one session against pooled history, at an n that resolves nothing finer than ~9 points -- it clears the n>=100 bar and does not clear the ~290 needed to call 31% to +/-5. The pooled row is the honest headline.
 
 ## Target
 
@@ -40,6 +47,41 @@ This exists because the failure mode is mine and it is documented: quoting a fav
 
 | 7 | multi-enemy target selection: does the searcher take an available kill on the enemy telegraphing the most damage? | **behavioural gate, no change yet.** Predict the kill is MISSED in >= 30% of positions where it is available and affordable, against 8/8 taken in the verified single-enemy case; and predict the miss rate RISES with enemy count, because `evaluate` scores `kill` as `0.10 * dead/len(killable)` so one corpse out of three is worth a third of one corpse out of one. If the kill is taken >= 90% of the time and shows no trend in enemy count, the hypothesis is dead and nothing gets built. | `scripts/probe_multi_enemy_kill.py`, 124 positions over 31 encounters: kill taken **92.7%** with several bodies on the table against 96.0% for the same victim alone. By enemy count 92.2% / 91.7% / 100.0% at 2 / 3 / 4 -- no trend, and the 4-enemy cell is perfect | **MISS, on both halves** |
 | 8 | the same question with the kill and the block made mutually exclusive: 1 energy, so Strike-the-threat and Defend cannot both be played | 7 gave the searcher 3 energy against a 5 HP victim, so it killed AND blocked and never had to choose -- it measures "does it notice a free kill", not the valuation. Predict the kill is taken in < 60% of positions once it costs the block, because `evaluate` is the only judge of the leaf and it prices a kill's future through `player_hp` over a 3-turn window while a block is banked immediately and certainly | same 124 positions at 1 energy: kill taken **91.1%**, against 93.5% solo. By enemy count 93.8% / 85.4% / 100.0% | **MISS** |
+| 9 | bridge power reconstruction returns the registry class (`situation._bridge_power_instance`), so hooked powers -- first among them Waterfall Giant's STEAM_ERUPTION detonation -- exist in every live-search lookahead | the mid-fight clone installed bare `PowerInstance`s, so the eruption never fired in search and every kill on the giant scored a clean win. Predict: **zero further live deaths where the killing blow on Waterfall Giant is followed by lethal eruption damage** (run 7 sunday died exactly this way at 37 HP against a ~37 bank); Waterfall's live boss record lifts off 4/28; pooled clear +2 to +5 points depending on boss incidence. Prediction written before the fix is measured live; the offline behavioural gates (search holds a fatal kill, takes a survivable one) already pass | **clear 19.6% -> 31.0% +/- 9.1 (z=2.18, p=0.029), inside the predicted direction but 2x the predicted size.** Both behavioural gates FAIL: 5 further eruption-phase deaths, not zero (56% of eruptions against 58% pre-fix), and Waterfall's record is 4/12 = 33% against a pooled pre-fix 14/44 = **32%**, z=0.10, p=0.92 -- the "4/28 = 14%" baseline the prediction was written against does not reconcile with the journals | **MISS on both gates; the clear rate moved and the named mechanism did not** |
+
+### 9: the fix is real, the gate is flat, and the attribution is unproven
+
+The fix itself is correct end to end, verified rather than assumed. The bridge really does report the power (`STEAM_ERUPTION_POWER`, 38 of 50 captured Waterfall states), `_coerce_power_id` maps it to `PowerId.STEAM_ERUPTION`, and `_bridge_power_instance` returns a `SteamEruptionPower` with `after_death` overridden and the amount verbatim. The pre-fix death is in the journal exactly as described -- sunday, giant on 2 HP at round 11, killed, round 12 opens with the giant at 999999991, the agent plays UNRELENTING into it, ends the turn on **zero block**, and dies 80 -> 0.
+
+What did not happen is the change that was predicted to follow:
+
+| | pre-fix (pooled, 44 fights) | postfix (12 fights) |
+|---|---|---|
+| Waterfall act 1 record | 14/44 = **32%** | 4/12 = **33%** |
+| fights reaching the eruption | 33 | 9 |
+| ... that killed the run | 19 = **58%** | 5 = **56%** |
+| zero-block eruption turns | 23/34 = **68%** | 6/9 = **67%** |
+
+Every column is flat. So the +11.4 clear points are **not attributable to the Waterfall mechanism**, and this is the shape of prediction 6 -- a plausible story with a dead behavioural gate. Three readings survive and they are not separated yet: the fix pays through *all* hooked powers in every fight rather than through this one boss (the change restores every `after_death` in `powers/monster.py` and every hooked player power, so it would show broadly and not in the Waterfall column); or the gain rides on something else in a large instrumentation diff; or p=0.029 on one session is the false positive this file keeps buying. n=9 eruptions cannot resolve any of it.
+
+**The instrument that would resolve it broke in the same session.** `postfix` captured **0 Boss states** (203 total) against `sunday`'s **324** (3931 total). `RawCapture` opens its file with `"w"` and is reconstructed inside `run_agent`, so **every `--restart-on-crash` relaunch truncates the capture and only the final segment survives** -- `postfix` restarted 4 times and its last segment was one run. The journal and eval log append across restarts; the capture does not. `sunday` only worked because it ran crash-free in a single segment. At the measured ~1-crash-in-9 rate this destroys the Track A capture on essentially every 100-run session, silently.
+
+### The `postfix` disparities: four real parity bugs, and none of them touch act 1
+
+Fixed 2026-08-17, every value quoted from `decompiled/MegaCrit.Sts2.Core.Models.Monsters/` rather than fitted to the observed telegraph:
+
+| subject | was | game | what it was |
+|---|---|---|---|
+| `NOISEBOT` / `STABBOT` / `ZAPBOT` HP | 23-28, tough 24-29 | **18-23, tough 19-24** | every bound +5, with our MIN sitting on the game's MAX -- a window transcribed one step up |
+| `TORCH_HEAD_AMALGAM` opening move | `TACKLE_1_MOVE`, 18 damage | **`STRONG_TACKLE_MOVE`, 26** | the state id the bridge sent did not exist here, and the act 3 boss's opening hit was under-modelled by 8 |
+| `TORCH_HEAD_AMALGAM` deadly damages | tackle 19, weak 15 | **22, 16** | guessed as base+1 |
+| `THE_FORGOTTEN` Dread | flat 15 | **13 + its own Dexterity** | `DreadDamage => base + GetPowerAmount<DexterityPower>()`. Miasma self-applies +2 Dex a cycle, so Dread grows all fight; the flat 15 was the base with two Miasmas silently baked in, which matches one mid-fight telegraph and nothing else |
+
+**Honest magnitude for the 50% goal: approximately zero.** Every one is act 3 content. Of the 100 `postfix` runs, 69 ended in act 1, 30 in act 2 and **1 in act 3** — the deepest run this project has recorded, floor 48, which died on the Queen + Torch Head Amalgam fight whose opening hit we had modelled 8 low. These are correctness fixes and they belong to the act 3 plan, not to the act 1 number.
+
+That the disparity channel is now surfacing only act 3 is itself the finding, and it is the good kind: act 1 went 157 disparities to 2 under sustained audit, and `PHASE_TWO.md` §7 records that act 2/3 "had almost none of the parity attention act 1 received." The instrument is working and it is pointed at unaudited content. **It is not currently a lever for 50%.**
+
+One thing worth keeping: `tests/test_monster_ai_state_machine_parity.py` asserted the wrong values too — `*_A8_HP_RANGE = (24, 29)`, `THE_FORGOTTEN_DREAD_DAMAGE_A9 = 17`, `TORCH_HEAD_AMALGAM_TACKLE_DAMAGE_A9 = 19` — under test names ending `_matches_csharp`. The suite encoded the same transcription error it existed to catch, so it locked each bug in rather than finding it. A parity test written from the same source as the code it checks measures itself; this is `WEEKEND_DECISIONS.md` §5's rule turning up again in the test suite.
 
 ### 7 and 8: multi-enemy targeting is CLEAN, and that closes it
 
@@ -80,7 +122,7 @@ The standing "EvalWeights is biased 4:1 toward blocking, sweep `enemy_hp`" lead 
 
 Monotone in the wrong direction, and the earlier n=60 sweeps that read positive (`output/sweep_eval_weights.txt`, +5.0% then +1.7%) are the small-n noise this project keeps buying. `PHASE_TWO.md:68` already logs it as a null. **Do not re-run it.**
 
-The 4:1 arithmetic behind the lead also omits the horizon, which is where the kill value actually lives. `evaluate` is called *after* `end_player_turn()` and after a 2-turn playout, so an enemy killed this turn stops attacking for the whole scored window and that lands in `player_hp`, not in `enemy_hp`. Blocking 5 scores 0.0625 once; killing a 5-damage enemy scores roughly 15 HP of prevented damage across the window. Damage-vs-block is priced. **What is not priced is which enemy dies** — `kill` is a flat count and `per_enemy` damage appears nowhere in `evaluate`, only in the playout policy rewritten under prediction 6. That is the gap prediction 7 tests, and it is an impossibility question rather than a weight.
+The 4:1 arithmetic behind the lead also omits the horizon, which is where the kill value actually lives. `evaluate` is called *after* `end_player_turn()` and after a 2-turn playout, so an enemy killed this turn stops attacking for the whole scored window and that lands in `player_hp`, not in `enemy_hp`. Blocking 5 scores 0.0625 once; killing a 5-damage enemy scores roughly 15 HP of prevented damage across the window. Damage-vs-block is priced. The remaining suspicion was that **which enemy dies** is not — `kill` is a flat count and `per_enemy` damage appears nowhere in `evaluate`, only in the playout policy rewritten under prediction 6. Predictions 7 and 8 tested exactly that and measured it clean, so this is closed too; see the section below.
 
 ### Why 6 missed, and what the diagnosis got wrong
 
