@@ -427,3 +427,81 @@ def test_resampling_actually_varies_the_future() -> None:
         outcomes.add(round(evaluate(future), 4))
 
     assert len(outcomes) > 1, "every sampled future came out identical"
+
+
+# -- holding a potion for the fight that can end the run ---------------------
+
+def _with_potion(combat, potion_id):
+    from sts2_env.potions.base import create_potion
+    combat.potions = [create_potion(potion_id), None, None]
+    return combat
+
+
+def test_a_held_potion_is_not_drunk_in_a_hallway_fight():
+    """PowderedDemise went down on trash 89% of the time and never once on a boss.
+
+    Forcing was only half a policy: `CARD_GENERATORS` forces a drink on turn 1
+    of an elite but nothing stopped an earlier one, and `evaluate.py` has no
+    potion term, so a reserve scores zero and drinking is free.
+    """
+    from sts2_env.core.enums import RoomType
+    from sts2_env.search.potion_policy import should_hold
+
+    combat = _combat(hp=60, encounter="setup_shrinker_beetle_weak")
+    combat.room = RoomType.MONSTER
+    _with_potion(combat, "PowderedDemise")
+    assert should_hold(combat, combat.potions[0])
+
+
+def test_the_same_potion_is_free_to_drink_in_an_elite():
+    from sts2_env.core.enums import RoomType
+    from sts2_env.search.potion_policy import should_hold
+
+    combat = _combat(hp=60, encounter="setup_shrinker_beetle_weak")
+    combat.room = RoomType.ELITE
+    _with_potion(combat, "PowderedDemise")
+    assert not should_hold(combat, combat.potions[0])
+
+
+def test_a_hold_is_released_when_the_turn_could_be_lethal():
+    """A potion saved for a boss the run never reaches is worth nothing.
+
+    The release test is the board's own telegraphed damage against remaining
+    HP, so it needs no tuned threshold and cannot go stale on a rebalance.
+    """
+    from sts2_env.core.enums import RoomType
+    from sts2_env.search.potion_policy import _telegraphed_damage, should_hold
+
+    combat = _combat(hp=60, encounter="setup_fossil_stalker_normal")
+    combat.room = RoomType.MONSTER
+    _with_potion(combat, "PowderedDemise")
+    incoming = _telegraphed_damage(combat)
+    assert incoming > 0, "this test needs a real attack telegraphed"
+
+    combat.player.current_hp = incoming + 5
+    assert should_hold(combat, combat.potions[0]), "not lethal yet, so still held"
+
+    combat.player.current_hp = incoming
+    assert not should_hold(combat, combat.potions[0]), "lethal on the table: drink it"
+
+
+def test_an_unheld_potion_is_never_blocked():
+    from sts2_env.core.enums import RoomType
+    from sts2_env.search.potion_policy import should_hold
+
+    combat = _combat(hp=60, encounter="setup_shrinker_beetle_weak")
+    combat.room = RoomType.MONSTER
+    _with_potion(combat, "BlockPotion")
+    assert not should_hold(combat, combat.potions[0])
+
+
+def test_the_search_will_not_play_a_held_potion_in_a_hallway():
+    """End to end: the branch is not offered, so no line can contain it."""
+    from sts2_env.core.enums import RoomType
+    from sts2_env.gym_env.action_space import is_potion_action
+
+    combat = _combat(hp=60, encounter="setup_shrinker_beetle_weak")
+    combat.room = RoomType.MONSTER
+    _with_potion(combat, "PowderedDemise")
+    result = search_turn(combat)
+    assert not any(is_potion_action(a) for a in result.actions)

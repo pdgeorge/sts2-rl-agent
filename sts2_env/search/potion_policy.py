@@ -63,6 +63,78 @@ CARD_GENERATORS = frozenset({
 #: card still has a whole fight to pay off in.
 BIG_FIGHTS = frozenset({RoomType.ELITE, RoomType.BOSS})
 
+#: Potions kept OUT of hallway fights, so they are still in the belt when a
+#: fight that can end the run starts. pd's call, 2026-08-17.
+#:
+#: FORCING IS ONLY HALF A POLICY, and the measurement says so. `CARD_GENERATORS`
+#: above forces a drink on turn 1 of a big fight but does nothing to stop one
+#: earlier, and `evaluate.py` has no potion term -- a potion in reserve is worth
+#: zero, so drinking is FREE and any board improvement makes the line score
+#: better. Over the 200 runs since the power-hook fix:
+#:
+#:     PowderedDemise         31 monster /  4 elite / 0 boss   89% on trash
+#:     DistilledChaos         10 /  1 / 0                      83%
+#:     OrobicAcid              4 /  0 / 0                      80%
+#:     GigantificationPotion   5 /  2 / 1                      56%
+#:     Duplicator             17 /  0 / 1                      94%
+#:
+#: against 12% for the four the force rule already covers. The split is not
+#: about the rule, it is about what the searcher can SEE: Skill/Attack/Power/
+#: Colorless hand you a card, which scores nothing at end of turn, so the search
+#: never drinks them on its own and they survive to the elite. These five change
+#: the board, so the search drinks them the moment they help -- and a hallway
+#: monster is where they help first. Duplicator is in `CARD_GENERATORS` already
+#: and is still 94% trash, which is the proof that forcing alone does not hold.
+#:
+#: Wrong if: the chip damage these prevent in the corridor is worth more than
+#: the damage they deal at the boss. Prediction 10 priced 15 HP at +4.6
+#: boss-win points, so that is a real possibility and it is why this is
+#: measured rather than assumed.
+HOLD_FOR_BIG_FIGHTS = frozenset({
+    "PowderedDemise",
+    "DistilledChaos",
+    "GigantificationPotion",
+    "OrobicAcid",
+    "Duplicator",
+})
+
+
+def _telegraphed_damage(combat: "CombatState") -> int:
+    """What the living enemies have announced for this turn.
+
+    Read off the intents the simulator already holds rather than estimated, for
+    the same reason `evaluate.py` scores a state instead of predicting one.
+    """
+    total = 0
+    for enemy in combat.enemies:
+        if getattr(enemy, "is_dead", False) or not getattr(enemy, "is_alive", True):
+            continue
+        ai = (getattr(combat, "enemy_ais", None) or {}).get(enemy.combat_id)
+        move = getattr(ai, "current_move", None)
+        for intent in getattr(move, "intents", None) or ():
+            total += (getattr(intent, "damage", 0) or 0) * max(1, getattr(intent, "hits", 1) or 1)
+    return total
+
+
+def should_hold(combat: "CombatState", potion) -> bool:
+    """Keep this potion for a fight that can end the run?
+
+    NEVER HELD THROUGH A LETHAL TURN. If what the enemies have telegraphed is
+    at least the player's remaining HP, the hold is released and the search may
+    drink -- a potion saved for a boss the run never reaches is worth nothing,
+    and this is the failure mode a blanket hold would introduce. The test is
+    the board's own declared damage, so it needs no tuned threshold.
+    """
+    if str(getattr(potion, "potion_id", "")) not in HOLD_FOR_BIG_FIGHTS:
+        return False
+    if _room_type(combat) in BIG_FIGHTS:
+        return False
+    player = combat.player
+    unblocked = max(0, _telegraphed_damage(combat) - (getattr(player, "block", 0) or 0))
+    if unblocked >= max(0, getattr(player, "current_hp", 0)):
+        return False
+    return True
+
 
 def _room_type(combat: "CombatState") -> RoomType | None:
     """`combat.room` is a CombatRoom, not a RoomType -- and it is unhashable, so

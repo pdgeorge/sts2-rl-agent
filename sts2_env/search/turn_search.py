@@ -41,7 +41,7 @@ from sts2_env.gym_env.action_space import (
 )
 from sts2_env.search.cloning import clone_combat
 from sts2_env.search.evaluate import DEFAULT_WEIGHTS, EvalWeights, evaluate
-from sts2_env.search.potion_policy import forced_potion_action
+from sts2_env.search.potion_policy import forced_potion_action, should_hold
 
 if TYPE_CHECKING:
     from sts2_env.core.combat import CombatState
@@ -161,6 +161,17 @@ class SearchResult:
     def first_action(self) -> int:
         """What to do right now. End the turn if the line is empty."""
         return self.actions[0] if self.actions else ACTION_END_TURN
+
+
+def _held_potion(combat: "CombatState", action: int):
+    """The potion a potion-action would drink, or None if the slot is empty."""
+    from sts2_env.core.constants import POTION_ACTION_START, POTION_TARGET_OPTIONS
+
+    slot = (action - POTION_ACTION_START) // POTION_TARGET_OPTIONS
+    potions = getattr(combat, "potions", None) or []
+    if 0 <= slot < len(potions):
+        return potions[slot]
+    return None
 
 
 def _state_key(combat: "CombatState") -> tuple:
@@ -678,8 +689,17 @@ def search_turn(
             if out_of_budget():
                 exhausted = False
                 return
-            if not include_potions and is_potion_action(action):
-                continue
+            if is_potion_action(action):
+                if not include_potions:
+                    continue
+                # A held potion is not offered to the search at all, rather
+                # than scored and rejected. `evaluate.py` has no potion term, so
+                # a reserve is worth zero to it and drinking is free -- there is
+                # no number to lose the argument with, and the only way to keep
+                # one for the elite is to keep the branch off the table.
+                held = _held_potion(state, action)
+                if held is not None and should_hold(state, held):
+                    continue
 
             child = clone_combat(state)
             if not apply_combat_action(child, action):
