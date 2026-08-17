@@ -869,6 +869,7 @@ def run_agent(
                             decoded = adapter.decode_action(action_int, state)
                             if verbose:
                                 logger.info("LIVE_SEARCH: chose %s", decoded)
+                            _log_combat_options(journal, live_search_agent, state)
                             _live_search_last_action = action_int
                             if decoded["type"] == ActionType.END_TURN:
                                 client.end_turn()
@@ -1567,6 +1568,44 @@ def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
         )
 
     return _read_index(best_card, best_index)
+
+
+def _log_combat_options(journal: Any, live_search_agent: Any, state: dict[str, Any]) -> None:
+    """Log the lines the search considered this decision, with their scores.
+
+    The combat half of PHASE_TWO section 3.3. Card rewards have had this since
+    the policy-config work; combat never did, so a lost boss fight recorded the
+    cards she played and nothing about the ones she passed over. That gap is why
+    every recent prediction had to be written against a GUESSED mechanism --
+    6, 7, 8 and 9 all named one and all came back flat on the behavioural gate.
+
+    Scores are the searcher's own leaf numbers, from the same `SearchResult`
+    that produced the move, so the log cannot disagree with the decision. One
+    row per decision, capped at `CONSIDERED_LINES` lines.
+
+    Never raises. A journal line must not be able to cost a run.
+    """
+    try:
+        options = getattr(live_search_agent, "last_options", None)
+        if not options:
+            return
+        enemies = state.get("enemies") or []
+        journal.write(
+            "combat_options",
+            room_type=state.get("room_type"),
+            turn=state.get("round") or state.get("turn"),
+            hp=(state.get("player") or {}).get("current_hp", state.get("hp")),
+            block=(state.get("player") or {}).get("block", state.get("block")),
+            energy=(state.get("player") or {}).get("energy", state.get("energy")),
+            enemies=[
+                {"id": e.get("id"), "hp": e.get("current_hp", e.get("hp")),
+                 "intent": e.get("intent"), "intent_damage": e.get("intent_damage")}
+                for e in enemies
+            ],
+            options=options,
+        )
+    except Exception:  # noqa: BLE001 - a diagnostic must never end a run
+        logger.debug("could not log the combat options", exc_info=True)
 
 
 def _log_card_reward_options(journal: Any, state: dict[str, Any], choice: int | None) -> None:

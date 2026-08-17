@@ -110,6 +110,10 @@ class LiveSearch:
         rollout actually helps is still unmeasured.
         """
         self._playout_policy = playout_policy
+        self.last_options: list[dict] | None = None
+        """What the last `decide` considered: the top lines with their scores,
+        card names resolved. Read by the runner's journal; nothing branches on
+        it."""
         # Survive the per-fight SearchAgent rebuild; see `stats`.
         self._retired_searches = 0
         self._retired_truncated = 0
@@ -163,6 +167,7 @@ class LiveSearch:
         from a previous fight being replayed.
         """
         # Bank the outgoing fight's counters before the rebuild discards them.
+        self.last_options = None
         self._retired_searches += self._search.searches
         self._retired_truncated += self._search.budget_exhausted_count
         self._search = SearchAgent(
@@ -194,7 +199,19 @@ class LiveSearch:
             action = self._search.act(combat)
         except Exception:
             logger.exception("search agent raised; falling back to END_TURN")
+            self.last_options = None
             return ACTION_END_TURN
+
+        # Resolved HERE because this is the only place the rebuilt combat and
+        # the search result are both in scope; action indices mean nothing in a
+        # journal a week later, and resolving them later would need the position
+        # back. Never raises -- a diagnostic that can end a run is worse than no
+        # diagnostic, which is `RawCapture`'s rule and for the same reason.
+        try:
+            self.last_options = _describe_lines(self._search.last_result, combat)
+        except Exception:  # noqa: BLE001
+            logger.debug("could not describe the searched lines", exc_info=True)
+            self.last_options = None
 
         return _retarget_for_bridge(action, combat)
 
@@ -241,3 +258,44 @@ def _retarget_for_bridge(action: int, combat) -> int:
     if bridge_index == enemy_index:
         return action
     return 1 + MAX_HAND_SIZE + hand_index * MAX_ENEMIES + bridge_index
+
+
+def _describe_lines(result, combat) -> list[dict] | None:
+    """Turn a `SearchResult.considered` into something readable a year later.
+
+    An action index is meaningless without the hand it indexed into, so the
+    cards are named against a clone the line is replayed on -- indices shift as
+    cards leave the hand, so naming them against the opening hand would mislabel
+    everything after the first play.
+    """
+    if result is None or not result.considered:
+        return None
+
+    from sts2_env.gym_env.action_space import (
+        action_to_card_and_target,
+        apply_combat_action,
+    )
+    from sts2_env.search.cloning import clone_combat
+
+    def name_line(actions):
+        names, state = [], clone_combat(combat)
+        for action in actions:
+            hand_index, target = action_to_card_and_target(action)
+            if hand_index is not None and hand_index < len(state.hand):
+                card = state.hand[hand_index]
+                label = card.card_id.name + ("+" if getattr(card, "upgraded", False) else "")
+                names.append(f"{label}->{target}" if target is not None else label)
+            else:
+                names.append(f"action:{action}")
+            apply_combat_action(state, action)
+        return names
+
+    chosen = tuple(result.actions)
+    return [
+        {
+            "score": round(float(score), 4),
+            "line": name_line(actions) or ["END_TURN"],
+            "chosen": actions == chosen,
+        }
+        for score, actions in result.considered
+    ]

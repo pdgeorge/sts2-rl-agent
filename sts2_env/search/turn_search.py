@@ -54,6 +54,13 @@ DEFAULT_MAX_DEPTH = 12
 DEFAULT_LOOKAHEAD_TURNS = 2
 MAX_PLAYOUT_ACTIONS_PER_TURN = 12
 
+#: How many of the enumerated lines `SearchResult.considered` carries out.
+#: A boss turn enumerates thousands, so this is a diagnostic sample, not the
+#: shortlist -- eight is enough to see whether the played line won by a nose or
+#: a mile, and small enough that a 10-turn fight costs ~80 rows rather than
+#: tens of thousands. The journal is already the biggest artefact of a session.
+CONSIDERED_LINES = 8
+
 DEFAULT_TOP_K = 0
 """How many of the turn's best lines get played to the end of the fight.
 
@@ -121,6 +128,23 @@ class SearchResult:
     exhausted: bool = True
     """False when a budget cut the search short -- the answer is then the best of
     what was looked at, not the best there is. Reported rather than hidden."""
+
+    considered: tuple[tuple[float, tuple[int, ...]], ...] = ()
+    """The best few lines the enumeration looked at, `(score, actions)`, best
+    first -- what she REJECTED, not only what she played.
+
+    PHASE_TWO section 3.3 built this for card rewards and stopped there, so a
+    lost boss fight shows the cards played and nothing about the alternatives.
+    That is the difference between "she blundered" and "the position was
+    already lost", and without it the mechanism behind a loss has to be
+    guessed at -- which is how predictions 6, 7, 8 and 9 all came to be written
+    against mechanisms that turned out to be flat.
+
+    These are the LEAF scores from the enumeration, which is the ranking the
+    shortlist is cut by. When `top_k` rescoring runs it reorders the top few by
+    playing them out, and only the winner survives that step, so a chosen line
+    is not always this list's first entry. `score` on the result is the final
+    number; these are the field it was chosen from."""
 
     @property
     def gap(self) -> float | None:
@@ -694,6 +718,7 @@ def search_turn(
         rollouts=rollouts,
         elapsed=time.perf_counter() - started,
         exhausted=exhausted,
+        considered=tuple(sorted(shortlist, key=lambda e: -e[0])[:CONSIDERED_LINES]),
     )
 
 
@@ -827,6 +852,9 @@ class SearchAgent:
         """The `round_number` `_plan` was searched for. A plan is only valid for
         its own turn; see `act`."""
         self._last_gap: float | None = None
+        self._last_result: SearchResult | None = None
+        """The most recent search, kept so a caller can log what was rejected.
+        Only ever read; nothing here branches on it."""
         self.searches = 0
         self.total_nodes = 0
         self.total_seconds = 0.0
@@ -836,6 +864,11 @@ class SearchAgent:
     def last_gap(self) -> float | None:
         """The margin behind the most recent decision, for milestone phrasing."""
         return self._last_gap
+
+    @property
+    def last_result(self) -> "SearchResult | None":
+        """The most recent `SearchResult`, for option-score logging."""
+        return self._last_result
 
     def _replan(self, combat: "CombatState") -> None:
         result = search_turn(
@@ -853,6 +886,7 @@ class SearchAgent:
         )
         self._plan = list(result.actions)
         self._last_gap = result.gap
+        self._last_result = result
         self.searches += 1
         self.total_nodes += result.nodes
         self.total_seconds += result.elapsed
@@ -905,6 +939,7 @@ class SearchAgent:
                 rollout_samples=self.rollout_samples,
             )
             self._last_gap = result.gap
+            self._last_result = result
             self.searches += 1
             self.total_nodes += result.nodes
             self.total_seconds += result.elapsed
