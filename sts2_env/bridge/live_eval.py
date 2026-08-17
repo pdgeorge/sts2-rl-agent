@@ -441,7 +441,7 @@ def main() -> None:
     def _close_capture() -> None:
         if raw_capture is not None:
             raw_capture.close()
-            logger.info("Raw protocol capture: %s", raw_capture.summary)
+            logger.info("Raw protocol capture: %s", raw_capture.summary_line)
 
     restarts_left = max(0, args.restart_on_crash)
     while True:

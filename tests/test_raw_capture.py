@@ -314,3 +314,45 @@ def test_run_agent_does_not_close_a_capture_it_was_handed(tmp_path):
 
     # And the seam exists at all: a caller can hand one in.
     assert "capture_raw" in inspect.signature(agent_runner.run_agent).parameters
+
+
+def test_the_console_summary_is_one_readable_line(tmp_path):
+    """The full per-bucket dict is 30 KB on one line and nobody reads it.
+
+    A 54-run session produced 625 buckets -- one per distinct fight, because
+    combat is keyed per encounter_seed -- and dumped every one of them to the
+    console at shutdown. The counts still matter, so `close` keeps writing them
+    to the file's trailer; they just do not belong in a log line.
+    """
+    path = tmp_path / "capture.jsonl"
+    capture = RawCapture(path, per_type=2, boss_quota=3)
+    for seed in range(40):
+        for _ in range(5):
+            capture.observe({"type": "combat_action", "room_type": "Monster",
+                             "encounter_seed": seed})
+    for _ in range(5):
+        capture.observe({"type": "combat_action", "room_type": "Boss",
+                         "encounter_seed": 999})
+    capture.close()
+
+    line = capture.summary_line
+    assert "\n" not in line
+    assert len(line) < 300, f"{len(line)} chars is not a log line"
+    assert "1 boss fights" in line
+    assert "trailer" in line, "must point at where the detail actually lives"
+
+    # The detail is still on disk, which is the whole justification for cutting it.
+    trailer = load_trailer(path)
+    assert len(trailer["kept"]) == 41
+    assert trailer["kept"]["combat_action:Boss:999"] == 3
+
+
+def test_the_full_summary_still_carries_every_bucket():
+    """Programmatic callers keep the detail; only the console line is trimmed."""
+    import pathlib
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        capture = RawCapture(pathlib.Path(d) / "c.jsonl", per_type=2)
+        capture.observe({"type": "map_select"})
+        assert capture.summary["per_type"] == {"map_select": 1}
+        assert capture.summary["kept"] == 1

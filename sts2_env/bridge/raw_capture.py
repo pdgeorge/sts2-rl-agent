@@ -199,6 +199,14 @@ class RawCapture:
 
     @property
     def summary(self) -> dict[str, Any]:
+        """The full picture, for a caller that wants to inspect it.
+
+        NOT for the console. `per_type` carries one entry per distinct fight --
+        625 of them in a 54-run session -- which is 30 KB on a single log line
+        that nobody reads. The same counts are already written to the file's
+        trailer by `close`, which is where they belong: on disk, next to the
+        states they describe.
+        """
         return {
             "path": str(self.path),
             "types": len(self.kept),
@@ -206,6 +214,28 @@ class RawCapture:
             "seen": sum(self.seen.values()),
             "per_type": dict(self.kept),
         }
+
+    @property
+    def summary_line(self) -> str:
+        """One line a human will actually read at the end of a session.
+
+        The two numbers worth surfacing are how much reached disk and how many
+        buckets hit their quota -- a truncated bucket is the difference between
+        "that screen is rare" and "that screen was cut off", which is the whole
+        reason the counts are kept at all.
+        """
+        boss = sum(1 for key in self.kept if key.startswith("combat_action:Boss"))
+        truncated = sum(
+            1 for key, count in self.kept.items()
+            if count >= (self.boss_quota if key.startswith("combat_action:Boss")
+                         else self.per_type)
+        )
+        return (
+            f"{self.path}: {sum(self.kept.values())} states kept of "
+            f"{sum(self.seen.values())} seen, {len(self.kept)} buckets, "
+            f"{boss} boss fights, {truncated} hit their quota "
+            f"(per-bucket counts are in the file's trailer)"
+        )
 
 
 def load_capture(path: str | Path) -> list[dict[str, Any]]:

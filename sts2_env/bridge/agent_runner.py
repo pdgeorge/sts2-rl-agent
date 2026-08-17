@@ -1064,7 +1064,7 @@ def run_agent(
                 # every state from the segments that follow.
                 if owns_capture:
                     raw_capture.close()
-                logger.info("Raw protocol capture: %s", raw_capture.summary)
+                logger.info("Raw protocol capture: %s", raw_capture.summary_line)
             cyra.close()
             if isinstance(client, BridgeReplayRecorder):
                 saved_path = client.save(record_replay_path)
