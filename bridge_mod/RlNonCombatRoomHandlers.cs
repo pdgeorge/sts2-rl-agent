@@ -410,10 +410,32 @@ public class RlShopRoomHandler : IRoomHandler, IHandler
     private const int HandlerTimeoutSeconds = 120;
     private const int InventoryOpenDelayMs = 500;
     private const int PurchaseSettleDelayMs = 300;
+
+    // How often to look at the overlay stack while a purchase is resolving, and
+    // how long to keep looking before giving up on it settling. See the comment
+    // on the purchase itself: a relic with an on-pickup reward never completes
+    // its purchase until its rewards screen is dismissed, so "wait for the
+    // purchase, then look for an overlay" can never terminate.
+    private const int PurchasePollMs = 100;
+    private const int PurchaseResolveTimeoutMs = 5000;
     private static readonly TimeSpan AgentTimeout = TimeSpan.FromSeconds(AgentTimeoutSeconds);
 
     public RoomType[] HandledTypes => new[] { RoomType.Shop };
     public TimeSpan Timeout => TimeSpan.FromSeconds(HandlerTimeoutSeconds);
+
+    /// <summary>
+    /// Log a purchase task that faults after we stopped waiting on it.
+    /// Without this an exception on a task nobody awaits is swallowed by the
+    /// runtime, and a purchase that silently failed would look exactly like one
+    /// that worked.
+    /// </summary>
+    private static void ObserveFault(Task task)
+    {
+        _ = task.ContinueWith(
+            t => AutoSlayLog.Warn("Shop purchase faulted after the handler moved on: "
+                                  + t.Exception),
+            TaskContinuationOptions.OnlyOnFaulted);
+    }
 
     public async Task HandleAsync(Rng random, CancellationToken ct)
     {
@@ -442,7 +464,62 @@ public class RlShopRoomHandler : IRoomHandler, IHandler
             }
 
             AutoSlayLog.Action($"Buying shop option at index {choice.OptionIndex}");
-            await choice.Slot!.Entry.OnTryPurchaseWrapper(room.Inventory.Inventory);
+
+            // NOT awaited to completion, and that is the whole point.
+            //
+            // A relic with HasUponPickupEffect resolves AfterObtained() inside
+            // this call. For Orrery and Cauldron -- the only two buyable ones --
+            // that is RewardsCmd.OfferCustom, whose RewardsSet.Offer() ends in
+            // `await task` and does not return until the rewards screen is
+            // DISMISSED. Only DrainOverlayScreensAsync dismisses it, and that
+            // runs only after this handler returns. So awaiting here deadlocks:
+            // the purchase waits on the screen, the screen waits on the handler,
+            // the handler waits on the purchase.
+            //
+            // It soft-locked two sessions before it was understood -- the game
+            // sat on `Overlay Stack: 1 screens / Current: NRewardsScreen` with
+            // the watchdog reporting no progress for six hours, and 46 of 100
+            // runs were lost.
+            //
+            // So the purchase is started, then raced against the overlay stack.
+            // If a screen opens we leave immediately and let the drain loop
+            // close it, which is what completes the purchase task we are still
+            // holding. Nothing is lost by not awaiting it here.
+            Task purchase = choice.Slot!.Entry.OnTryPurchaseWrapper(room.Inventory.Inventory);
+            ObserveFault(purchase);
+
+            bool overlayOpened = false;
+            int waited = 0;
+            while (!purchase.IsCompleted && waited < PurchaseResolveTimeoutMs)
+            {
+                if ((NOverlayStack.Instance?.ScreenCount ?? 0) > 0)
+                {
+                    overlayOpened = true;
+                    break;
+                }
+                await Task.Delay(PurchasePollMs, ct);
+                waited += PurchasePollMs;
+            }
+
+            if (overlayOpened)
+            {
+                AutoSlayLog.Action(
+                    "Overlay screen opened during purchase, deferring to drain loop");
+                break;
+            }
+
+            if (purchase.IsCompleted)
+            {
+                await purchase;   // surface a failed purchase rather than swallowing it
+            }
+            else
+            {
+                AutoSlayLog.Warn(
+                    $"Purchase did not resolve within {PurchaseResolveTimeoutMs}ms and no "
+                    + "overlay opened; leaving the shop rather than blocking the run.");
+                break;
+            }
+
             await Task.Delay(PurchaseSettleDelayMs, ct);
 
             NOverlayStack? overlayStack = NOverlayStack.Instance;

@@ -33,6 +33,62 @@ Repro seed for the same crash: `VHHTGKTPEZWF`.
 
 ---
 
+## The shop purchase deadlock — FIXED 2026-08-18
+
+Two sessions soft-locked on it, and the second lost 46 of 100 runs sitting on
+one screen for six hours. Worth keeping because the shape is not obvious and
+the shop handler *looked* like it already handled the case.
+
+**What you see.** The game stops. Nothing crashes, nothing logs an error.
+Python repeats `Timeout waiting for state. Sending ping...` once a minute
+forever. The game's own state dump says:
+
+```
+Room: Shop
+Overlay Stack: 1 screens
+  Current: NRewardsScreen
+Watchdog timeout: No progress for 21389.0s. Last activity: Entering Shop room
+```
+
+The journal's last event is a shop purchase — `ORRERY` the first time,
+`CAULDRON` the second — and nothing after it.
+
+**What it is.** A three-way deadlock:
+
+```
+RlShopRoomHandler:  await OnTryPurchaseWrapper(...)      never returns
+  -> Orrery.AfterObtained()  ->  RewardsCmd.OfferCustom
+       -> RewardsSet.Offer() ->  await task              completes only when the
+                                                         rewards screen is dismissed
+                                                         ...which only
+                                                         DrainOverlayScreensAsync does
+                                                         ...which only runs after
+                                                         HandleRoomAsync returns
+```
+
+The purchase waits on the screen, the screen waits on the drain loop, the drain
+loop waits on the purchase. The shop handler's own overlay check sat on the
+line *after* the await and was therefore unreachable.
+
+**Why exactly these two relics.** Six relics call `RewardsCmd` from
+`AfterObtained` — Orrery, Cauldron, CallingBell, Kaleidoscope, LostCoffer,
+ToyBox — and **only Orrery and Cauldron are `RelicRarity.Shop`**. The other
+four are Ancient, taken from the post-boss event, and that handler uses
+`UiHelper.Click` plus a delay rather than awaiting a game task, so it cannot
+deadlock. The shop is the only handler that awaits a real game API instead of
+clicking a button, which is why it is the only one that hangs.
+
+**The fix.** `RlNonCombatRoomHandlers.RlShopRoomHandler` starts the purchase
+without awaiting it, then races it against the overlay stack. If a screen opens
+it leaves immediately and lets the drain loop close it, which is what completes
+the still-pending purchase task. A fault on that task is logged rather than
+swallowed, and a purchase that neither completes nor opens an overlay inside 5s
+leaves the shop rather than blocking the run.
+
+**If you see it again**, check the game log's state dump first: `Overlay Stack`
+naming a screen while `Last activity` still names a room is this shape,
+whatever the screen turns out to be.
+
 ## Live-run failure modes
 
 How a live run actually stops. Kept as a list because twice now a run was
