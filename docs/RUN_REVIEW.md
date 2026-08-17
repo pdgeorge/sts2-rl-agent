@@ -40,33 +40,73 @@ Nothing in these scripts is Qwen-specific. `review_runs.py` speaks
 OpenAI-compatible `/v1/chat/completions`, so llama-server, Ollama, vLLM and LM
 Studio all work — point `--base-url` at whichever is running.
 
-### llama.cpp (most direct for a GGUF off Hugging Face)
+### Bare metal, and on this box that is not a close call
 
-```bash
-# One-off: build it. ~5 minutes on this box.
-git clone https://github.com/ggerganov/llama.cpp ~/llama.cpp
-cmake -S ~/llama.cpp -B ~/llama.cpp/build -DGGML_CUDA=ON
-cmake --build ~/llama.cpp/build --config Release -j
+`nvcc` (CUDA 13.3), `cmake` and the driver are already installed, so the build
+is the whole cost. Docker would additionally need its GPU path repaired: as of
+2026-08-17 `docker run --gpus all` fails here with
 
-# The model. Q4_K_M is ~5 GB and leaves room for a long context on 12 GB.
-hf download unsloth/Qwen3-VL-8B-Instruct-GGUF \
-    --include "*Q4_K_M*" --local-dir ~/models/qwen3-vl-8b
-
-# Serve it. -ngl 99 puts every layer on the 4070.
-~/llama.cpp/build/bin/llama-server \
-    -m ~/models/qwen3-vl-8b/*Q4_K_M*.gguf \
-    -c 16384 -ngl 99 --host 127.0.0.1 --port 8080
+```
+failed to fulfil mount request: open /usr/lib/libnvidia-gtk3.so.610.57.04:
+no such file or directory
 ```
 
-`-c 16384` matters. A transcript is ~9k tokens and the reply needs room; 16k
-leaves headroom for the retry exchange, which appends the failed reply and an
-error message to the conversation.
+— the container toolkit's library list is stale against driver 610.57.04. That
+is fixable (`sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml`, then
+`--device nvidia.com/gpu=all`) but it is a yak-shave in front of a job that has
+no reason to be containerised. Bare metal also makes `-ngl`, context size and
+KV quantisation trivial to retune, which is exactly what you will be doing.
+
+```bash
+# Build. ~5 minutes.
+git clone https://github.com/ggml-org/llama.cpp ~/llama.cpp
+cmake -S ~/llama.cpp -B ~/llama.cpp/build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=89
+cmake --build ~/llama.cpp/build --config Release -j
+
+# The model: one file, 4.7 GB. The mmproj-*.gguf files in that repo are the
+# vision projector and are NOT needed -- this job is pure text, and skipping
+# them saves VRAM.
+hf download unsloth/Qwen3-VL-8B-Instruct-GGUF \
+    --include "Qwen3-VL-8B-Instruct-Q4_K_M.gguf" \
+    --local-dir ~/models/qwen3-vl-8b
+
+# Serve.
+~/llama.cpp/build/bin/llama-server \
+    --model ~/models/qwen3-vl-8b/Qwen3-VL-8B-Instruct-Q4_K_M.gguf \
+    --ctx-size 40960 \
+    --n-gpu-layers 99 \
+    --cache-type-k q8_0 --cache-type-v q8_0 \
+    --host 127.0.0.1 --port 8080
+```
+
+`-DCMAKE_CUDA_ARCHITECTURES=89` is the 4070 SUPER (Ada, sm_89). Naming it skips
+building every other architecture and cuts the build time by most of itself.
+
+**The context size is not a guess, and 16384 is too small.** Measured against a
+real session:
+
+| | tokens |
+|---|---|
+| system prompt (the generated reference) | 7.0k |
+| transcript, mean | 8.6k |
+| transcript, **largest** | **23.5k** |
+| reply | up to 2.0k |
+| **worst case, with one retry** | **~34.7k** |
+
+The longest transcripts are the deepest runs, which are the ones most worth
+reviewing, so truncating them is the opposite of what you want. 40960 covers
+the worst case with headroom.
+
+`--cache-type-k/v q8_0` is what makes that fit. At 40k context an f16 KV cache
+is ~5.9 GB, which on top of a 4.7 GB model leaves almost nothing of the 12 GB;
+quantised to q8_0 it is ~3 GB and the whole thing sits around 7.7 GB. Watch
+`nvidia-smi` on the first call and drop `--ctx-size` if it is tight.
 
 ### Ollama, if you would rather
 
 ```bash
 ollama serve                       # then, in another shell:
-printf 'FROM ~/models/qwen3-vl-8b/Qwen3-VL-8B-Instruct-Q4_K_M.gguf\nPARAMETER num_ctx 16384\n' > /tmp/Modelfile
+printf 'FROM ~/models/qwen3-vl-8b/Qwen3-VL-8B-Instruct-Q4_K_M.gguf\nPARAMETER num_ctx 40960\n' > /tmp/Modelfile
 ollama create qwen3-review -f /tmp/Modelfile
 ```
 
@@ -74,7 +114,8 @@ then `--base-url http://127.0.0.1:11434/v1 --model qwen3-review`.
 
 Note the cyra compose already defines an `ollama` service with the GPU
 reserved, but it is deliberately not published to the host, so it needs a
-`ports:` entry before this can reach it.
+`ports:` entry — and it would hit the same broken container-GPU path described
+above.
 
 ### A note on the model choice
 
