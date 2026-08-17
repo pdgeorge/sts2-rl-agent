@@ -40,23 +40,68 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
-SYSTEM = """You are a Slay the Spire 2 expert reviewing an AI agent's play.
+#: Appended to the generated game reference. The reference explains the game;
+#: this states the job and the output contract.
+TASK = """
 
-You will be given one complete run: every fight turn by turn, every card the
-agent played, the lines it considered and REJECTED with their scores, and every
+---
+
+# Your task
+
+You are given one complete run: every fight turn by turn, every card played,
+the lines the agent considered and REJECTED with their scores, and every
 reward, shop, rest and map choice.
 
-The transcript begins with the real behaviour of every card and enemy in that
-run, taken from the game's own source. Trust that list over your own memory --
-this game is not Slay the Spire 1 and cards with familiar names behave
-differently.
+Find where the run was decided. Say what should have been done instead, and be
+concrete about which floor and which turn.
 
-Your job is to find where the run was decided. Be specific and be selective:
-a line rejected by 0.002 is a coin flip, not a mistake. Report what plausibly
-cost real HP or the run itself, and say what should have been done instead.
-Naming nothing is a valid answer for a well-played run.
+Reply with a single JSON object and nothing else:
 
-Reply with a single JSON object and no other text."""
+```json
+{
+  "run": 7,
+  "outcome": "died floor 13, elite, 0/80",
+  "summary": "one or two sentences on what decided this run",
+  "mistakes": [
+    {"floor": 11, "turn": 4,
+     "did": "played Defend twice into a 6-damage intent",
+     "better": "Bash then Strike; the kill was there and removed 16 damage a turn",
+     "cost_hp": 22,
+     "kind": "combat",
+     "confidence": "high"}
+  ],
+  "good_plays": ["floor 9: held Powdered Demise for the elite"]
+}
+```
+
+`kind` is one of: combat, card_reward, map, shop, rest, potion.
+`confidence` is one of: high, medium, low.
+
+Every mistake MUST carry a `floor`, and a combat mistake a `turn` -- a claim
+without a location cannot be checked and will be discarded. If the run was
+already lost by the time of a mistake, say so in `summary` rather than listing
+ten consequences of one earlier error. An empty `mistakes` list is a valid and
+useful answer."""
+
+DEFAULT_CONTEXT = REPO / "output" / "review_context.md"
+
+
+def _system_prompt(path: Path) -> str:
+    """The generated game reference, plus the task.
+
+    Identical on every call on purpose: llama.cpp caches a matching prompt
+    prefix, so 7k tokens of card and monster reference are evaluated once and
+    reused for the other 99 runs. The alternative -- a short system prompt and
+    a per-run card list -- pays unique tokens on every single call AND tells
+    the model less.
+    """
+    if not path.exists():
+        raise SystemExit(
+            f"missing {path}. Generate it first:\n"
+            f"  .venv/bin/python scripts/build_review_context.py\n"
+            f"Without it an 8B reviews a game it invented -- the card names "
+            f"overlap Slay the Spire 1 and the effects do not.")
+    return path.read_text(encoding="utf-8") + TASK
 
 
 def _post(url: str, payload: dict, timeout: float, api_key: str | None) -> dict:
@@ -107,6 +152,9 @@ def main() -> int:
                     help="low on purpose: this is analysis, not prose")
     ap.add_argument("--max-tokens", type=int, default=2000)
     ap.add_argument("--redo", action="store_true", help="re-review runs already done")
+    ap.add_argument("--context", default=None,
+                    help="generated game reference used as the system prompt; "
+                         "defaults to output/review_context.md")
     args = ap.parse_args()
 
     sys.path.insert(0, str(REPO))
@@ -125,8 +173,11 @@ def main() -> int:
               f"  .venv/bin/python scripts/export_run_transcripts.py --tag {args.tag}")
         return 1
 
+    system = _system_prompt(Path(args.context) if args.context else DEFAULT_CONTEXT)
     url = args.base_url.rstrip("/") + "/chat/completions"
-    print(f"{len(files)} transcripts -> {url}\n")
+    print(f"{len(files)} transcripts -> {url}")
+    print(f"system prompt {len(system) / 4 / 1000:.1f}k tokens "
+          f"(cached after the first call)\n")
 
     done = failed = skipped = 0
     started = time.monotonic()
@@ -138,7 +189,7 @@ def main() -> int:
 
         transcript = path.read_text(encoding="utf-8")
         messages = [
-            {"role": "system", "content": SYSTEM},
+            {"role": "system", "content": system},
             {"role": "user", "content": transcript},
         ]
 

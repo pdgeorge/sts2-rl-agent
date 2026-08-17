@@ -7,10 +7,30 @@ worth opening yourself.
 The pipeline is four steps and only the third needs a GPU.
 
 ```
-run100.sh <tag>            ->  journal + transcripts   (transcripts are automatic)
+build_review_context.py    ->  output/review_context.md   (once, ~7k tokens)
+run100.sh <tag>            ->  journal + transcripts      (transcripts are automatic)
 review_runs.py --tag <tag> ->  output/reports/<tag>/run_NNN.json
 aggregate_run_reports.py   ->  the ranked report
 ```
+
+## 0. The game reference, once
+
+```bash
+.venv/bin/python scripts/build_review_context.py
+```
+
+Writes `output/review_context.md` -- about 7k tokens: how act 1 works, how the
+agent decides, how to read a transcript, and **the real behaviour of all 184
+cards an Ironclad run can hold plus every enemy it can meet**, all generated
+from the game's own source.
+
+That file is the system prompt on every review call. It is deliberately large
+and it is effectively free: llama.cpp caches an identical prompt prefix, so
+7k tokens of reference are evaluated **once** and reused for the other 99 runs.
+A short system prompt with a per-run card list would pay unique tokens on every
+call and tell the model less.
+
+Regenerate it after a game update; it is derived, not written.
 
 ---
 
