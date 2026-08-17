@@ -87,7 +87,11 @@ done
 
 echo "100 live runs, tag '${TAG}'. Ctrl-C stops and still prints the summary."
 
-exec $PY -m sts2_env.bridge.live_eval \
+# NOT `exec` any more. The session is no longer the last thing this script
+# does -- the transcripts are rendered afterwards -- and dropping exec also
+# means a Ctrl-C still gets them: live_eval catches the interrupt, prints its
+# summary and exits normally, and the shell carries on to the export.
+$PY -m sts2_env.bridge.live_eval \
     --model-path "$MODEL" \
     --runs 100 \
     --live-search \
@@ -98,3 +102,20 @@ exec $PY -m sts2_env.bridge.live_eval \
     --crash-log "output/crash_${TAG}.json" \
     --capture-raw "output/bridge_boss_fights_${TAG}.jsonl" \
     --telemetry
+
+# Per-run transcripts, for a reviewing model to read end to end. Seconds to
+# render, and doing it here means they are on disk before anyone asks -- the
+# alternative is remembering a post-processing step at 3am after a 5-hour run.
+#
+# Non-fatal on purpose: a rendering bug must never be the reason a finished
+# session looks like a failed one. The journal is the artefact that matters and
+# it is already written and flushed.
+echo
+echo "Rendering per-run transcripts..."
+$PY scripts/export_run_transcripts.py --tag "${TAG}" || \
+    echo "WARNING: transcript export failed; the journal is still intact." >&2
+
+echo
+echo "Numbers:  $PY scripts/summarise_live_runs.py output/live_journal_${TAG}.jsonl"
+echo "Review:   output/transcripts/${TAG}/  (one .md per run, plus REVIEW_PROMPT.md)"
+echo "Then:     $PY scripts/aggregate_run_reports.py --tag ${TAG}"
