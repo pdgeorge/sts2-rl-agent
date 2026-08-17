@@ -1085,7 +1085,7 @@ This milestone should be treated as research-grade. It is possible, but not guar
 
 ## 12.1 Event requirements
 
-The system must emit high-level events to another service.
+The system must emit high-level events to another service. Fire-and-Forget style.
 
 Recommended events:
 

@@ -86,16 +86,48 @@ def main() -> int:
     print(f"  {'arm':<20}{'pairs':>7}{'clear +':>9}{'clear -':>9}{'net':>7}"
           f"{'McNemar p':>12}")
     print("  " + "-" * 64)
+
+    from sts2_env.evaluation.seed_split import is_holdout
+
+    holdout_report: list[tuple[str, tuple[int, int], tuple[int, int]]] = []
     for t in tags[1:]:
-        pairs = [(data[base][s], data[t][s]) for s in data[base] if s in data[t]]
+        pairs = [(s, data[base][s], data[t][s]) for s in data[base] if s in data[t]]
         if not pairs:
             continue
-        plus = sum(1 for b, x in pairs
-                   if x.get("act", 1) >= 2 and b.get("act", 1) < 2)
-        minus = sum(1 for b, x in pairs
-                    if b.get("act", 1) >= 2 and x.get("act", 1) < 2)
+
+        def _counts(sel):
+            plus = sum(1 for _, b, x in sel
+                       if x.get("act", 1) >= 2 and b.get("act", 1) < 2)
+            minus = sum(1 for _, b, x in sel
+                        if b.get("act", 1) >= 2 and x.get("act", 1) < 2)
+            return plus, minus
+
+        plus, minus = _counts(pairs)
         print(f"  {t:<20}{len(pairs):>7}{plus:>9}{minus:>9}{plus - minus:>+7}"
               f"{_mcnemar(plus, minus):>12.2f}")
+        tuning = [p for p in pairs if not is_holdout(p[0])]
+        holdout = [p for p in pairs if is_holdout(p[0])]
+        holdout_report.append((t, _counts(tuning), _counts(holdout)))
+
+    if holdout_report:
+        # PHASE_TWO section 3.4: tune and evaluate must not be the same seeds.
+        # The split is `seed % 4 == 3`; an effect has to hold on BOTH halves,
+        # and one that appears only on the tuning half is reported as noise.
+        print()
+        print(f"holdout check (seed % 4 == 3 is holdout; both halves must agree):")
+        print(f"  {'arm':<20}{'tuning net':>12}{'holdout net':>13}  {'verdict'}")
+        print("  " + "-" * 58)
+        for t, (tp, tm), (hp, hm) in holdout_report:
+            tnet, hnet = tp - tm, hp - hm
+            if (tnet > 0) != (hnet > 0) and hnet != 0 and tnet != 0:
+                verdict = "NOISE (split disagrees)"
+            elif hnet > 0:
+                verdict = "holds on holdout"
+            elif hnet == 0 and tnet > 0:
+                verdict = "tuning-only: NOISE"
+            else:
+                verdict = "no gain"
+            print(f"  {t:<20}{tnet:>+12}{hnet:>+13}  {verdict}")
     print()
     print("  PREDICTION on file: offline reach 54% -> 65%. A miss is a miss.")
     print("=" * 76)

@@ -80,3 +80,37 @@ The combat budget divergence is different: 2000 nodes offline is a deliberate
 cost bound for sweeps, not an accident. It should be stated in every report that
 compares the two, because the weaker searcher currently wins more, and any
 explanation of that gap has to account for it.
+
+## Enemy powers were reconstructed without their hooks (fixed 2026-08-16)
+
+The strongest live/offline divergence found to date. `_sync_combat_from_bridge`
+installed every bridge power -- player and enemy -- as a bare ``PowerInstance``:
+amount only, no hooks. The offline funnel builds the fully-hooked registry
+classes through ``apply_power``, so the two sides did not merely disagree about
+a number; the live search's world was missing behaviour.
+
+The concrete cost: Waterfall Giant banks its whole fight into STEAM_ERUPTION
+and detonates it from ``SteamEruptionPower.after_death``. With a bare instance
+the search clone let the giant die quietly, every kill line scored a clean win,
+and the live agent killed it at 37 HP against a ~37-damage bank
+(``live_journal_sunday``, run 7: the last damage taken landed after the killing
+blow). Two fights arrived at 80/80 HP and both lost live, while the same
+positions replayed won offline. This was the first named cause of the boss-gap
+between live and offline.
+
+The fix: ``situation._bridge_power_instance`` builds reported powers through the
+registry class, amounts verbatim, hooks restored in every lookahead the search
+runs from a reconstructed state. Pinned by four tests in
+``tests/test_combat_situation_from_bridge.py``: the class comes back hooked, the
+clone detonates the bank on death, the search refuses a kill whose eruption is
+fatal, and still takes it when the eruption is survivable.
+
+Scope: every live combat decision since the mid-fight rebuild existed, and every
+power with a hook, not just eruption. ``IllusionPower``'s revive had a bespoke
+seam already (``_install_revive_state``); the general case now goes through the
+registry, which is the seam that should have existed.
+
+Residual asymmetry, stated so it is not rediscovered: offline applies powers
+through the real pipeline, so application-time hooks fire there; the bridge
+mirror sets state verbatim and fires nothing. They now agree about the hooks the
+lookahead actually uses -- future behaviour -- which is the part a plan reads.

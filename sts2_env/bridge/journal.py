@@ -115,10 +115,19 @@ def _describe(option: Any) -> Any:
 class RunJournal:
     """Watches the state stream and the agent's actions, and writes both down."""
 
-    def __init__(self, path: str | Path | None, *, model: str = "") -> None:
+    def __init__(self, path: str | Path | None, *, model: str = "",
+                 policy_version: str = "", git_sha: str = "",
+                 on_event: "Callable[[dict[str, Any]], None] | None" = None) -> None:
         self._path = Path(path) if path else None
         self._fh = None
         self.model = model
+        # Which policy played every run written here. Empty strings keep old
+        # callers source-compatible; new callers always pass them, because a
+        # journal that cannot say which weights produced it is the exact
+        # failure PHASE_TWO section 3.2 exists to end.
+        self.policy_version = policy_version
+        self.git_sha = git_sha
+        self._on_event = on_event
 
         if self._path is not None:
             try:
@@ -174,8 +183,6 @@ class RunJournal:
 
     def write(self, event: str, **fields: Any) -> None:
         """One event. Never raises: a lost line must not cost the run."""
-        if self._fh is None:
-            return
         record = {
             "t": round(time.time(), 3),
             "session": self.session,
@@ -184,11 +191,26 @@ class RunJournal:
             "floor": self._floor,
         }
         record.update(fields)
-        try:
-            self._fh.write(json.dumps(record, default=str) + "\n")
-            self._fh.flush()
-        except Exception:
-            logger.debug("Journal write failed", exc_info=True)
+        if self._fh is not None:
+            try:
+                self._fh.write(json.dumps(record, default=str) + "\n")
+                self._fh.flush()
+            except Exception:
+                logger.debug("Journal write failed", exc_info=True)
+        # The telemetry tap sees every record whether or not a journal file is
+        # open, and its failures are its own: a broker problem must not reach
+        # a run, and must not stop the journal line above from landing. The
+        # stamp travels with the tap rather than into every file line, which
+        # would repeat the version thousands of times per session.
+        if self._on_event is not None:
+            try:
+                self._on_event({
+                    **record,
+                    "policy_version": self.policy_version,
+                    "git_sha": self.git_sha,
+                })
+            except Exception:
+                logger.debug("journal on_event tap failed", exc_info=True)
 
     # -- observing the stream ---------------------------------------------
 
@@ -210,6 +232,8 @@ class RunJournal:
                 character=state.get("character") or state.get("character_id"),
                 ascension=state.get("ascension", 0),
                 model=self.model,
+                policy_version=self.policy_version,
+                git_sha=self.git_sha,
             )
 
         # Act transitions are one-way progress: when `act` increments, the

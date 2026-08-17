@@ -714,6 +714,32 @@ def _coerce_power_id(name: str) -> PowerId | None:
     return None
 
 
+def _bridge_power_instance(pid: PowerId, amount: int) -> PowerInstance:
+    """Build a bridge-reported power as its registered class, not a bare one.
+
+    A bare ``PowerInstance`` has no hooks, and the search clone carries only
+    what this sync installs. Waterfall Giant banks its whole fight into
+    ``STEAM_ERUPTION`` and detonates it from ``SteamEruptionPower.after_death``
+    -- so with a bare instance the clone let the giant die quietly, every kill
+    line scored a clean win, and the live agent nuked itself at 37 HP against
+    a 37-damage eruption on 2026-08-16. Constructing the registered class keeps
+    the amount verbatim -- nothing re-fires -- while the power's hooks work
+    again in every lookahead the search runs from here.
+    """
+    from sts2_env.core.creature import get_power_class
+
+    cls = get_power_class(pid)
+    if cls is not None:
+        try:
+            return cls(amount)
+        except TypeError:
+            logger.warning(
+                "bridge powers: class for %r does not take a single amount; "
+                "falling back to a bare instance.", pid,
+            )
+    return PowerInstance(power_id=pid, amount=amount)
+
+
 def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None:
     """Overwrite mutable combat state with the bridge's ground-truth report.
 
@@ -771,7 +797,7 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
             )
             continue
         amount = int(p.get("amount", 0))
-        pcard.powers[pid] = PowerInstance(power_id=pid, amount=amount)
+        pcard.powers[pid] = _bridge_power_instance(pid, amount)
 
     # Hand: clear and rebuild from the bridge's list. Cards come back as
     # fresh CardInstance objects via the factory; their internal counters do
@@ -946,7 +972,7 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
                         "not modelled", str(p.get("id", "")).upper())
                     continue
                 amount = int(p.get("amount", 0))
-                enemy.powers[pid] = PowerInstance(power_id=pid, amount=amount)
+                enemy.powers[pid] = _bridge_power_instance(pid, amount)
 
             # Intent: the bridge sends the next move's intent/damage/hits.
             # Install it onto the simulator's own MoveState so the

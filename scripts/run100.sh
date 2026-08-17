@@ -30,6 +30,14 @@
 #                       docs/KNOWN_ISSUES.md, do NOT re-diagnose it, and do not
 #                       spend time fixing it before the clear rate hits 50%.
 #                       Needs `steam` on PATH.
+#   --telemetry         Milestone events (run_start, boss_beaten, elite_beaten,
+#                       died, run_end, potion_used, policy_version_loaded) to
+#                       the sts2.events topic exchange on RabbitMQ. Fire-and-
+#                       forget on a background thread: a dead broker costs one
+#                       log line and plays on, never a measurement. See
+#                       sts2_env/bridge/telemetry.py. Broker at
+#                       STS2_TELEMETRY_URL, default amqp://cyra:changeme@
+#                       127.0.0.1:5672/.
 #   --journal           Per-room, per-fight, per-card record. The run log says
 #                       a run reached floor 11; the journal says what happened
 #                       on the way, and every analysis in WEEKEND_DECISIONS.md
@@ -88,4 +96,5 @@ exec $PY -m sts2_env.bridge.live_eval \
     --journal "output/live_journal_${TAG}.jsonl" \
     --console-log "output/live_console_${TAG}.log" \
     --crash-log "output/crash_${TAG}.json" \
-    --capture-raw "output/bridge_boss_fights_${TAG}.jsonl"
+    --capture-raw "output/bridge_boss_fights_${TAG}.jsonl" \
+    --telemetry

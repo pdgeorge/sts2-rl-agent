@@ -56,6 +56,13 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_PER_TYPE = 25
 
+#: Boss fights are the replay experiment's entire subject, and they are also the
+#: longest: the 2026-08-16 session's Waterfall Giant fights ran eleven turns at
+#: roughly five states a round, and the shared quota cut both captures at round
+#: five -- right where the fight started being lost. Every boss bucket therefore
+#: gets its own larger budget; everything else keeps the tight one.
+DEFAULT_BOSS_QUOTA = 100
+
 #: Marks the trailer record. A plain state can never collide with this because
 #: the mod's states are keyed by "type", not by this name.
 TRAILER_KEY = "__capture_trailer__"
@@ -109,9 +116,11 @@ class RawCapture:
     is complete-up-to-the-crash at all times; ``close`` only adds the trailer.
     """
 
-    def __init__(self, path: str | Path, *, per_type: int = DEFAULT_PER_TYPE):
+    def __init__(self, path: str | Path, *, per_type: int = DEFAULT_PER_TYPE,
+                 boss_quota: int = DEFAULT_BOSS_QUOTA):
         self.path = Path(path)
         self.per_type = per_type
+        self.boss_quota = boss_quota
         self.seen: Counter[str] = Counter()
         self.kept: Counter[str] = Counter()
         self._closed = False
@@ -138,7 +147,9 @@ class RawCapture:
 
         msg_type = _state_type(state)
         self.seen[msg_type] += 1
-        if self.kept[msg_type] >= self.per_type:
+        quota = (self.boss_quota if msg_type.startswith("combat_action:Boss")
+                 else self.per_type)
+        if self.kept[msg_type] >= quota:
             return False
 
         try:
@@ -155,11 +166,11 @@ class RawCapture:
         self._fh.flush()
         self.kept[msg_type] += 1
 
-        if self.kept[msg_type] == self.per_type:
+        if self.kept[msg_type] == quota:
             logger.info(
                 "raw capture: %r reached its quota of %d; further %r states "
                 "are counted but not written.",
-                msg_type, self.per_type, msg_type,
+                msg_type, quota, msg_type,
             )
         return True
 
@@ -171,6 +182,7 @@ class RawCapture:
         trailer = {
             TRAILER_KEY: True,
             "per_type_quota": self.per_type,
+            "boss_quota": self.boss_quota,
             "seen": dict(self.seen),
             "kept": dict(self.kept),
         }

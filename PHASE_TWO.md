@@ -211,6 +211,43 @@ of ~1 win point per 1% of max HP and ~4.5 per relic, HP and relics together
 account for ~19 of the 45 points. **~26 points remain unexplained**, and no
 current hypothesis covers them. The gate stays shut.
 
+**2026-08-16, second reading: the gate's instrument exists, and the gap now has
+a name.** The sunday session captured 13 boss fights whole (the quota is now
+keyed per fight AND boss buckets keep 100 states, because 25 cut both Waterfall
+Giant captures at round five). Replaying the live arrival positions: offline
+5/13 = 38% +/- 13% against live 2/13. Arrival therefore explains ~36 of the
+45-point funnel gap (74% fresh-run offline vs 38% at live arrivals), and ~23
+points stayed. Those 23 were not a mystery: the mid-fight reconstruction
+installed every bridge power as a bare ``PowerInstance`` with no hooks, so the
+search clone let Waterfall Giant die quietly -- the STEAM_ERUPTION detonation
+lives in ``after_death`` -- and scored every kill a clean win. Run 7 arrived at
+80/80 and died killing the giant at 37 HP against a ~37 bank. That is the
+execution side of the gap, fixed in ``situation._bridge_power_instance`` and
+pinned by four tests.
+
+**What the replay still cannot see: the deal.** The bridge sends
+``draw_pile_count``, never the pile order, and the game's shuffle stream is
+run-level, so every replay reshuffles. One replay scores one arbitrary deal and
+cannot separate play from luck; ``scripts/replay_boss_seed_sweep.py`` answers
+the honest question instead -- win rate across many reshuffles of the same
+arrival. Full fidelity needs the draw pile order on the wire; that is a mod
+change and the next instrument work.
+
+**2026-08-16, third reading: the sweep closed the gate.** Each of the 13
+captured arrivals replayed across 20 reshuffles, same search budget as live:
+offline pooled **50% +/- 3%** against live **15% +/- 10%** on the identical
+positions. The spread names the shape: Waterfall at 80/80 with deck 22 wins
+**100%**, including the reshuffle k=0, which IS the live game's own
+``combat_seed`` -- same deck, same draw order, offline wins the fight live
+lost, so that one is pure execution, and the dropped power hooks are the named
+mechanism. Waterfall at 80/80 with deck 18 loses **0%** in every world: some
+arrivals are simply dead, and no policy change rescues them. Kin at 53/80:
+90% offline, lost live. Beast at 34/80: 85% offline, lost live. So: the
+arrival term is real (deck 18 vs deck 22), but the majority of the gap between
+the funnel's 74% and live's 15% is execution the reconstruction used to drop.
+G1 is open for the next live session's purpose: confirm prediction 9, and get
+the draw pile order onto the wire so replays stop gambling on deals.
+
 ### Track B — reach rate, 54% -> 75%+
 
 Offline agrees with live here, so this can be tuned offline with confidence.

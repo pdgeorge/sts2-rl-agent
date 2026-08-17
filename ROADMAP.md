@@ -141,10 +141,10 @@ These exist because each one was learned by losing weeks to its absence.
 | one function per decision | offline measuring an agent that does not ship | done, test-pinned |
 | capture the state that caused a failure | silent degradation with no reproduction | done for search; extend |
 | disparity reporting | the simulator quietly disagreeing with the game | done |
-| policy version on every run | not knowing which code produced which result | **not built** |
-| weights in versioned config | sweeps monkey-patching globals | **not built** |
-| per-option score logging | not seeing which options never appeared | **not built** |
-| holdout seeds | tuning and evaluating on the same data | **not built** |
+| policy version on every run | not knowing which code produced which result | **built 2026-08-16** (live path: journal run_start, eval log and crash log carry `policy_version` + git sha); offline funnel still unstamped |
+| weights in versioned config | sweeps monkey-patching globals | **built 2026-08-16**: `policies/v001.json` + `PolicyConfig`; `run_agent --policy` loads it, `apply_active_policy` is the only sanctioned writer of the legacy constants; sweeps still to migrate |
+| per-option score logging | not seeing which options never appeared | **built 2026-08-16 for card rewards** (`card_reward_options` journal record, same `rank_cards` path as the decision); other screens follow when a question needs them |
+| holdout seeds | tuning and evaluating on the same data | **built 2026-08-16**: `sts2_env/evaluation/seed_split.py` (`seed % 4 == 3`), `compare_funnels.py` reports both halves and calls tuning-only gains NOISE; PHASE_TWO's note stands: the holdout needs more seeds to resolve small effects |
 
 **An identifier audit is not version diffing.** Flame Barrier was never a version
 change: the game always sent `FLAME_BARRIER`, we always spelled it

@@ -90,14 +90,23 @@ def main() -> int:
 
     # One state per fight. A fight sends a state per decision, so keeping every
     # one would weight long fights heavily and score the same position repeatedly.
-    # Keyed on the enemies and their max HP plus the deck size, which is stable
-    # within a fight and differs between runs.
+    # Keyed on the capture's own encounter_seed -- unique per fight, stable
+    # within one, and present because CombatSituation needs it. The previous key
+    # (enemies + deck size + max HP) was proven wrong on the sunday capture: it
+    # merged different runs into one "fight" (three Vantom fights share deck 19
+    # and max HP 80) and split one Kin fight in two when a follower died and the
+    # enemy tuple changed. Rows are appended in order, so the first state per
+    # seed is the earliest captured position of that fight.
     seen: dict[tuple, dict] = {}
     for state in rows:
-        enemies = tuple(sorted(
-            (e.get("id"), e.get("max_hp")) for e in (state.get("enemies") or [])))
-        key = (enemies, len(state.get("deck") or []), state.get("run_max_hp"))
-        seen.setdefault(key, state)
+        seed = state.get("encounter_seed")
+        if seed is not None:
+            seen.setdefault(("seed", seed), state)
+        else:
+            enemies = tuple(sorted(
+                (e.get("id"), e.get("max_hp")) for e in (state.get("enemies") or [])))
+            key = ("legacy", enemies, len(state.get("deck") or []), state.get("run_max_hp"))
+            seen.setdefault(key, state)
     fights = list(seen.values())
     if args.limit:
         fights = fights[:args.limit]

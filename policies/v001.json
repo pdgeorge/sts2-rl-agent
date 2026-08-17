@@ -1,0 +1,26 @@
+{
+  "policy_version": "v001",
+  "eval_weights": {
+    "player_hp": 1.0,
+    "enemy_hp": 0.25,
+    "kill": 0.10,
+    "win": 3.0,
+    "loss": -10.0,
+    "turn": -0.02,
+    "powers": 1.0,
+    "powers_cap": 0.25,
+    "block_unused": -0.02
+  },
+  "room_min_hp_fraction": {
+    "boss": 0.80,
+    "elite": 0.80,
+    "monster": 0.40,
+    "unknown": 0.40,
+    "event": 0.40
+  },
+  "quality_bar_scale": 10.0,
+  "skip_threshold": 0.0,
+  "large_deck_size": 30,
+  "scaling_bonus": 1.5,
+  "block_need_bonus": 1.0
+}

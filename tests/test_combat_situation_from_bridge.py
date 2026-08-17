@@ -624,3 +624,106 @@ def test_a_revive_does_not_report_itself_as_a_parity_gap() -> None:
         assert disparity_summary() == []
     finally:
         reset_disparities()
+
+
+# -- powers with behavioural hooks survive the bridge reconstruction ---------
+# The sync installs the bridge's power list verbatim. It used to build every
+# power as a bare PowerInstance, which has no hooks -- so Waterfall Giant's
+# STEAM_ERUPTION came back inert, the clone let the giant die quietly, and the
+# search scored every kill a clean win. On 2026-08-16 the live agent killed the
+# giant at 37 HP against a ~37-damage banked eruption and died to its own kill.
+# The reconstruction must return the REGISTERED class so the hooks work in
+# every lookahead, with amounts verbatim and nothing re-fired.
+
+def _waterfall_state(*, bank: int, giant_hp: int = 6, player_hp: int = 40):
+    state = _bridge_state(encounter="setup_waterfall_giant_boss",
+                          deck_extra=["STRIKE_IRONCLAD"])
+    state["room_type"] = "Boss"
+    state["floor"] = 17
+    state["act_floor"] = 17
+    state["run_hp"] = player_hp
+    crash = state["combat_state"]
+    crash["player"]["hp"] = player_hp
+    crash["hand"] = [{"id": "STRIKE_IRONCLAD"}] * 3 + [{"id": "DEFEND_IRONCLAD"}] * 2
+    crash["enemies"] = [{
+        "id": "WATERFALL_GIANT", "hp": giant_hp, "max_hp": 240, "block": 0,
+        "is_alive": True,
+        "powers": [{"id": "STEAM_ERUPTION_POWER", "amount": bank}],
+        "intent": "Attack", "intent_move_id": "STOMP_MOVE",
+        "intent_damage": 15, "intent_hits": 1,
+    }]
+    return state
+
+
+def test_eruption_is_reconstructed_as_the_hooked_power_class() -> None:
+    from sts2_env.core.enums import PowerId
+    from sts2_env.powers.monster import SteamEruptionPower
+
+    combat = CombatSituation.from_bridge_state(_waterfall_state(bank=24)) \
+        .to_combat_mid_fight(_waterfall_state(bank=24))
+    giant = combat.enemies[0]
+    power = giant.powers[PowerId.STEAM_ERUPTION]
+    assert isinstance(power, SteamEruptionPower), (
+        "a bare PowerInstance has no after_death; the explosion would be "
+        "invisible to every lookahead the search runs")
+    assert power.amount == 24
+
+
+def test_killing_the_reconstructed_giant_detonates_the_eruption() -> None:
+    from sts2_env.core.enums import PowerId
+
+    state = _waterfall_state(bank=24)
+    combat = CombatSituation.from_bridge_state(state).to_combat_mid_fight(state)
+    giant = combat.enemies[0]
+    giant.current_hp = 0
+    combat.kill_creature(giant)
+
+    assert not combat.is_over, "the giant is about to blow, not gone"
+    assert giant.current_hp > 10**6, "ABOUT_TO_BLOW sets the giant unkillable"
+
+    hp_before = combat.primary_player.current_hp
+    combat.end_player_turn()  # ABOUT_TO_BLOW stuns
+    assert not combat.is_over
+    combat.end_player_turn()  # EXPLODE
+    assert combat.is_over
+    assert combat.primary_player.current_hp < hp_before, (
+        "the banked eruption must land on the player")
+    assert PowerId.STEAM_ERUPTION not in giant.powers
+
+
+def test_search_holds_a_lethal_that_would_detonate_a_fatal_eruption() -> None:
+    from sts2_env.gym_env.action_space import action_to_card_and_target
+    from sts2_env.search.turn_search import SearchAgent
+
+    state = _waterfall_state(bank=50, player_hp=40)
+    combat = CombatSituation.from_bridge_state(state).to_combat_mid_fight(state)
+    agent = SearchAgent(max_nodes=20000, time_budget=3.0, lookahead_turns=2)
+    plan = [agent.act(combat)] + list(agent._plan)
+    played = []
+    for action in plan:
+        hand_idx, _ = action_to_card_and_target(action)
+        played.append(combat.hand[hand_idx].card_id.name
+                      if hand_idx is not None else "END_TURN")
+
+    assert all(name != "STRIKE_IRONCLAD" for name in played), (
+        f"the kill detonates a 50-damage eruption into 40 HP; the search "
+        f"must not play it, but planned {played}")
+
+
+def test_search_takes_the_kill_when_the_eruption_is_survivable() -> None:
+    from sts2_env.gym_env.action_space import action_to_card_and_target
+    from sts2_env.search.turn_search import SearchAgent
+
+    state = _waterfall_state(bank=20, player_hp=40)
+    combat = CombatSituation.from_bridge_state(state).to_combat_mid_fight(state)
+    agent = SearchAgent(max_nodes=20000, time_budget=3.0, lookahead_turns=2)
+    plan = [agent.act(combat)] + list(agent._plan)
+    played = []
+    for action in plan:
+        hand_idx, _ = action_to_card_and_target(action)
+        played.append(combat.hand[hand_idx].card_id.name
+                      if hand_idx is not None else "END_TURN")
+
+    assert "STRIKE_IRONCLAD" in played, (
+        f"a 20-damage eruption into 40 HP is survivable; the search must "
+        f"close the fight, but planned {played}")
