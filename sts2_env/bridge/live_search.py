@@ -271,22 +271,13 @@ def _describe_lines(result, combat) -> list[dict] | None:
     if result is None or not result.considered:
         return None
 
-    from sts2_env.gym_env.action_space import (
-        action_to_card_and_target,
-        apply_combat_action,
-    )
+    from sts2_env.gym_env.action_space import apply_combat_action
     from sts2_env.search.cloning import clone_combat
 
     def name_line(actions):
         names, state = [], clone_combat(combat)
         for action in actions:
-            hand_index, target = action_to_card_and_target(action)
-            if hand_index is not None and hand_index < len(state.hand):
-                card = state.hand[hand_index]
-                label = card.card_id.name + ("+" if getattr(card, "upgraded", False) else "")
-                names.append(f"{label}->{target}" if target is not None else label)
-            else:
-                names.append(f"action:{action}")
+            names.append(_name_action(state, action))
             apply_combat_action(state, action)
         return names
 
@@ -299,3 +290,37 @@ def _describe_lines(result, combat) -> list[dict] | None:
         }
         for score, actions in result.considered
     ]
+
+
+def _name_action(combat, action: int) -> str:
+    """A readable label for one action, against the state it is played from.
+
+    Cards, potions and end-turn all have to resolve. The first version named
+    only cards and fell back to `action:62`, which made a whole session's
+    transcripts unreadable exactly where potions -- the single largest measured
+    effect in the boss counterfactual grid -- were being played.
+    """
+    from sts2_env.core.constants import (
+        ACTION_END_TURN,
+        POTION_ACTION_START,
+        POTION_TARGET_OPTIONS,
+    )
+    from sts2_env.gym_env.action_space import action_to_card_and_target
+
+    if action == ACTION_END_TURN:
+        return "END_TURN"
+
+    if action >= POTION_ACTION_START:
+        offset = action - POTION_ACTION_START
+        slot, target = divmod(offset, POTION_TARGET_OPTIONS)
+        potions = getattr(combat, "potions", None) or []
+        potion = potions[slot] if 0 <= slot < len(potions) else None
+        label = str(getattr(potion, "potion_id", "") or f"potion_slot_{slot}")
+        return f"{label}->{target - 1}" if target else label
+
+    hand_index, target = action_to_card_and_target(action)
+    if hand_index is not None and hand_index < len(combat.hand):
+        card = combat.hand[hand_index]
+        label = card.card_id.name + ("+" if getattr(card, "upgraded", False) else "")
+        return f"{label}->{target}" if target is not None else label
+    return f"action:{action}"

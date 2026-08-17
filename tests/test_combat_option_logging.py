@@ -120,3 +120,24 @@ def test_the_position_is_logged_with_the_mods_own_field_names():
     assert f["enemies"] == [{"id": "WATERFALL_GIANT", "hp": 120, "block": 0,
                              "intent": "ATTACK", "intent_damage": 18,
                              "intent_hits": 1}]
+
+
+def test_potions_and_end_turn_are_named_not_left_as_action_ints():
+    """`action:62` made a whole session's transcripts unreadable.
+
+    It fell back to the raw index for anything that was not a card, which is
+    every potion -- and potions were the single largest effect in the boss
+    counterfactual grid (-12.1 points without them). A reviewer cannot say
+    "she wasted Powdered Demise here" if the log says `action:62`.
+    """
+    from sts2_env.core.constants import ACTION_END_TURN, POTION_ACTION_START
+    from sts2_env.bridge.live_search import _name_action
+    from sts2_env.potions.base import create_potion
+
+    combat = _combat([CardId.STRIKE_IRONCLAD])
+    combat.potions = [create_potion("PowderedDemise"), None, None]
+
+    assert _name_action(combat, ACTION_END_TURN) == "END_TURN"
+    named = _name_action(combat, POTION_ACTION_START)
+    assert named.startswith("PowderedDemise"), named
+    assert "STRIKE" in _name_action(combat, 1 + 0)  # first card action

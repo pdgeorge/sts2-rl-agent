@@ -1,0 +1,294 @@
+"""One readable transcript per run, for a reviewer to read end to end.
+
+    .venv/bin/python scripts/export_run_transcripts.py --tag boss_telemetry
+
+Writes `output/transcripts/<tag>/run_001.md` .. `run_100.md`, plus a
+`REVIEW_PROMPT.md` holding the contract a reviewing model should answer with.
+
+WHY A TRANSCRIPT AND NOT THE JOURNAL
+------------------------------------
+The journal is the right shape for a script and the wrong shape for a reader.
+One run is ~240 KB of JSONL, about 62k tokens, and 65% of those bytes are
+`combat_options` rows repeating the same field names a few thousand times.
+Rendered as a transcript the same run is ~30 KB, about 8k tokens -- a 7.9x
+compression that loses nothing a reviewer needs, and fits any local model with
+room to think in.
+
+WHAT IS IN IT
+-------------
+Everything that was decided, with what was NOT chosen beside it:
+
+- every fight, turn by turn: HP, block, energy, each enemy with its telegraphed
+  intent, the line she played and the best few she passed over, with scores
+- every card reward, shop, rest and map choice, with the options she declined
+- the deck as it stood, and how the run ended
+
+The rejected lines are the point. A log of what she played can only support
+"that looks wrong"; a log of what she passed over supports "she had X and took
+Y, and the evaluator scored them 0.002 apart".
+
+ONE BLOCK PER TURN, NOT PER CARD
+--------------------------------
+`LiveSearch` re-searches after every card, so a five-card turn logs five
+`combat_options` rows. They are not prefixes of each other -- the hand changes
+underneath, so the plan is re-derived -- and printing all five triples the size
+while saying the same thing five times.
+
+So a turn renders as what she ACTUALLY played, taken from the `card_played`
+events, which is ground truth and cannot disagree with the game; and beneath
+it the alternatives from the FIRST search of that turn, which is the decision
+that set the turn up. `replans: N` records how many times she re-searched, so a
+reader can still see a turn that went off-plan.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+from collections import defaultdict
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+
+#: How many rejected lines to show under each decision. The log holds eight;
+#: three is enough to see whether the choice was close or clear, and keeps a
+#: boss turn to a few lines rather than a screenful.
+SHOW_REJECTED = 3
+
+REVIEW_PROMPT = """# Reviewing a run
+
+You are reading one complete run of an AI playing Slay the Spire 2 as the
+Ironclad. Act 1 is 17 floors and ends with a boss. The agent picks its line by
+searching every legal ordering of its hand and scoring the position two turns
+ahead; the scores you see are that evaluation, in units where about 1.0 is a
+full health bar.
+
+## How to read a fight
+
+```
+=== f11 Elite | hp 62/80 | deck 19 | BYGONE_EFFIGY 108hp
+T1  hp 62  blk 0  nrg 3 | BYGONE_EFFIGY 108hp ATTACK 16
+    played  BASH->0, STRIKE->0                     0.612
+    passed  DEFEND, BASH->0                        0.608
+    passed  STRIKE->0, STRIKE->0                   0.571
+```
+
+`played` is the line taken. `passed` are lines it considered and rejected, with
+their scores. A gap of 0.004 means the two were near-identical to the
+evaluator; a gap of 0.1 means it was confident.
+
+## What to report
+
+Go through the run and identify where it went wrong. Judgement is expected:
+a line that was 0.002 behind is not a mistake, it is a coin flip. Report things
+that plausibly cost real HP or the run.
+
+Answer with JSON and nothing else:
+
+```json
+{
+  "run": 7,
+  "outcome": "died floor 13, elite, 0/80",
+  "summary": "one or two sentences",
+  "mistakes": [
+    {"floor": 11, "turn": 4,
+     "did": "played Defend twice into a 6-damage intent",
+     "better": "Bash then Strike; the kill was available and removed 16/turn",
+     "cost_hp": 22,
+     "kind": "combat|card_reward|map|shop|rest|potion",
+     "confidence": "high|medium|low"}
+  ],
+  "good_plays": ["floor 9: held Powdered Demise for the elite"]
+}
+```
+
+Rules:
+- Every mistake MUST cite the floor and, for a fight, the turn. A claim without
+  a location cannot be checked and will be discarded.
+- If the run was already lost when the mistake happened, say so in `summary`
+  rather than listing ten consequences of one earlier error.
+- An empty `mistakes` list is a valid and useful answer.
+"""
+
+
+def _norm(line: str) -> str:
+    """Tidy an action label for reading.
+
+    Existing sessions logged anything that was not a card as `action:62`;
+    decoding what can be decoded is better than showing the reader an integer.
+    Sessions after 2026-08-17 name these properly at capture time.
+    """
+    m = re.fullmatch(r"action:(\d+)", line)
+    if not m:
+        return line
+    from sts2_env.core.constants import (
+        ACTION_END_TURN,
+        POTION_ACTION_START,
+        POTION_TARGET_OPTIONS,
+    )
+    action = int(m.group(1))
+    if action == ACTION_END_TURN:
+        return "END_TURN"
+    if action >= POTION_ACTION_START:
+        slot, target = divmod(action - POTION_ACTION_START, POTION_TARGET_OPTIONS)
+        return f"potion[slot {slot}]" + (f"->{target - 1}" if target else "")
+    return f"action:{action}"
+
+
+def _enemy(e: dict) -> str:
+    bits = f"{e.get('id')} {e.get('hp')}hp"
+    if e.get("block"):
+        bits += f" blk{e['block']}"
+    intent = e.get("intent")
+    if intent:
+        dmg = e.get("intent_damage")
+        hits = e.get("intent_hits") or 1
+        bits += f" [{intent}"
+        if dmg:
+            bits += f" {dmg}" + (f"x{hits}" if hits and hits > 1 else "")
+        bits += "]"
+    return bits
+
+
+def render(events: list[dict]) -> str:
+    out: list[str] = []
+    pending = _new_turn()
+
+    for e in events:
+        ev = e.get("event")
+
+        if ev == "run_start":
+            pending = _new_turn()
+            out.append(f"# Run {e.get('run')}  ({e.get('character')}, "
+                       f"ascension {e.get('ascension', 0)})")
+            out.append(f"policy {e.get('policy_version')} @ {e.get('git_sha')}\n")
+
+        elif ev == "combat_start":
+            _flush(out, pending)
+            ens = ", ".join(_enemy(x) for x in (e.get("enemies") or []))
+            relics = ", ".join(e.get("relics") or [])
+            out.append(f"\n=== f{e.get('floor')} {e.get('room_type')} | "
+                       f"hp {e.get('hp')}/{e.get('max_hp')} | deck {e.get('deck_size')} | {ens}")
+            if relics:
+                out.append(f"    relics: {relics}")
+            pots = [p for p in (e.get("potions") or []) if p]
+            if pots:
+                out.append(f"    potions: {', '.join(pots)}")
+
+        elif ev == "turn":
+            _flush(out, pending)
+            ens = ", ".join(_enemy(x) for x in (e.get("enemies") or []))
+            out.append(f"T{e.get('round')}  hp {e.get('hp')}  blk {e.get('block')} | {ens}")
+
+        elif ev == "card_played":
+            pending["played"].append(
+                f"{e.get('card')}" + (f"->{e['target']}" if e.get("target") not in (None, -1) else ""))
+
+        elif ev == "combat_options":
+            pending["replans"] += 1
+            if pending["alts"] is None:   # first search of this turn sets it up
+                opts = e.get("options") or []
+                pending["alts"] = [
+                    (", ".join(_norm(x) for x in (o.get("line") or [])) or "END_TURN",
+                     o.get("score"))
+                    for o in opts if not o.get("chosen")
+                ][:SHOW_REJECTED]
+                chosen = next((o for o in opts if o.get("chosen")), None)
+                pending["planned"] = chosen.get("score") if chosen else None
+
+        elif ev == "end_turn":
+            _flush(out, pending)
+
+        elif ev == "combat_end":
+            _flush(out, pending)
+            out.append(f"    -> hp {e.get('hp_before')} to {e.get('hp_after')} "
+                       f"over {e.get('turns')} turns, {e.get('cards_played')} cards")
+
+        elif ev == "choice":
+            offered = e.get("offered")
+            skipped = " (SKIPPED)" if e.get("skipped") else ""
+            out.append(f"  [{e.get('screen')} f{e.get('floor')}] took "
+                       f"{e.get('chosen')}{skipped}   offered: {offered}")
+
+        elif ev == "card_reward_options":
+            scored = e.get("options") or e.get("scores")
+            if scored:
+                out.append(f"      scores: {scored}")
+
+        elif ev == "potion_used":
+            out.append(f"    POTION {e.get('potion')} (slot {e.get('slot')})")
+
+        elif ev == "run_end":
+            out.append(f"\n## RUN END: floor {e.get('floor')}, act {e.get('act')}, "
+                       f"{e.get('room_type')}, hp {e.get('run_hp')}/{e.get('run_max_hp')}, "
+                       f"killed by {e.get('death_enemy_id')}, "
+                       f"deck {e.get('deck_size')}, relics {e.get('relic_count')}")
+    return "\n".join(out) + "\n"
+
+
+def _new_turn() -> dict:
+    return {"played": [], "alts": None, "planned": None, "replans": 0}
+
+
+def _flush(out: list[str], pending: dict) -> None:
+    """Emit the accumulated turn, then reset it in place."""
+    if pending["played"] or pending["alts"]:
+        score = pending.get("planned")
+        head = f"    played  {', '.join(pending['played']) or 'END_TURN'}"
+        if score is not None:
+            head += f"{'':<4}{score:>8.3f}"
+        if pending["replans"] > 1:
+            head += f"   (replans: {pending['replans']})"
+        out.append(head)
+        for line, alt_score in pending["alts"] or []:
+            out.append(f"    passed  {line}{'':<4}{alt_score:>8.3f}"
+                       if alt_score is not None else f"    passed  {line}")
+    pending.update(_new_turn())
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--tag", required=True, help="session tag, e.g. boss_telemetry")
+    ap.add_argument("--journal", default=None, help="defaults to output/live_journal_<tag>.jsonl")
+    ap.add_argument("--out", default=None, help="defaults to output/transcripts/<tag>")
+    args = ap.parse_args()
+
+    import sys
+    sys.path.insert(0, str(REPO))
+
+    journal = Path(args.journal or f"output/live_journal_{args.tag}.jsonl")
+    outdir = Path(args.out or f"output/transcripts/{args.tag}")
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    runs: dict[tuple, list[dict]] = defaultdict(list)
+    with journal.open(encoding="utf-8") as fh:
+        for raw in fh:
+            try:
+                e = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            runs[(e.get("session"), e.get("run"))].append(e)
+
+    (outdir / "REVIEW_PROMPT.md").write_text(REVIEW_PROMPT, encoding="utf-8")
+
+    total = 0
+    for index, key in enumerate(sorted(runs, key=lambda k: (str(k[0]), k[1] or 0)), 1):
+        text = render(runs[key])
+        path = outdir / f"run_{index:03d}.md"
+        path.write_text(text, encoding="utf-8")
+        total += len(text)
+
+    n = len(runs)
+    print(f"{n} transcripts -> {outdir}")
+    print(f"  mean {total / n / 1024:.0f} KB per run  (~{total / n / 4 / 1000:.0f}k tokens)")
+    print(f"  total {total / 1024 / 1024:.1f} MB  (~{total / 4 / 1000:.0f}k tokens for all {n})")
+    print(f"\nreview contract: {outdir / 'REVIEW_PROMPT.md'}")
+    print("collect the JSON replies as output/reports/<tag>/run_NNN.json, then:")
+    print(f"  .venv/bin/python scripts/aggregate_run_reports.py --tag {args.tag}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
