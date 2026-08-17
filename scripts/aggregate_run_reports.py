@@ -174,6 +174,39 @@ def main() -> int:
         for phrase, count in good.most_common(5):
             print(f"  {count:>3}x  {phrase}")
 
+    # Triage: which individual runs are worth opening. A ranked list of patterns
+    # says what to change; this says which transcript to READ, which is the
+    # other half of the question and the one an aggregate usually destroys.
+    scored = []
+    for path, data in parsed:
+        run = data.get("run")
+        ms = data.get("mistakes") or []
+        hp = sum(m.get("cost_hp") or 0 for m in ms if isinstance(m.get("cost_hp"), (int, float)))
+        end = outcomes.get(run) or {}
+        scored.append((run, hp, len(ms), end.get("floor"), end.get("cleared"),
+                       str(data.get("summary") or "")[:88]))
+
+    worst = sorted((r for r in scored if r[1]), key=lambda r: -r[1])[:5]
+    if worst:
+        print(f"\nMOST EGREGIOUS -- open these transcripts first")
+        for run, hp, n, floor, _cleared, summary in worst:
+            print(f"  run {run:>3}  {hp:>4} HP over {n} claims, died floor {floor}")
+            print(f"          {summary}")
+
+    deepest = sorted((r for r in scored if r[3] is not None), key=lambda r: -r[3])[:5]
+    if deepest:
+        print(f"\nGOT FURTHEST -- what did these do right?")
+        for run, hp, n, floor, cleared, summary in deepest:
+            print(f"  run {run:>3}  floor {floor}"
+                  f"{'  (cleared act 1)' if cleared else ''}"
+                  f"  {n} claims, {hp} HP")
+            print(f"          {summary}")
+
+    clean = [r for r in scored if r[2] == 0 and r[4]]
+    if clean:
+        print(f"\n  {len(clean)} runs cleared act 1 with nothing flagged: "
+              f"{[r[0] for r in clean][:12]}")
+
     print("\n" + "=" * 74)
     print("A claim appearing in 40 runs is a lead worth a paired A/B. In 2 runs it is\n"
           "a reviewer noticing something once. Rank by the first column, then go and\n"

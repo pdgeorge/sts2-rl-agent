@@ -98,3 +98,37 @@ def test_outcomes_are_read_from_the_journal_for_checking_claims(tmp_path):
     j = tmp_path / "j.jsonl"
     j.write_text(json.dumps({"event": "run_end", "run": 3, "floor": 9, "act": 1}))
     assert _run_outcomes(j)[3]["floor"] == 9
+
+
+# -- the review loop's contract check ---------------------------------------
+
+@pytest.mark.parametrize("data,problem", [
+    ({"mistakes": []}, None),
+    ({"mistakes": [{"floor": 3, "did": "x"}]}, None),
+    ({}, "missing"),
+    ({"mistakes": "none"}, "must be a list"),
+    ({"mistakes": [{"did": "no floor"}]}, "floor"),
+])
+def test_a_reply_is_only_accepted_when_it_can_be_checked(data, problem):
+    """A claim without a location cannot be looked up, so it cannot be believed."""
+    from scripts.review_runs import _valid
+    result = _valid(data)
+    if problem is None:
+        assert result is None
+    else:
+        assert result and problem in result
+
+
+def test_the_transcript_tells_the_reviewer_it_does_not_know_this_game():
+    """An 8B has never seen STS2 and the names overlap StS1.
+
+    Without the card reference it reviews a game it invented, so the primer and
+    the per-run card list are load-bearing, not decoration.
+    """
+    from scripts.export_run_transcripts import _appendix
+    cards = {"BASH": {"name": "Bash", "type": "Attack", "cost": "2",
+                      "rarity": "Basic", "description": "Deal 8 damage."}}
+    text = _appendix(_events(), cards)
+    assert "not Slay the Spire 1" in text
+    assert "**Bash** (Attack, cost 2, Basic): Deal 8 damage." in text
+    assert "BYGONE_EFFIGY (108 HP)" in text

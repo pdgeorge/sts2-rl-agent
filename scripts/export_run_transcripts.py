@@ -56,6 +56,26 @@ REPO = Path(__file__).resolve().parent.parent
 #: boss turn to a few lines rather than a screenful.
 SHOW_REJECTED = 3
 
+RULES_PRIMER = """## What you are reading
+
+Slay the Spire 2, act 1: 17 floors ending in a boss. The player is the Ironclad,
+80 max HP, 3 energy a turn. HP does NOT refill between fights -- damage taken in
+a corridor fight is still gone at the boss, which is why chip damage decides
+runs. Enemies telegraph their next move, shown in `[ ]` after their HP.
+
+**You almost certainly do not know this game.** It is not Slay the Spire 1 and
+the cards are different. Every card and monster in this run is listed below with
+its real behaviour, taken from the game's own code. Use that list and do not
+rely on what you remember about a card with a similar name.
+
+The agent chooses by enumerating every legal ordering of its hand, playing each
+one out on a copy, letting the enemies respond, and keeping the best. `played`
+is the line it took; `passed` are lines it considered and rejected. The number
+is its evaluation of the resulting position -- higher is better, and roughly
+1.0 is a full health bar. A gap of 0.004 between two lines means the agent
+considered them near-identical; a gap of 0.1 means it was confident.
+"""
+
 REVIEW_PROMPT = """# Reviewing a run
 
 You are reading one complete run of an AI playing Slay the Spire 2 as the
@@ -151,8 +171,60 @@ def _enemy(e: dict) -> str:
     return bits
 
 
-def render(events: list[dict]) -> str:
+def _card_reference() -> dict:
+    """Card behaviour, generated from the decompile by `generate_card_text.py`.
+
+    Grounding, not decoration. An 8B model has never seen this game -- the cards
+    share names with Slay the Spire 1 and do not share effects -- so without
+    this it reviews a run against a game it invented. Only the cards this run
+    actually touched are emitted, which keeps the primer at about 1k tokens
+    instead of dumping all 577.
+    """
+    path = REPO / "output" / "card_text.json"
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+
+
+def _appendix(events: list[dict], cards: dict) -> str:
+    """The cards and monsters THIS run met, with what they really do."""
+    seen_cards: set[str] = set()
+    seen_monsters: dict[str, int] = {}
+    for e in events:
+        if e.get("card"):
+            seen_cards.add(str(e["card"]).rstrip("+"))
+        if e.get("chosen") and isinstance(e.get("chosen"), str):
+            seen_cards.add(e["chosen"].rstrip("+"))
+        for offer in e.get("offered") or []:
+            if isinstance(offer, str):
+                seen_cards.add(offer.rstrip("+"))
+        for enemy in e.get("enemies") or []:
+            if isinstance(enemy, dict) and enemy.get("id"):
+                seen_monsters.setdefault(str(enemy["id"]), enemy.get("max_hp") or enemy.get("hp") or 0)
+
+    lines = [RULES_PRIMER, "### Cards in this run"]
+    for name in sorted(seen_cards):
+        info = cards.get(name) or cards.get(name + "_CARD")
+        if not info:
+            continue
+        desc = " ".join(str(info.get("description", "")).split())
+        lines.append(f"- **{info.get('name', name)}** ({info.get('type')}, "
+                     f"cost {info.get('cost')}, {info.get('rarity')}): {desc}")
+    if seen_monsters:
+        lines.append("\n### Enemies in this run")
+        for name, hp in sorted(seen_monsters.items()):
+            lines.append(f"- {name} ({hp} HP)")
+    lines.append("\n---\n")
+    return "\n".join(lines)
+
+
+def render(events: list[dict], cards: dict | None = None) -> str:
     out: list[str] = []
+    if cards is not None:
+        out.append(_appendix(events, cards))
     pending = _new_turn()
 
     for e in events:
@@ -271,11 +343,16 @@ def main() -> int:
                 continue
             runs[(e.get("session"), e.get("run"))].append(e)
 
+    cards = _card_reference()
+    if not cards:
+        print("WARNING: output/card_text.json missing -- transcripts will have no "
+              "card reference, and a small model will review a game it invented.\n"
+              "  regenerate with: .venv/bin/python scripts/generate_card_text.py")
     (outdir / "REVIEW_PROMPT.md").write_text(REVIEW_PROMPT, encoding="utf-8")
 
     total = 0
     for index, key in enumerate(sorted(runs, key=lambda k: (str(k[0]), k[1] or 0)), 1):
-        text = render(runs[key])
+        text = render(runs[key], cards)
         path = outdir / f"run_{index:03d}.md"
         path.write_text(text, encoding="utf-8")
         total += len(text)
