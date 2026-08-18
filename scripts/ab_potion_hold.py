@@ -32,6 +32,16 @@ decision, in its own process, so the arms cannot see each other's value.
 `PHASE_TWO.md` section 3.1 records what the alternative costs: a sweep once ran
 400 runs with its baseline arm doing the exact opposite of its name.
 
+KNOWN LIMIT OF THE MECHANISM COLUMNS
+------------------------------------
+Potions are counted by watching the belt shrink, which cannot say WHICH potion
+left it. So the where-they-are-drunk columns cover every potion in the game,
+while the arm only holds five of them -- the live session measured 85% -> 12%
+on those five, and the same signal diluted across the whole pool reads 68% ->
+65% here. The outcome comparison is unaffected (paired seeds, one difference
+between arms), but this script cannot confirm the behavioural gate. Fixing it
+means recording the potion id as it leaves the belt.
+
 THE GATE, NOT ONLY THE RATE
 ---------------------------
 The live session's lesson was that the outcome moved while the mechanism did
