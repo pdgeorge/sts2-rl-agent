@@ -92,6 +92,8 @@ Paired: gains 8, loses 5, **13 discordant pairs of 400** -- and the discordant c
 
 **Verdict.** The revert stands, and on gate 2 rather than on the rate: a hold that moves potions from trash to elites without changing how many reach the boss has not tested its own hypothesis. Offline now says it costs nothing either. Both readings agree it is not a lever.
 
+| 12 | `tuesday`: the potion hold reverted, plus the Lagavulin wake fix | **Predict NOTHING MOVES.** Reach and clear both unchanged within error against the pooled 34.5% +/- 5.0. The hold is measured null offline (+0.75, CI -1.0 to +2.5) and the Lagavulin fix is worth ~0.5-2 clear points -- SLASH is 19 damage against DISEMBOWEL's 9, so the search under-blocked by 10 on the wake turn, but that boss is only 23% of act 1 boss fights. A 100-run session resolves +/-9 and needs +15 to see reliably, so it CANNOT see this fix. The session is run for pooled n and for clean transcripts, not to test anything. If clear lands outside 25-44% something unexpected happened and it is worth chasing | pending | — |
+
 ### 11: the hold works, the potions still do not reach the boss, and the session cannot settle it
 
 The mechanism did exactly what it was built to do. Trash use of the held five went **85% to 12%** -- Powdered Demise 89% -> 14%, Duplicator 94% -> 0%.
