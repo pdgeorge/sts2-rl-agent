@@ -90,13 +90,18 @@ BIG_FIGHTS = frozenset({RoomType.ELITE, RoomType.BOSS})
 #: the damage they deal at the boss. Prediction 10 priced 15 HP at +4.6
 #: boss-win points, so that is a real possibility and it is why this is
 #: measured rather than assumed.
-HOLD_FOR_BIG_FIGHTS = frozenset({
-    "PowderedDemise",
-    "DistilledChaos",
-    "GigantificationPotion",
-    "OrobicAcid",
-    "Duplicator",
-})
+#: EMPTY, which is the shipped behaviour. `apply_active_policy` overwrites this
+#: from `PolicyConfig.hold_potions_for_big_fights`, so the A/B arm turns it on
+#: without anything patching a global.
+#:
+#: MEASURED AND REVERTED, 2026-08-18. Live for one session as a hard-coded set.
+#: The mechanism worked and the hypothesis did not: trash use of the five fell
+#: 85% -> 12%, and potions held entering the act 1 boss did not move (0.99 ->
+#: 0.97). They were not saved for the boss, they were spent one room earlier on
+#: elites -- group elite use went 7 -> 13 in half as many runs. Clear fell 12
+#: points at p=0.041, which this project cannot separate from session variance:
+#: two sessions on identical act 1 code have already differed by 13 points.
+HOLD_FOR_BIG_FIGHTS: frozenset[str] = frozenset()
 
 
 def _telegraphed_damage(combat: "CombatState") -> int:

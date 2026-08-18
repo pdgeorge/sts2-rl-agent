@@ -437,7 +437,22 @@ def _with_potion(combat, potion_id):
     return combat
 
 
-def test_a_held_potion_is_not_drunk_in_a_hallway_fight():
+@pytest.fixture
+def holding():
+    """The hold ships OFF; these tests are about the arm that turns it on.
+
+    Restored afterwards so the shipped default cannot leak into another test --
+    apply_active_policy writes a module global, which is exactly the shape of
+    leak PolicyConfig exists to contain.
+    """
+    from sts2_env.policy_config import PolicyConfig, apply_active_policy
+
+    apply_active_policy(PolicyConfig.load("v002_hold_potions"))
+    yield
+    apply_active_policy(PolicyConfig.load("v001"))
+
+
+def test_a_held_potion_is_not_drunk_in_a_hallway_fight(holding):
     """PowderedDemise went down on trash 89% of the time and never once on a boss.
 
     Forcing was only half a policy: `CARD_GENERATORS` forces a drink on turn 1
@@ -453,7 +468,7 @@ def test_a_held_potion_is_not_drunk_in_a_hallway_fight():
     assert should_hold(combat, combat.potions[0])
 
 
-def test_the_same_potion_is_free_to_drink_in_an_elite():
+def test_the_same_potion_is_free_to_drink_in_an_elite(holding):
     from sts2_env.core.enums import RoomType
     from sts2_env.search.potion_policy import should_hold
 
@@ -463,7 +478,7 @@ def test_the_same_potion_is_free_to_drink_in_an_elite():
     assert not should_hold(combat, combat.potions[0])
 
 
-def test_a_hold_is_released_when_the_turn_could_be_lethal():
+def test_a_hold_is_released_when_the_turn_could_be_lethal(holding):
     """A potion saved for a boss the run never reaches is worth nothing.
 
     The release test is the board's own telegraphed damage against remaining
@@ -485,7 +500,7 @@ def test_a_hold_is_released_when_the_turn_could_be_lethal():
     assert not should_hold(combat, combat.potions[0]), "lethal on the table: drink it"
 
 
-def test_an_unheld_potion_is_never_blocked():
+def test_an_unheld_potion_is_never_blocked(holding):
     from sts2_env.core.enums import RoomType
     from sts2_env.search.potion_policy import should_hold
 
@@ -495,7 +510,7 @@ def test_an_unheld_potion_is_never_blocked():
     assert not should_hold(combat, combat.potions[0])
 
 
-def test_the_search_will_not_play_a_held_potion_in_a_hallway():
+def test_the_search_will_not_play_a_held_potion_in_a_hallway(holding):
     """End to end: the branch is not offered, so no line can contain it."""
     from sts2_env.core.enums import RoomType
     from sts2_env.gym_env.action_space import is_potion_action

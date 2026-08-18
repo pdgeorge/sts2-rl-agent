@@ -1,5 +1,5 @@
 {
-  "policy_version": "v001",
+  "policy_version": "v002_hold_potions",
   "eval_weights": {
     "player_hp": 1.0,
     "enemy_hp": 0.25,
@@ -23,5 +23,11 @@
   "large_deck_size": 30,
   "scaling_bonus": 1.5,
   "block_need_bonus": 1.0,
-  "hold_potions_for_big_fights": []
+  "hold_potions_for_big_fights": [
+    "PowderedDemise",
+    "DistilledChaos",
+    "GigantificationPotion",
+    "OrobicAcid",
+    "Duplicator"
+  ]
 }

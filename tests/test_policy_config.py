@@ -111,3 +111,57 @@ def test_with_weights_rejects_unknown_names():
 
     with pytest.raises(ValueError, match="unknown eval weight"):
         PolicyConfig.load().with_weights(not_a_weight=1.0)
+
+
+class TestPotionHoldIsAPolicyFieldNotAGlobal:
+    """The hold ships OFF and is turned on by a policy, never by a patch.
+
+    It was live for one session as a hard-coded frozenset. The measurement said
+    the mechanism worked and the hypothesis did not -- trash use of the five
+    fell 85% to 12%, and potions held entering the act 1 boss did not move at
+    all (0.99 -> 0.97), because they were spent one room earlier on elites.
+    Reverted here, and made configurable so the A/B can be run the sanctioned
+    way: PHASE_TWO section 3.1 records a sweep that ran 400 runs with its
+    baseline arm doing the opposite of its name, because it patched a global.
+    """
+
+    def test_the_shipped_policy_holds_nothing(self):
+        from sts2_env.policy_config import PolicyConfig
+        assert PolicyConfig.load("v001").hold_potions_for_big_fights == ()
+
+    def test_the_experiment_policy_holds_the_five(self):
+        from sts2_env.policy_config import PolicyConfig
+        held = set(PolicyConfig.load("v002_hold_potions").hold_potions_for_big_fights)
+        assert held == {"PowderedDemise", "DistilledChaos", "GigantificationPotion",
+                        "OrobicAcid", "Duplicator"}
+
+    def test_applying_a_policy_drives_the_module_constant(self):
+        from sts2_env.policy_config import PolicyConfig, apply_active_policy
+        from sts2_env.search import potion_policy
+
+        apply_active_policy(PolicyConfig.load("v002_hold_potions"))
+        assert len(potion_policy.HOLD_FOR_BIG_FIGHTS) == 5
+        apply_active_policy(PolicyConfig.load("v001"))
+        assert potion_policy.HOLD_FOR_BIG_FIGHTS == frozenset()
+
+    def test_a_policy_written_before_the_key_existed_still_loads(self):
+        """Optional, so old configs keep meaning what they meant."""
+        import json
+        from sts2_env.policy_config import PolicyConfig
+
+        data = json.loads(open("policies/v001.json").read())
+        data.pop("hold_potions_for_big_fights", None)
+        assert PolicyConfig.from_dict(data).hold_potions_for_big_fights == ()
+
+    def test_a_misspelled_key_is_still_rejected(self):
+        """Optional must not mean unvalidated -- that is the whole check."""
+        import json
+
+        import pytest
+
+        from sts2_env.policy_config import PolicyConfig
+
+        data = json.loads(open("policies/v001.json").read())
+        data["hold_potions_for_big_fite"] = []
+        with pytest.raises(ValueError, match="unknown keys"):
+            PolicyConfig.from_dict(data)

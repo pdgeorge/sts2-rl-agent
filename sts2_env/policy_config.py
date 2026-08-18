@@ -86,6 +86,18 @@ class PolicyConfig:
     large_deck_size: int
     scaling_bonus: float
     block_need_bonus: float
+    hold_potions_for_big_fights: tuple[str, ...] = ()
+    """Potion ids kept out of hallway fights so they survive to an elite or boss.
+
+    EMPTY in v001, which is the shipped behaviour. It was live for one session
+    as a module constant and is reverted here, because the measurement said the
+    mechanism worked and the hypothesis did not: trash use of the five held
+    potions fell 85% -> 12%, and potions held entering the act 1 boss did not
+    move at all (0.99 -> 0.97). They were spent one room earlier, on elites.
+
+    A policy field rather than a constant so the A/B can be run properly.
+    Sweeping it as a global is the trap `PHASE_TWO.md` section 3.1 records --
+    400 runs with a baseline arm doing the opposite of its name."""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], *, source_path: str = "<memory>") -> "PolicyConfig":
@@ -103,6 +115,8 @@ class PolicyConfig:
             large_deck_size=int(data["large_deck_size"]),
             scaling_bonus=float(data["scaling_bonus"]),
             block_need_bonus=float(data["block_need_bonus"]),
+            hold_potions_for_big_fights=tuple(
+                str(x) for x in data.get("hold_potions_for_big_fights", ())),
         )
 
     @classmethod
@@ -148,6 +162,7 @@ class PolicyConfig:
             large_deck_size=self.large_deck_size,
             scaling_bonus=self.scaling_bonus,
             block_need_bonus=self.block_need_bonus,
+            hold_potions_for_big_fights=self.hold_potions_for_big_fights,
         )
 
 
@@ -164,17 +179,33 @@ _SCALAR_TARGETS = {
     "block_need_bonus": ("sts2_env.bridge.card_quality", "BLOCK_NEED_BONUS"),
 }
 
+#: Non-scalars need their own line in `apply_active_policy`; listed here so the
+#: two places cannot drift.
+_SEQUENCE_TARGETS = {
+    "hold_potions_for_big_fights": ("sts2_env.search.potion_policy",
+                                    "HOLD_FOR_BIG_FIGHTS"),
+}
+
 
 def _validate(data: dict[str, Any], source_path: str) -> None:
+    # `hold_potions_for_big_fights` is deliberately NOT required: it defaults to
+    # empty, so every policy written before it existed still loads and still
+    # means what it meant.
     required = {
         "policy_version", "eval_weights", "room_min_hp_fraction",
         "quality_bar_scale", "skip_threshold", "large_deck_size",
         "scaling_bonus", "block_need_bonus",
     }
+    #: Keys a policy MAY carry. Optional rather than required so a policy
+    #: written before the key existed still loads and still means what it meant;
+    #: listed here so it is still rejected if misspelled, which is the whole
+    #: point of the unknown-key check.
+    optional = {"hold_potions_for_big_fights"}
+
     missing = required - set(data)
     if missing:
         raise ValueError(f"{source_path}: policy is missing {sorted(missing)}")
-    unknown = set(data) - required
+    unknown = set(data) - required - optional
     if unknown:
         raise ValueError(f"{source_path}: policy has unknown keys {sorted(unknown)} "
                          f"-- a config the code will quietly ignore is worse than a crash")
@@ -220,7 +251,12 @@ def apply_active_policy(policy: PolicyConfig) -> None:
     """Write the policy's values into the legacy constants its readers use."""
     from sts2_env.bridge import agent_runner, card_quality  # noqa: PLC0415
 
+    import importlib  # noqa: PLC0415
+
     agent_runner.ROOM_MIN_HP_FRACTION = dict(policy.room_min_hp_fraction)
+    for attr, (module_name, const) in _SEQUENCE_TARGETS.items():
+        setattr(importlib.import_module(module_name), const,
+                frozenset(getattr(policy, attr)))
     for attr, (module_name, const) in _SCALAR_TARGETS.items():
         module = agent_runner if module_name.endswith("agent_runner") else card_quality
         setattr(module, const, getattr(policy, attr))
