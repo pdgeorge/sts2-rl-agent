@@ -92,7 +92,19 @@ Paired: gains 8, loses 5, **13 discordant pairs of 400** -- and the discordant c
 
 **Verdict.** The revert stands, and on gate 2 rather than on the rate: a hold that moves potions from trash to elites without changing how many reach the boss has not tested its own hypothesis. Offline now says it costs nothing either. Both readings agree it is not a lever.
 
-| 12 | `tuesday`: the potion hold reverted, plus the Lagavulin wake fix | **Predict NOTHING MOVES.** Reach and clear both unchanged within error against the pooled 34.5% +/- 5.0. The hold is measured null offline (+0.75, CI -1.0 to +2.5) and the Lagavulin fix is worth ~0.5-2 clear points -- SLASH is 19 damage against DISEMBOWEL's 9, so the search under-blocked by 10 on the wake turn, but that boss is only 23% of act 1 boss fights. A 100-run session resolves +/-9 and needs +15 to see reliably, so it CANNOT see this fix. The session is run for pooled n and for clean transcripts, not to test anything. If clear lands outside 25-44% something unexpected happened and it is worth chasing | pending | — |
+| 12 | `tuesday`: the potion hold reverted, plus the Lagavulin wake fix | **Predict NOTHING MOVES.** Reach and clear both unchanged within error against the pooled 34.5% +/- 5.0. The hold is measured null offline (+0.75, CI -1.0 to +2.5) and the Lagavulin fix is worth ~0.5-2 clear points -- SLASH is 19 damage against DISEMBOWEL's 9, so the search under-blocked by 10 on the wake turn, but that boss is only 23% of act 1 boss fights. A 100-run session resolves +/-9 and needs +15 to see reliably, so it CANNOT see this fix. The session is run for pooled n and for clean transcripts, not to test anything. If clear lands outside 25-44% something unexpected happened and it is worth chasing | **reach 86.0% +/- 6.8, win|reach 57.0% +/-10.5, clear 49.0% +/- 9.8.** Clear vs pooled z=+2.63 p=0.008; reach vs pooled z=+2.92 p=0.003 | **MISS -- and by its own terms, worth chasing** |
+
+### 12: the highest session on record, with no mechanism to explain it
+
+`tuesday` (sha 5eeec36, policy v001) came in at **49.0% clear and 86.0% reach**, well outside the 25-44% band this prediction named as the surprise threshold. Verified rather than assumed: 100 eval rows, and an independent recount straight from the journal's `run_end` events also gives 49/100.
+
+**Nothing shipped explains it, and reach is the reason to say so.** The Lagavulin wake fix is boss-only and cannot touch whether a run survives to floor 17, yet reach moved MORE than clear did (+14.4 against +14.5, and reach is the more significant of the two at p=0.003). The potion hold was already reverted, and the two earlier `v001` sessions reached 68% and 75%. Search failures were 0, but they were also 0 in `postfix`, which cleared 31%. The game build is unchanged since 2026-08-14 and no update was detected.
+
+**So it is either a real jump with an unfound cause, or the high excursion again.** The series now reads **31.0, 44.0, 38.9, 25.3, 49.0** with no trend, and this file has already established that two sessions on identical act 1 code differ by 13 points. A single session cannot separate those, which is exactly the rule that made prediction 12 a null in the first place.
+
+Pooled over all five: **clear 37.8% +/- 4.5, reach 74.8% +/- 4.0 (n=445)** -- and that is the number, not 49%.
+
+**What settles it:** a second session at the same sha. If `tuesday` was an excursion the next one regresses toward 38%; if something real landed, it holds near 49% and the pooled figure climbs. Nothing should be built on 49% until then.
 
 ### 11: the hold works, the potions still do not reach the boss, and the session cannot settle it
 
