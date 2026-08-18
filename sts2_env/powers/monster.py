@@ -751,10 +751,26 @@ class AsleepPower(PowerInstance):
                 owner.powers.pop(PowerId.PLATING, None)
                 self.is_awake = True
                 owner.powers.pop(self.power_id, None)
-                if owner.monster_id == _LAGAVULIN_MATRIARCH_ID:
-                    combat.set_enemy_state(owner, _LAGAVULIN_MATRIARCH_SLASH_MOVE_ID)
-                else:
+                if owner.monster_id != _LAGAVULIN_MATRIARCH_ID:
                     combat.stun_enemy(owner)
+                # LAGAVULIN IS NOT STEERED HERE, and setting SLASH_MOVE was a
+                # double advance. Its machine already routes the natural wake:
+                # SLEEP_MOVE follows up into SLEEP_BRANCH, which sends it to
+                # SLEEP_MOVE while ASLEEP is held and to SLASH_MOVE once it is
+                # gone -- which this line has just made true. Setting the state
+                # here too left the move ON SLASH_MOVE, and the turn's own
+                # advance then stepped off it into DISEMBOWEL_MOVE, so the
+                # simulator skipped the boss's first waking attack entirely.
+                #
+                # The C# agrees: the DAMAGE wake stuns explicitly into
+                # "SLASH_MOVE" (AsleepPower.AfterDamageReceived), and the
+                # natural wake just calls WakeUpMove and lets the machine
+                # decide. Only the damage path names a move.
+                #
+                # Found by scripts/audit_dynamics.py: the game plays
+                # SLEEP,SLEEP,SLEEP,SLASH,DISEMBOWEL and the simulator played
+                # SLEEP,SLEEP,SLEEP,DISEMBOWEL -- so every search of that turn
+                # was blocking for the wrong attack.
 
     def before_turn_end_very_early(
         self, owner: Creature, side: CombatSide, combat: CombatState

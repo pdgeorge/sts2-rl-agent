@@ -7509,7 +7509,21 @@ class TestFixedRotation:
         )
         assert PowerId.ASLEEP not in matriarch_natural_wake.powers
         assert PowerId.PLATING not in matriarch_natural_wake.powers
-        assert matriarch_natural_wake_ai.current_move.state_id == LAGAVULIN_MATRIARCH_SLASH_MOVE
+        # The MOVE is not asserted here any more, and that is the fix.
+        #
+        # This called `after_turn_end` in isolation, so the state machine's own
+        # advance never ran, and it pinned "the power sets SLASH_MOVE" rather
+        # than "the fight arrives at SLASH_MOVE". Those are different claims and
+        # only the second is the game's. SLEEP_MOVE follows up into
+        # SLEEP_BRANCH, which routes to SLASH_MOVE precisely because ASLEEP has
+        # just been removed above -- so the power setting it too made the turn's
+        # advance step off SLASH and into DISEMBOWEL, skipping the boss's first
+        # waking attack in every search of that fight.
+        #
+        # Asserted through a real turn instead, in
+        # TestLagavulinWakesIntoItsFirstAttack, against the move order captured
+        # from the live game.
+        assert matriarch_natural_wake_ai.current_move.state_id == LAGAVULIN_MATRIARCH_SLEEP_MOVE
 
         for setup in (setup_waterfall_giant_boss, setup_soul_fysh_boss, setup_lagavulin_matriarch_boss):
             setup_combat = _make_combat(91)
@@ -8059,3 +8073,72 @@ class TestDisparitiesFoundLive:
         # The exact position the live disparity was reported from.
         creature.apply_power(PowerId.DEXTERITY, 4, applier=creature)
         assert creature.get_power_amount(PowerId.DEXTERITY) == 4
+
+
+class TestLagavulinWakesIntoItsFirstAttack:
+    """The boss's first waking attack was being skipped entirely.
+
+    `AsleepPower.after_turn_end` set the move to SLASH_MOVE on the natural
+    wake, and the machine ALREADY routes that: SLEEP_MOVE follows up into
+    SLEEP_BRANCH, which goes to SLASH_MOVE once ASLEEP is gone. Setting it too
+    left the move ON SLASH_MOVE, so the turn's own advance stepped off it into
+    DISEMBOWEL_MOVE.
+
+    The C# agrees on which path names a move: the DAMAGE wake stuns explicitly
+    into "SLASH_MOVE", the natural wake just calls WakeUpMove and lets the
+    machine decide.
+
+    Found by scripts/audit_dynamics.py against 73 captured act 1 boss fights,
+    where the game played SLEEP,SLEEP,SLEEP,SLASH,DISEMBOWEL and the simulator
+    played SLEEP,SLEEP,SLEEP,DISEMBOWEL -- so the search blocked for the wrong
+    attack on the turn the boss wakes up.
+    """
+
+    def _fight(self):
+        from sts2_env.core.rng import Rng
+        from sts2_env.monsters.act4 import create_lagavulin_matriarch
+        from sts2_env.search.situation import CardRef, CombatSituation
+
+        combat = CombatSituation(
+            situation_id="lagavulin", character_id="Ironclad",
+            current_hp=80, max_hp=80,
+            deck=tuple([CardRef("STRIKE_IRONCLAD")] * 5
+                       + [CardRef("DEFEND_IRONCLAD")] * 5),
+            encounter="setup_shrinker_beetle_weak", encounter_seed=5,
+            combat_seed=5, relics=("BURNING_BLOOD",)).to_combat()
+        creature, ai = create_lagavulin_matriarch(Rng(1))
+        combat.enemies[:] = [creature]
+        combat.enemy_ais[creature.combat_id] = ai
+        return combat, creature, ai
+
+    def test_the_move_order_matches_the_live_game(self):
+        """Taken from the capture: three fights all ran SLEEP x3 then this."""
+        combat, _creature, ai = self._fight()
+        seq = [ai.current_move.state_id]
+        for _ in range(6):
+            combat.end_player_turn()
+            seq.append(ai.current_move.state_id)
+        assert seq == [
+            "SLEEP_MOVE", "SLEEP_MOVE", "SLEEP_MOVE",
+            "SLASH_MOVE", "DISEMBOWEL_MOVE", "SLASH2_MOVE", "SOUL_SIPHON_MOVE",
+        ]
+
+    def test_the_last_asleep_turn_wakes_into_slash_not_disembowel(self):
+        """The exact captured position: ASLEEP at 1, full HP, no damage wake."""
+        from sts2_env.core.enums import PowerId
+
+        combat, creature, ai = self._fight()
+        creature.powers.pop(PowerId.ASLEEP, None)
+        creature.apply_power(PowerId.ASLEEP, 1, applier=creature)
+        combat.end_player_turn()
+        assert ai.current_move.state_id == "SLASH_MOVE"
+
+    def test_it_still_sleeps_the_full_three_turns(self):
+        """The fix must not wake it early -- the sleep is setup time for the player."""
+        from sts2_env.core.enums import PowerId
+
+        combat, creature, ai = self._fight()
+        assert creature.get_power_amount(PowerId.ASLEEP) == 3
+        for expected in (2, 1, 0):
+            combat.end_player_turn()
+            assert creature.get_power_amount(PowerId.ASLEEP) == expected
