@@ -74,7 +74,29 @@ This exists because the failure mode is mine and it is documented: quoting a fav
 
 | 10 | boss counterfactuals (`scripts/boss_counterfactuals.py`): replay the lost act 1 boss arrivals under arms that change either how she PLAYS the fight or what she ARRIVED with | **Written before the run.** Predict `think_10x` converts **fewer than 20%** of the positions the baseline loses on every reshuffle -- i.e. most losses are arrival, not search depth, and the 3s budget is not what is costing them. Predict the arrival arms (`hp_plus_15`, `minus_2_basics`) each convert **more** positions than any play arm. If `think_10x` clears 20%+, search budget becomes a live lever and the measured 42%-at-full-HP is a play ceiling we can actually reach | 84 arrivals x 7 arms x 6 reshuffles, 3528 replays. `think_10x` rescued **1 of the 11** positions the baseline loses outright = **9%**, and moved the pooled rate **+1.8 +/- 2.4 (not resolvable)**. Arrival arms did NOT each beat every play arm: `hp_plus_15` rescued 2 and `minus_2_basics` 1, against `lookahead_4`'s 2 | **HIT on the ceiling, MISS on the ordering** |
 
-| 11 | HOLD the fight-ending potions for elites and bosses (pd's call): `PowderedDemise`, `DistilledChaos`, `GigantificationPotion`, `OrobicAcid`, and `Duplicator` | **Written before the build.** Measured over the 200 post-fix runs, those five are drunk on hallway trash **82%** of the time (50 of 61) -- `PowderedDemise` 89% and never once on a boss -- against **12%** for the four already forced into big fights. Behavioural gate: trash use of the held group falls below **25%**, and potions held entering the act 1 boss rise from 0.9 to above 1.3. Outcome: clear **+0 to +3 points**, and I am explicitly allowing this to come back NEGATIVE -- holding a fight-ender through a hallway means eating the chip damage it would have prevented, and prediction 10 priced 15 HP at +4.6 boss-win points. If the behavioural gate passes and clear does not move, the potions were worth more as chip prevention than as boss damage, and that is a real answer | pending | — |
+| 11 | HOLD the fight-ending potions for elites and bosses (pd's call): `PowderedDemise`, `DistilledChaos`, `GigantificationPotion`, `OrobicAcid`, and `Duplicator` | **Written before the build.** Measured over the 200 post-fix runs, those five are drunk on hallway trash **82%** of the time (50 of 61) -- `PowderedDemise` 89% and never once on a boss -- against **12%** for the four already forced into big fights. Behavioural gate: trash use of the held group falls below **25%**, and potions held entering the act 1 boss rise from 0.9 to above 1.3. Outcome: clear **+0 to +3 points**, and I am explicitly allowing this to come back NEGATIVE -- holding a fight-ender through a hallway means eating the chip damage it would have prevented, and prediction 10 priced 15 HP at +4.6 boss-win points. If the behavioural gate passes and clear does not move, the potions were worth more as chip prevention than as boss damage, and that is a real answer | `potion_fix_2`, n=91: trash use **85% -> 12%** (gate 1 PASSED hard), potions held entering the boss **0.99 -> 0.97** (gate 2 FAILED, unmoved). Clear 37.5% -> **25.3% +/- 8.9**, z=-2.05 p=0.041 | **SPLIT, and not resolvable at this n -- see below** |
+
+### 11: the hold works, the potions still do not reach the boss, and the session cannot settle it
+
+The mechanism did exactly what it was built to do. Trash use of the held five went **85% to 12%** -- Powdered Demise 89% -> 14%, Duplicator 94% -> 0%.
+
+And it bought nothing at the boss. **Potions held entering the act 1 boss: 0.99 before, 0.97 after.** They were not saved for the boss; they were spent one room earlier, on elites. Elite use of the group went from 7 to 13 in half as many runs.
+
+The clear rate fell 12 points at p=0.041, and every link of the chain that would explain it moves the right way and **not one of them resolves**:
+
+| | before | after | t |
+|---|---|---|---|
+| monster damage per fight | 5.17 | 5.69 | +1.09 |
+| elite damage per fight | 26.59 | 28.24 | +0.70 |
+| boss arrival HP | 86.0% | 82.6% | -1.44 |
+
+Elite damage went UP while elites received more potions, which is the opposite of the story that would make this a clean causal finding.
+
+**Why this session cannot decide it.** n=91 resolves +/-8.9. The effect is 12 points. And this project has already measured **31.0% against 44.0% on identical act 1 code** (`postfix` vs `boss_telemetry`, p=0.058) -- a 13-point swing with nothing changed at all. The observed session-to-session variance is the same size as the effect being tested, so a single live session is the wrong instrument for a question this fine, whichever way it lands.
+
+Pooled over all three post-power-fix sessions: **33.7% +/- 5.4 (n=291)**, which is the number that survives.
+
+**The honest reading is that gate 2 is the finding.** A hold that moves potions from trash to elites without moving the count at the boss has not tested the hypothesis it was built for. Whether holding them *through* the elite is better is a different change and a different prediction.
 
 ### 10: MISPLAYS ARE NOT THE PROBLEM. This is the most useful null this project has bought.
 
