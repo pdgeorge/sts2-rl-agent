@@ -66,22 +66,39 @@ def _load_json(text: str) -> dict | None:
 
 
 def _run_outcomes(journal: Path) -> dict[int, dict]:
-    """How each run actually ended, so claims can be read against ground truth."""
+    """How each run ended, keyed by TRANSCRIPT NUMBER, not by journal run index.
+
+    A session restarts on a crash and the run counter restarts with it, so
+    `tuesday` holds 103 runs under only 53 distinct indices. `export_run_transcripts`
+    numbers its files 1..N over the runs sorted by (session, run), and the
+    reports are named after those files -- so keying this table by the journal's
+    bare `run` matched a report against a DIFFERENT run in another segment, and
+    the "claim on a floor the run never reached" check was validating against
+    the wrong ground truth entirely. Same ordering as the exporter, or the
+    check is worse than not having one.
+    """
     out: dict[int, dict] = {}
     if not journal.exists():
         return out
+    ends: dict[tuple, dict] = {}
+    seen: set = set()
     with journal.open(encoding="utf-8") as fh:
         for raw in fh:
             try:
                 e = json.loads(raw)
             except json.JSONDecodeError:
                 continue
+            key = (e.get("session"), e.get("run"))
+            seen.add(key)
             if e.get("event") == "run_end":
-                out[e.get("run")] = {
+                ends[key] = {
                     "floor": e.get("floor"), "act": e.get("act"),
                     "room": e.get("room_type"), "killed_by": e.get("death_enemy_id"),
                     "cleared": bool(e.get("act_cleared")),
                 }
+    for index, key in enumerate(sorted(seen, key=lambda k: (str(k[0]), k[1] or 0)), 1):
+        if key in ends:
+            out[index] = ends[key]
     return out
 
 
