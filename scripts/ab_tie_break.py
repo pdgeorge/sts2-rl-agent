@@ -177,7 +177,16 @@ def _gate(job) -> dict:
     from live_policy import noncombat_action
     from sts2_env.gym_env.run_env import STS2RunEnv
     from sts2_env.run.run_manager import RunManager
-    from sts2_env.search.turn_search import search_turn
+    from sts2_env.search.turn_search import SearchAgent, search_turn
+
+    # The run must be PLAYED by the search agent, not by the RNG. Passing None
+    # here raises inside `_search_combat_action`, which returns None, which
+    # falls through to `rng.choice(valid)` -- silently measuring the tie rate
+    # over positions a RANDOM player reached. That is how the first version of
+    # this probe was written, and the numbers it produced were quoted into
+    # prediction 13 before the fallback was noticed.
+    agent = SearchAgent(time_budget=3.0, lookahead_turns=2, max_nodes=max_nodes,
+                        weights=policy.eval_weights, tie_break="enumeration")
 
     counts: Counter = Counter()
     rng = np.random.default_rng(seed)
@@ -206,15 +215,30 @@ def _gate(job) -> dict:
                 counts["SCORE_CHANGED"] += 1
             if tuple(base.actions) != tuple(focus.actions):
                 counts["changed"] += 1
+            leaves = base.considered_leaves
+            if leaves:
+                first = base.considered[0][0]
+                tied = [leaves[i] for i, (sc, _) in enumerate(base.considered)
+                        if abs(sc - first) < 1e-9]
+                if len(tied) > 1:
+                    b = tied[0]
+                    same = all((t.end_hp, t.end_block, t.end_enemies_alive,
+                                t.end_enemy_hps) ==
+                               (b.end_hp, b.end_block, b.end_enemies_alive,
+                                b.end_enemy_hps) for t in tied)
+                    counts["ties_identical" if same else "ties_different_board"] += 1
+                    if not same and len({t.end_enemy_hp for t in tied}) == 1:
+                        counts["ties_same_pool_diff_spread"] += 1
             top = base.considered[0][0] if base.considered else None
             if top is not None and sum(
                     1 for s, _ in base.considered if abs(s - top) < 1e-9) > 1:
                 counts["ties"] += 1
-            action = _search_combat_action(None, mgr, mask)
+            action = _search_combat_action(agent, mgr, mask)
         else:
             action = noncombat_action(mgr, mgr.phase, mask, rng)
 
         if action is None:
+            counts["fell_back_to_random"] += 1
             action = int(rng.choice(valid))
         _, _, terminated, truncated, _ = env.step(action)
         if terminated or truncated:
@@ -257,6 +281,15 @@ def main() -> int:
         print(f"  tie-break CHANGED the pick {total['changed']}  "
               f"({100 * total['changed'] / max(1, d):.1f}%)")
         print(f"  score changed (must be 0)  {total['SCORE_CHANGED']}")
+        print(f"  fell back to a random move {total['fell_back_to_random']} "
+              f"(must be ~0, or the walk is not the agent's)")
+        t = total["ties"] or 1
+        print(f"\n  of the ties: {total['ties_identical']} identical position "
+              f"({100 * total['ties_identical'] / t:.1f}%), "
+              f"{total['ties_different_board']} different board "
+              f"({100 * total['ties_different_board'] / t:.1f}%), of which "
+              f"{total['ties_same_pool_diff_spread']} are the same pooled enemy "
+              f"HP spread differently")
         print("\n  Gate as written in prediction 13: 2-5% of decisions changed.")
         return 0
 
