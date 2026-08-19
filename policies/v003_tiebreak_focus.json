@@ -1,0 +1,28 @@
+{
+  "policy_version": "v003_tiebreak_focus",
+  "eval_weights": {
+    "player_hp": 1.0,
+    "enemy_hp": 0.25,
+    "kill": 0.1,
+    "win": 3.0,
+    "loss": -10.0,
+    "turn": -0.02,
+    "powers": 1.0,
+    "powers_cap": 0.25,
+    "block_unused": -0.02
+  },
+  "room_min_hp_fraction": {
+    "boss": 0.8,
+    "elite": 0.8,
+    "monster": 0.4,
+    "unknown": 0.4,
+    "event": 0.4
+  },
+  "quality_bar_scale": 10.0,
+  "skip_threshold": 0.0,
+  "large_deck_size": 30,
+  "scaling_bonus": 1.5,
+  "block_need_bonus": 1.0,
+  "hold_potions_for_big_fights": [],
+  "tie_break": "focus"
+}

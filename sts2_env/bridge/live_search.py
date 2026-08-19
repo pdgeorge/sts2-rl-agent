@@ -282,14 +282,32 @@ def _describe_lines(result, combat) -> list[dict] | None:
         return names
 
     chosen = tuple(result.actions)
-    return [
-        {
+    # Aligned by index with `considered`; empty on an older result, hence the
+    # guard rather than a bare zip -- a diagnostic that raises costs the run.
+    leaves = getattr(result, "considered_leaves", ()) or ()
+    rows = []
+    for index, (score, actions) in enumerate(result.considered):
+        row = {
             "score": round(float(score), 4),
             "line": name_line(actions) or ["END_TURN"],
             "chosen": actions == chosen,
         }
-        for score, actions in result.considered
-    ]
+        if index < len(leaves):
+            leaf = leaves[index]
+            # What the score was computed FROM. Two lines tie 33% of the time
+            # and the score alone cannot say whether the tie is real; these
+            # columns can. Short keys -- this is written once per decision and
+            # there were 13,017 of them in one session.
+            row["leaf"] = {
+                "hp": leaf.end_hp, "blk": leaf.end_block,
+                "alive": leaf.end_enemies_alive, "ehp": leaf.end_enemy_hp,
+                "ehps": list(leaf.end_enemy_hps),
+                "f_hp": leaf.future_hp, "f_alive": leaf.future_enemies_alive,
+                "f_ehp": leaf.future_enemy_hp, "f_ehps": list(leaf.future_enemy_hps),
+                "f_over": leaf.future_over,
+            }
+        rows.append(row)
+    return rows
 
 
 def _name_action(combat, action: int) -> str:

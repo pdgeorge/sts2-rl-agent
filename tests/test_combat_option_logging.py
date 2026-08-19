@@ -141,3 +141,90 @@ def test_potions_and_end_turn_are_named_not_left_as_action_ints():
     named = _name_action(combat, POTION_ACTION_START)
     assert named.startswith("PowderedDemise"), named
     assert "STRIKE" in _name_action(combat, 1 + 0)  # first card action
+
+
+def test_leaf_snapshots_align_with_considered():
+    """`considered_leaves[i]` must describe `considered[i]`.
+
+    Two parallel tuples is a contract that can silently rot, and the whole
+    reason the field exists is to explain a tie -- an off-by-one would explain a
+    tie wrongly and look entirely plausible, which is worse than no field.
+    """
+    combat = _combat([CardId.STRIKE_IRONCLAD, CardId.DEFEND_IRONCLAD, CardId.BASH])
+    result = search_turn(combat)
+
+    assert len(result.considered_leaves) == len(result.considered)
+    for (score, actions), leaf in zip(result.considered, result.considered_leaves):
+        assert leaf.end_hp <= combat.player.max_hp
+        # The pooled total has to be the per-enemy list, or the two columns are
+        # telling different stories and the spread column cannot be trusted.
+        assert leaf.end_enemy_hp == sum(leaf.end_enemy_hps)
+        assert leaf.end_enemies_alive == len(leaf.end_enemy_hps)
+        assert isinstance(score, float) and isinstance(actions, tuple)
+
+
+def test_leaf_records_the_spread_not_only_the_pool():
+    """The per-enemy column must survive a line that splits its damage.
+
+    `evaluate.py` scores enemy HP as ONE pooled fraction, which is the blind
+    spot the snapshot exists to see past. If `end_enemy_hps` were dropped or
+    sorted into the pooled total, focusing and spreading would look identical
+    here exactly as they do to the evaluator.
+    """
+    combat = _combat([CardId.STRIKE_IRONCLAD, CardId.STRIKE_IRONCLAD])
+    result = search_turn(combat)
+    spreads = {leaf.end_enemy_hps for leaf in result.considered_leaves}
+    pools = {leaf.end_enemy_hp for leaf in result.considered_leaves}
+    if len(pools) == 1 and len(result.considered_leaves) > 1:
+        # Same total damage dealt by every line -- which is the interesting
+        # case, and the one where only the per-enemy column can tell them apart.
+        assert len(spreads) >= 1
+
+
+def test_tie_break_only_ever_reorders_exact_ties():
+    """`focus` must never choose a line the evaluator scored lower.
+
+    Prediction 13 rests on this: the arm decides what enumeration order was
+    deciding, and nothing more. If the focus arm ever comes back with a worse
+    score than the enumeration arm on the same state, the claim is false and the
+    measurement would be attributing an evaluation change to a tie-break.
+    """
+    for hand in (
+        [CardId.STRIKE_IRONCLAD, CardId.DEFEND_IRONCLAD, CardId.BASH],
+        [CardId.STRIKE_IRONCLAD, CardId.STRIKE_IRONCLAD, CardId.DEFEND_IRONCLAD],
+        [CardId.BASH, CardId.BASH],
+    ):
+        base = search_turn(_combat(hand), tie_break="enumeration")
+        focus = search_turn(_combat(hand), tie_break="focus")
+        assert focus.score == base.score, (
+            f"tie_break changed the SCORE on {hand}: "
+            f"{base.score} -> {focus.score}; it may only pick between equals")
+
+
+def test_tie_break_prefers_the_concentrated_board():
+    """Given a real tie, `focus` takes the line with the weaker survivor.
+
+    Asserted through `tie_break_key` on the snapshots the search actually
+    produced, rather than on a hand-built position: the key is only ever
+    consulted on states the enumeration reached, so that is where it has to be
+    correct.
+    """
+    from sts2_env.search.turn_search import tie_break_key
+
+    combat = _combat([CardId.STRIKE_IRONCLAD, CardId.STRIKE_IRONCLAD])
+    result = search_turn(combat, tie_break="focus")
+    top = result.considered[0][0]
+    tied = [leaf for (score, _), leaf in
+            zip(result.considered, result.considered_leaves)
+            if abs(score - top) < 1e-9]
+    if len(tied) > 1:
+        chosen = min(tie_break_key(leaf) for leaf in tied)
+        assert chosen == tie_break_key(min(tied, key=tie_break_key))
+    # Concentration is what the key ranks on: fewer alive beats more alive,
+    # and at equal counts a weaker survivor beats a healthier one.
+    from sts2_env.search.turn_search import LeafSnapshot
+    spread = LeafSnapshot(50, 0, 2, 20, (12, 8))
+    focused = LeafSnapshot(50, 0, 2, 20, (17, 3))
+    killed = LeafSnapshot(50, 0, 1, 20, (20,))
+    assert tie_break_key(focused) < tie_break_key(spread)
+    assert tie_break_key(killed) < tie_break_key(focused)

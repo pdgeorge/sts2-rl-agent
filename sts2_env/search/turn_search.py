@@ -40,7 +40,12 @@ from sts2_env.gym_env.action_space import (
     is_potion_action,
 )
 from sts2_env.search.cloning import clone_combat
-from sts2_env.search.evaluate import DEFAULT_WEIGHTS, EvalWeights, evaluate
+from sts2_env.search.evaluate import (
+    DEFAULT_WEIGHTS,
+    EvalWeights,
+    cannot_be_killed,
+    evaluate,
+)
 from sts2_env.search.potion_policy import forced_potion_action, should_hold
 
 if TYPE_CHECKING:
@@ -111,6 +116,103 @@ dying later, which is true, and doubly true given the playout is a rough policy
 whose predicted deaths are not to be trusted."""
 
 
+@dataclass(frozen=True)
+class LeafSnapshot:
+    """What the position actually LOOKED like at the end of a considered line.
+
+    `considered` carries the score, which is what the search compared. This
+    carries what that score was computed from, which is a different question and
+    the one the scores cannot answer: whether two lines that tie are equivalent,
+    or merely equal because the horizon stops before they diverge.
+
+    MEASURED MOTIVATION. Across the `wednesday` session, 3,457 of 10,556 combat
+    decisions (32.7%) had the chosen line EXACTLY tied with at least one other,
+    and every one of those was resolved by taking the first line the enumerator
+    emitted. 83.6% of the tied pairs played a different card, not a reordering.
+    None of that says whether the tie was real -- against a 5 HP Seapunk,
+    `STRIKE, DISMANTLE` and `DEFEND` genuinely do end the fight at the same HP,
+    and scoring them equal is correct. The journal held lines and scores only,
+    so which ties mattered could not be measured, only argued about. Hence this.
+
+    Both halves are recorded. `end_*` is after the turn was ended and the
+    enemies replied; `future_*` is after the lookahead playout. A tie that is
+    already identical at `end_*` is a different animal from one that is equal at
+    `end_*` and diverges by `future_*`.
+    """
+
+    end_hp: int
+    end_block: int
+    end_enemies_alive: int
+    end_enemy_hp: int
+    end_enemy_hps: tuple[int, ...] = ()
+    """Per enemy, in slot order, alive ones only. Not derivable from
+    `end_enemy_hp`, and the difference is the whole point: `evaluate.py` scores
+    enemy HP as ONE pooled fraction, so focusing a kill and spreading the same
+    damage across two enemies are worth exactly the same to it. A tie that looks
+    identical in the pooled column can be two quite different boards. Recording
+    only the total here would have reproduced the evaluator's own blind spot in
+    the instrument built to look for it."""
+
+    future_hp: int = 0
+    future_enemies_alive: int = 0
+    future_enemy_hp: int = 0
+    future_enemy_hps: tuple[int, ...] = ()
+    future_over: bool = False
+    """Whether the fight had finished by the end of the lookahead. A line that
+    ends the fight and one that does not are never equivalent, however close
+    their scores sit."""
+
+
+def _snapshot(ended: "CombatState", future: "CombatState | None") -> LeafSnapshot:
+    """Read the two states into one record. No clone, no extra evaluation --
+    both states already exist because the score was computed from them."""
+
+    def read(state):
+        killable = [e for e in state.enemies if not cannot_be_killed(e)]
+        alive = [e for e in killable if e.is_alive]
+        hps = tuple(max(0, int(e.current_hp)) for e in alive)
+        return (
+            max(0, int(state.player.current_hp)),
+            int(getattr(state.player, "block", 0) or 0),
+            len(alive),
+            sum(hps),
+            hps,
+        )
+
+    hp, block, alive, enemy_hp, hps = read(ended)
+    if future is None:
+        return LeafSnapshot(hp, block, alive, enemy_hp, hps)
+    f_hp, _, f_alive, f_enemy_hp, f_hps = read(future)
+    return LeafSnapshot(hp, block, alive, enemy_hp, hps,
+                        f_hp, f_alive, f_enemy_hp, f_hps, bool(future.is_over))
+
+
+def tie_break_key(leaf: LeafSnapshot) -> tuple:
+    """Among lines the evaluator scored EXACTLY equal, which board is better?
+
+    Only ever consulted on an exact tie, so this cannot outvote the evaluation
+    -- it decides what enumeration order was deciding before, which is the whole
+    of the claim. Measured over 854 offline ties: 89.0% end in an identical
+    position and this returns an identical key for them, leaving the choice
+    where it was. The 11.0% that differ are almost entirely (89 of 94) the same
+    POOLED enemy HP spread differently, which is `evaluate.py`'s blind spot --
+    it scores enemy HP as one fraction, so a kill set up and a kill smeared away
+    are the same number to it.
+
+    Concentration, not damage. Both lines dealt the same total; the question is
+    whether it went into one enemy or two. The weakest survivor's HP is what a
+    kill next turn is measured against, so that is the key -- lower is better,
+    and the enemy count breaks the case where a line actually closed one out.
+
+    NOT a horizon fix. The payoff is a kill landing a turn sooner, which is
+    beyond the 2-turn lookahead by construction: none of the 854 ties differed
+    in enemies killed WITHIN the horizon. That is why prediction 13 is written
+    as a null with a behavioural gate rather than as a rate win.
+    """
+    hps = leaf.end_enemy_hps
+    return (leaf.end_enemies_alive, min(hps) if hps else 0, -leaf.end_hp)
+
+
 @dataclass
 class SearchResult:
     """The chosen line, and how sure the search was about it."""
@@ -145,6 +247,14 @@ class SearchResult:
     playing them out, and only the winner survives that step, so a chosen line
     is not always this list's first entry. `score` on the result is the final
     number; these are the field it was chosen from."""
+
+    considered_leaves: tuple[LeafSnapshot, ...] = ()
+    """Aligned one-to-one with `considered`: `considered_leaves[i]` is the
+    position `considered[i]` ended in. Two parallel tuples rather than one list
+    of pairs because `considered` is read by the journal, the transcript export
+    and Cyra, and none of them want the extra field -- but anything asking WHY
+    two scores tie needs it, and an index is a cheaper contract than a second
+    lookup keyed on the action tuple."""
 
     @property
     def gap(self) -> float | None:
@@ -617,6 +727,7 @@ def search_turn(
     rollout_turns: int = DEFAULT_ROLLOUT_TURNS,
     playout_policy=None,
     rollout_samples: int = DEFAULT_ROLLOUT_SAMPLES,
+    tie_break: str = "enumeration",
 ) -> SearchResult:
     """Find the best sequence of plays for the turn `combat` is in.
 
@@ -631,12 +742,14 @@ def search_turn(
 
     best_score = -float("inf")
     best_actions: tuple[int, ...] = ()
+    best_tie_key: tuple | None = None
     second_score = -float("inf")
+    breaking_ties = tie_break == "focus"
     # Every line and its cheap score, so the most promising few can be looked at
     # properly afterwards. Kept as paths rather than states: replaying three
     # actions from the root costs one clone, where holding hundreds of states
     # costs hundreds.
-    shortlist: list[tuple[float, tuple[int, ...]]] = []
+    shortlist: list[tuple[float, tuple[int, ...], LeafSnapshot]] = []
 
     def out_of_budget() -> bool:
         return (
@@ -646,7 +759,7 @@ def search_turn(
 
     def consider_ending(state: "CombatState", path: tuple[int, ...]) -> None:
         """Score 'stop here and end the turn', by doing exactly that."""
-        nonlocal best_score, best_actions, second_score
+        nonlocal best_score, best_actions, second_score, best_tie_key
 
         if state.pending_choice is not None:
             return  # cannot end a turn mid-choice
@@ -655,16 +768,27 @@ def search_turn(
         ended = clone_combat(state)
         ended.end_player_turn()
         score = evaluate(ended, weights)
+        future = None
         if lookahead_turns:
             future = clone_combat(ended)
             _playout(future, lookahead_turns, playout_policy)
             score += LOOKAHEAD_WEIGHT * evaluate(future, weights)
 
-        shortlist.append((score, path))
+        leaf = _snapshot(ended, future)
+        shortlist.append((score, path, leaf))
 
         if score > best_score:
             second_score = best_score
             best_score, best_actions = score, path
+            best_tie_key = tie_break_key(leaf) if breaking_ties else None
+        elif breaking_ties and score == best_score:
+            # An EXACT tie only. `>` already took anything better, so this
+            # cannot promote a worse-scoring line -- it replaces the "first one
+            # enumerated wins" rule that was silently deciding 28% of turns.
+            key = tie_break_key(leaf)
+            if best_tie_key is None or key < best_tie_key:
+                best_actions, best_tie_key = path, key
+            second_score = score
         elif score > second_score:
             second_score = score
 
@@ -729,6 +853,7 @@ def search_turn(
             deadline=started + time_budget,
         )
 
+    top = sorted(shortlist, key=lambda e: -e[0])[:CONSIDERED_LINES]
     return SearchResult(
         actions=best_actions,
         score=best_score,
@@ -738,13 +863,14 @@ def search_turn(
         rollouts=rollouts,
         elapsed=time.perf_counter() - started,
         exhausted=exhausted,
-        considered=tuple(sorted(shortlist, key=lambda e: -e[0])[:CONSIDERED_LINES]),
+        considered=tuple((s, p) for s, p, _ in top),
+        considered_leaves=tuple(leaf for _, _, leaf in top),
     )
 
 
 def _rescore_by_playing_to_the_end(
     combat: "CombatState",
-    shortlist: list[tuple[float, tuple[int, ...]]],
+    shortlist: list[tuple[float, tuple[int, ...], LeafSnapshot]],
     *,
     weights: EvalWeights,
     top_k: int,
@@ -776,7 +902,8 @@ def _rescore_by_playing_to_the_end(
 
     scored: list[tuple[float, tuple[int, ...]]] = []
     rollouts = 0
-    for _, path in ranked:
+    for entry in ranked:
+        path = entry[1]
         if time.perf_counter() >= deadline:
             break
 
@@ -848,6 +975,7 @@ class SearchAgent:
         rollout_turns: int = DEFAULT_ROLLOUT_TURNS,
         rollout_samples: int = DEFAULT_ROLLOUT_SAMPLES,
         playout_policy=None,
+        tie_break: str = "enumeration",
         name: str | None = None,
     ):
         self.weights = weights
@@ -859,6 +987,12 @@ class SearchAgent:
         self.top_k = top_k
         self.rollout_turns = rollout_turns
         self.rollout_samples = rollout_samples
+        self.tie_break = tie_break
+        """"enumeration" keeps the historic behaviour -- on an exact tie the
+        first line the enumerator produced wins. "focus" consults
+        `tie_break_key`. Carried on the agent rather than read from a global so
+        an A/B can run both arms in one process without either seeing the
+        other's value; PHASE_TWO 3.1 records what the alternative cost."""
         # Phase 2.3: an optional trained rollout policy for the playouts. None
         # keeps the block-then-damage heuristic that every measured number in
         # MODELS.md was produced with.
@@ -900,6 +1034,7 @@ class SearchAgent:
             include_potions=self.include_potions,
             lookahead_turns=self.lookahead_turns,
             top_k=self.top_k,
+            tie_break=self.tie_break,
             rollout_turns=self.rollout_turns,
             playout_policy=self.playout_policy,
             rollout_samples=self.rollout_samples,
@@ -954,8 +1089,9 @@ class SearchAgent:
                 include_potions=self.include_potions,
                 lookahead_turns=self.lookahead_turns,
                 top_k=self.top_k,
+                tie_break=self.tie_break,
                 rollout_turns=self.rollout_turns,
-            playout_policy=self.playout_policy,
+                playout_policy=self.playout_policy,
                 rollout_samples=self.rollout_samples,
             )
             self._last_gap = result.gap

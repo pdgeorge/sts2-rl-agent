@@ -99,6 +99,20 @@ class PolicyConfig:
     Sweeping it as a global is the trap `PHASE_TWO.md` section 3.1 records --
     400 runs with a baseline arm doing the opposite of its name."""
 
+    tie_break: str = "enumeration"
+    """How an EXACT tie between two scored lines is settled.
+
+    "enumeration" is what the searcher has always done, which is to keep
+    whichever line the enumerator emitted first -- and that is not a small
+    default: 32.7% of live combat decisions in `wednesday` were exact ties and
+    100% of them went that way. "focus" consults `turn_search.tie_break_key`
+    instead, preferring the board where the damage is concentrated.
+
+    Only consulted on an exact tie, so it can never overrule the evaluation.
+    Prediction 13 on the scoreboard is written as a NULL: the leaf snapshot puts
+    89.0% of ties on genuinely identical positions, leaving ~3% of decisions
+    actually exposed."""
+
     @classmethod
     def from_dict(cls, data: dict[str, Any], *, source_path: str = "<memory>") -> "PolicyConfig":
         _validate(data, source_path)
@@ -117,6 +131,7 @@ class PolicyConfig:
             block_need_bonus=float(data["block_need_bonus"]),
             hold_potions_for_big_fights=tuple(
                 str(x) for x in data.get("hold_potions_for_big_fights", ())),
+            tie_break=str(data.get("tie_break", "enumeration")),
         )
 
     @classmethod
@@ -200,7 +215,7 @@ def _validate(data: dict[str, Any], source_path: str) -> None:
     #: written before the key existed still loads and still means what it meant;
     #: listed here so it is still rejected if misspelled, which is the whole
     #: point of the unknown-key check.
-    optional = {"hold_potions_for_big_fights"}
+    optional = {"hold_potions_for_big_fights", "tie_break"}
 
     missing = required - set(data)
     if missing:
@@ -215,6 +230,10 @@ def _validate(data: dict[str, Any], source_path: str) -> None:
     if missing_w or unknown_w:
         raise ValueError(f"{source_path}: eval_weights missing {sorted(missing_w)} "
                          f"unknown {sorted(unknown_w)}")
+    tb = data.get("tie_break", "enumeration")
+    if tb not in {"enumeration", "focus"}:
+        raise ValueError(f"{source_path}: tie_break must be 'enumeration' or "
+                         f"'focus', not {tb!r}")
     rooms = data["room_min_hp_fraction"]
     required_rooms = {"boss", "elite", "monster", "unknown", "event"}
     missing_r = required_rooms - set(rooms)
