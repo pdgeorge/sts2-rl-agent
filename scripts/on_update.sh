@@ -169,18 +169,28 @@ drift=0
 step "3/6  What the patch changed (game vs game)"
 # ---------------------------------------------------------------------------
 
-# The committed decompiled/ tree is a snapshot of some older build, which makes it
-# a perfectly good baseline until this script has run twice and has a .prev of its
-# own. It is only a fallback: it never moves, so it goes further out of date every
-# patch, and .prev is always the tighter comparison.
+# `.prev` is the only real baseline. The fallback below used to be described as
+# "the committed decompiled/ tree", and it is not committed and it is not a tree:
+# `decompiled` is a SYMLINK, tracked in git as mode 120000, pointing at
+# $DECOMPILE_DIR itself. Using it as a baseline diffs the tree just written
+# against itself and reports no changes -- which is the most reassuring possible
+# way to be wrong, and would have fired on any machine without a .prev.
+#
+# So it is only used when it genuinely resolves somewhere else, and the script
+# says plainly when it has nothing to compare against.
 BASELINE=""
 if [ -d "$PREV_DIR" ]; then
     BASELINE="$PREV_DIR"
     echo "  baseline: previous decompile ($PREV_DIR)"
-elif [ -d "$REPO/decompiled" ]; then
+elif [ -d "$REPO/decompiled" ] \
+     && [ "$(readlink -f "$REPO/decompiled")" != "$(readlink -f "$DECOMPILE_DIR")" ]; then
     BASELINE="$REPO/decompiled"
-    echo "  baseline: committed decompiled/ tree -- older than one patch, so this"
+    echo "  baseline: $REPO/decompiled -- a different tree, but an older one, so this"
     echo "            diff spans however many builds have landed since it was taken."
+elif [ -d "$REPO/decompiled" ]; then
+    echo "  NOTE: $REPO/decompiled resolves to the tree just written, so it cannot"
+    echo "        be a baseline. Skipping the patch diff rather than comparing a"
+    echo "        tree against itself and calling it unchanged."
 fi
 
 if [ -n "$BASELINE" ]; then

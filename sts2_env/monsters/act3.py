@@ -134,9 +134,13 @@ def create_devoted_sculptor(rng: Rng, ascension_level: int = 0) -> tuple[Creatur
 
 # ---- ScrollOfBiting (HP 24-26 / 26-28 asc) ----
 
-def create_scroll_of_biting(rng: Rng, starter_move_idx: int = 0) -> tuple[Creature, MonsterAI]:
-    hp = rng.next_int(31, 38)
-    creature = Creature(max_hp=hp, monster_id="SCROLL_OF_BITING", min_initial_hp=31, max_initial_hp=38)
+def create_scroll_of_biting(rng: Rng, starter_move_idx: int = 0,
+                            ascension_level: int = 0) -> tuple[Creature, MonsterAI]:
+    # `GetValueIfAscension(ToughEnemies, 33, 30)` / `(ToughEnemies, 39, 37)`.
+    min_hp = _ascension_value(ascension_level, TOUGH_ENEMIES_ASCENSION_LEVEL, 33, 30)
+    max_hp = _ascension_value(ascension_level, TOUGH_ENEMIES_ASCENSION_LEVEL, 39, 37)
+    hp = rng.next_int(min_hp, max_hp)
+    creature = Creature(max_hp=hp, monster_id="SCROLL_OF_BITING", min_initial_hp=min_hp, max_initial_hp=max_hp)
     chomp_dmg = 14
     chew_dmg = 5
 
@@ -239,9 +243,17 @@ def create_axebot(
     rng: Rng,
     start_with_boot_up: bool = False,
     stock_amount: int | None = None,
+    ascension_level: int = 0,
 ) -> tuple[Creature, MonsterAI]:
-    hp = rng.next_int(40, 44)
-    creature = Creature(max_hp=hp, monster_id="AXEBOT", min_initial_hp=40, max_initial_hp=44)
+    # `MinInitialHp => GetValueIfAscension(ToughEnemies, 76, 70)`,
+    # `MaxInitialHp => GetValueIfAscension(ToughEnemies, 86, 78)`.
+    # Was 40-44 -- roughly half. The searcher committed to a race it could not
+    # win: on 2026-08-19 one Axebot fight cost 51 HP of 93 in the deepest run
+    # this project has recorded, and it walked into the next room at 38.
+    min_hp = _ascension_value(ascension_level, TOUGH_ENEMIES_ASCENSION_LEVEL, 76, 70)
+    max_hp = _ascension_value(ascension_level, TOUGH_ENEMIES_ASCENSION_LEVEL, 86, 78)
+    hp = rng.next_int(min_hp, max_hp)
+    creature = Creature(max_hp=hp, monster_id="AXEBOT", min_initial_hp=min_hp, max_initial_hp=max_hp)
     # `OneTwoDamage => GetValueIfAscension(DeadlyEnemies, 10, 9)` and
     # `HammerUppercutDamage => GetValueIfAscension(DeadlyEnemies, 14, 12)`.
     # Were 5 and 8 -- barely half. Found by scripts/audit_attack_damage.py
@@ -403,10 +415,10 @@ def create_stabbot(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Monste
 
 
 GUARDBOT_MONSTER_ID = "GUARDBOT"
-GUARDBOT_BASE_MIN_HP = 21
-GUARDBOT_BASE_MAX_HP = 25
-GUARDBOT_TOUGH_MIN_HP = 22
-GUARDBOT_TOUGH_MAX_HP = 26
+GUARDBOT_BASE_MIN_HP = 16
+GUARDBOT_BASE_MAX_HP = 20
+GUARDBOT_TOUGH_MIN_HP = 17
+GUARDBOT_TOUGH_MAX_HP = 21
 GUARDBOT_GUARD_BLOCK = 15
 GUARDBOT_GUARD_MOVE = "GUARD_MOVE"
 
@@ -859,8 +871,8 @@ def create_globe_head(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Mon
 # ---- OwlMagistrate (HP 82 / 86 asc) ----
 
 OWL_MAGISTRATE_MONSTER_ID = "OWL_MAGISTRATE"
-OWL_MAGISTRATE_BASE_HP = 234
-OWL_MAGISTRATE_TOUGH_HP = 243
+OWL_MAGISTRATE_BASE_HP = 231
+OWL_MAGISTRATE_TOUGH_HP = 247
 OWL_MAGISTRATE_BASE_SCRUTINY_DAMAGE = 16
 OWL_MAGISTRATE_DEADLY_SCRUTINY_DAMAGE = 17
 OWL_MAGISTRATE_PECK_ASSAULT_DAMAGE = 4
@@ -965,8 +977,8 @@ def create_owl_magistrate(rng: Rng, ascension_level: int = 0) -> tuple[Creature,
 # ---- SlimedBerserker (HP 60-65 / 64-69 asc) ----
 
 SLIMED_BERSERKER_MONSTER_ID = "SLIMED_BERSERKER"
-SLIMED_BERSERKER_BASE_HP = 266
-SLIMED_BERSERKER_TOUGH_HP = 276
+SLIMED_BERSERKER_BASE_HP = 261
+SLIMED_BERSERKER_TOUGH_HP = 281
 SLIMED_BERSERKER_BASE_PUMMELING_DAMAGE = 4
 SLIMED_BERSERKER_DEADLY_PUMMELING_DAMAGE = 5
 SLIMED_BERSERKER_PUMMELING_REPEAT = 4
