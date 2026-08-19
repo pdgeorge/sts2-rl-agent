@@ -119,6 +119,11 @@ public class RlCardRewardScreenHandler : IScreenHandler, IHandler
                         if (skipButton != null)
                         {
                             await UiHelper.Click(skipButton);
+                            // Tell the rewards screen, or it will click straight
+                            // back into the reward we just declined -- the skip
+                            // deliberately leaves the reward uncompleted, so its
+                            // button is still sitting there.
+                            RlRewardsScreenHandler.NoteDeclined("CardReward");
                             Logger.Log("[RlCardReward] Skipped the card reward.");
                             return;
                         }

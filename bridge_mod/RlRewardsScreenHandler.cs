@@ -41,16 +41,57 @@ public class RlRewardsScreenHandler : IScreenHandler, IHandler
     public Type ScreenType => typeof(NRewardsScreen);
     public TimeSpan Timeout => TimeSpan.FromSeconds(HandlerTimeoutSeconds);
 
+    // Rewards the agent DECLINED on this screen, remembered across handler
+    // invocations rather than inside one.
+    //
+    // `attemptedButtons` below is local to a single HandleAsync, which is not
+    // where the problem lives. Skipping a card reward is supposed to leave it
+    // uncompleted -- the game's own enum says so:
+    //
+    //   new CardRewardAlternative("Skip",
+    //       PostAlternateCardRewardAction.EndSelectionAndDoNotCompleteReward)
+    //   /// end card selection, but don't complete it -
+    //   /// the player may re-enter card selection.
+    //
+    // So the skip closes the card screen and returns here with the reward still
+    // listed. The drain loop then dispatches THIS handler again, fresh, with an
+    // empty attemptedButtons -- and it clicks straight back into the reward the
+    // agent had just declined. Python read the re-offer as "the skip click is
+    // not consuming the reward" and took the least bad card to break the loop.
+    //
+    // Measured over the tuesday and wednesday sessions: 312 skip attempts, 312
+    // re-offers, zero skips that stuck. 14% of every card reward is one she
+    // judged not worth taking and was made to take. The skip was working the
+    // whole time; this handler was undoing it.
+    private static NRewardsScreen? _declinedOnScreen;
+    private static readonly HashSet<string> _declined = new();
+
+    /// <summary>Record that the agent declined a reward of this kind.</summary>
+    public static void NoteDeclined(string rewardLabel)
+    {
+        _declined.Add(rewardLabel);
+    }
+
     public async Task HandleAsync(Rng random, CancellationToken ct)
     {
         AutoSlayLog.EnterScreen(ScreenLogName);
         NRewardsScreen screen = AutoSlayer.GetCurrentScreen<NRewardsScreen>();
+
+        // A new rewards screen is a new room: nothing is declined yet.
+        if (!ReferenceEquals(_declinedOnScreen, screen))
+        {
+            _declinedOnScreen = screen;
+            _declined.Clear();
+        }
+
         HashSet<NRewardButton> attemptedButtons = new();
 
         while (true)
         {
             ct.ThrowIfCancellationRequested();
-            List<NRewardButton> rewardButtons = AvailableRewardButtons(screen, attemptedButtons).ToList();
+            List<NRewardButton> rewardButtons = AvailableRewardButtons(screen, attemptedButtons)
+                .Where(button => !_declined.Contains(RewardLabel(button)))
+                .ToList();
             NProceedButton? proceedButton = UiHelper.FindFirst<NProceedButton>(screen);
             if (rewardButtons.Count == 0)
             {

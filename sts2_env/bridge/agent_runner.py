@@ -1543,12 +1543,20 @@ def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
     bad card otherwise -- and says so, because "took a card it rated as harmful"
     is worth seeing in the log rather than silently accepting.
 
-    AND IT SKIPS THE SAME SCREEN ONLY ONCE. `can_skip: true` means the game
-    renders a Skip button, NOT that clicking it consumes the reward. Live on
-    2026-08-14 the reward screen kept re-offering the same three cards
-    (UNMOVABLE / ANGER / CINDER) after every skip, and this function -- being
-    deterministic and, on the merits, right -- skipped it again, and again,
-    until the run was killed by hand. Same shape as the Crystal Sphere loop.
+    AND IT SKIPS THE SAME SCREEN ONLY ONCE, as a backstop rather than as the
+    main mechanism. The original diagnosis here was wrong and is worth keeping
+    straight: `can_skip: true` does mean the game renders a Skip button, and
+    clicking it does NOT complete the reward -- but that is correct, documented
+    behaviour, not a broken click. `PostAlternateCardRewardAction` says the Skip
+    alternative "ends card selection, but doesn't complete it - the player may
+    re-enter card selection", so the reward is still listed when the screen
+    closes. What re-offered it was our own RlRewardsScreenHandler clicking back
+    into the reward the agent had just declined, with a fresh attempted-button
+    set on each dispatch. Fixed mod-side 2026-08-19.
+
+    Until then this fired on every single skip: 312 attempts across the tuesday
+    and wednesday sessions, 312 re-offers, and 14% of all card rewards taken
+    against the policy's own judgement.
 
     Taking a card we would rather decline costs a little deck quality. Hanging
     the run costs the run. So the second time the identical screen appears, take
@@ -1586,9 +1594,12 @@ def _pick_card_reward_index(state: dict[str, Any]) -> int | None:
 
     if already_skipped_this:
         logger.error(
-            "CARD_REWARD: this screen was already skipped and the game is "
-            "still offering it -- the skip click is not consuming the reward. "
-            "Taking %s to break the loop; a hung run is worse than a bad card.",
+            "CARD_REWARD: this screen was already skipped and is being offered "
+            "again. Taking %s to break the loop; a hung run is worse than a bad "
+            "card. This should now be rare: the skip itself always worked, and "
+            "what re-offered the reward was RlRewardsScreenHandler clicking back "
+            "into it (fixed 2026-08-19). If this line appears often again, that "
+            "regressed.",
             _card_label(best_card),
         )
         _last_card_reward_skipped = None
