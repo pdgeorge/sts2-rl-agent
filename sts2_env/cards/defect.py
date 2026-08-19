@@ -118,8 +118,8 @@ LIGHTNING_ROD_POWER_KEY = "lightning_rod_power"
 LIGHTNING_ROD_POWER = 2
 MACHINE_LEARNING_CARDS_KEY = "cards"
 MACHINE_LEARNING_CARDS = 1
-MOMENTUM_STRIKE_DAMAGE = 10
-MOMENTUM_STRIKE_UPGRADED_DAMAGE = 13
+MOMENTUM_STRIKE_DAMAGE = 11
+MOMENTUM_STRIKE_UPGRADED_DAMAGE = 15
 OVERCLOCK_CARDS_KEY = "cards"
 OVERCLOCK_CARDS = 2
 OVERCLOCK_UPGRADED_CARDS = 3
@@ -144,8 +144,8 @@ THUNDER_UPGRADED_POWER = 8
 TURBO_ENERGY_KEY = "energy"
 TURBO_ENERGY = 2
 TURBO_UPGRADED_ENERGY = 3
-UPROAR_DAMAGE = 5
-UPROAR_UPGRADED_DAMAGE = 7
+UPROAR_DAMAGE = 6
+UPROAR_UPGRADED_DAMAGE = 8
 UPROAR_HITS = 2
 GENETIC_ALGORITHM_BLOCK_KEY = "block"
 GENETIC_ALGORITHM_BLOCK = 1
@@ -158,8 +158,8 @@ HELIX_DRILL_CALC_BASE_KEY = "calc_base"
 HELIX_DRILL_CALC_BASE = 0
 HELIX_DRILL_CALC_EXTRA_KEY = "calc_extra"
 HELIX_DRILL_CALC_EXTRA = 1
-HYPERBEAM_DAMAGE = 26
-HYPERBEAM_UPGRADED_DAMAGE = 34
+HYPERBEAM_DAMAGE = 30
+HYPERBEAM_UPGRADED_DAMAGE = 38
 HYPERBEAM_FOCUS_KEY = "focus_power"
 HYPERBEAM_FOCUS = 3
 METEOR_STRIKE_DAMAGE = 24
@@ -171,14 +171,19 @@ MODDED_UPGRADED_CARDS = 2
 MODDED_REPEAT_KEY = "repeat"
 MODDED_REPEAT = 1
 MODDED_COST_INCREASE = 1
+REFRACT_DAMAGE = 10
+REFRACT_UPGRADED_DAMAGE = 13
 REFRACT_REPEAT_KEY = "repeat"
 REFRACT_REPEAT = 2
+# Refract.cs deals its damage with WithHitCount(2); the RepeatVar(2) above is the
+# number of Glass orbs channeled, a separate number that only happens to match.
+REFRACT_HITS = 2
 ICE_LANCE_REPEAT_KEY = "repeat"
 ICE_LANCE_REPEAT = 3
 SHADOW_SHIELD_BLOCK = 11
 SHADOW_SHIELD_UPGRADED_BLOCK = 15
-SYNTHESIS_DAMAGE = 12
-SYNTHESIS_UPGRADED_DAMAGE = 18
+SYNTHESIS_DAMAGE = 14
+SYNTHESIS_UPGRADED_DAMAGE = 20
 SYNTHESIS_FREE_POWER = 1
 TESLA_COIL_DAMAGE = 3
 TESLA_COIL_UPGRADED_DAMAGE = 6
@@ -207,8 +212,8 @@ QUADCAST_REPEAT = 4
 REBOOT_CARDS_KEY = "cards"
 REBOOT_CARDS = 4
 REBOOT_UPGRADED_CARDS = 6
-SHATTER_DAMAGE = 11
-SHATTER_UPGRADED_DAMAGE = 15
+SHATTER_DAMAGE = 7
+SHATTER_UPGRADED_DAMAGE = 11
 SIGNAL_BOOST_COST = 1
 SIGNAL_BOOST_UPGRADED_COST = 0
 SIGNAL_BOOST_POWER_KEY = "signal_boost_power"
@@ -1619,7 +1624,7 @@ def make_ftl(upgraded: bool = False) -> CardInstance:
 
 def make_fusion(upgraded: bool = False) -> CardInstance:
     return CardInstance(
-        card_id=CardId.FUSION, cost=1 if upgraded else 2, card_type=CardType.SKILL,
+        card_id=CardId.FUSION, cost=1, card_type=CardType.SKILL,
         target_type=TargetType.SELF, rarity=CardRarity.UNCOMMON,
         upgraded=upgraded,
         instance_id=_get_next_id(),
@@ -1702,7 +1707,7 @@ def make_refract(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.REFRACT, cost=3, card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY, rarity=CardRarity.UNCOMMON,
-        base_damage=12 if upgraded else 9,
+        base_damage=REFRACT_UPGRADED_DAMAGE if upgraded else REFRACT_DAMAGE,
         effect_vars={REFRACT_REPEAT_KEY: REFRACT_REPEAT},
         upgraded=upgraded,
         instance_id=_get_next_id(),

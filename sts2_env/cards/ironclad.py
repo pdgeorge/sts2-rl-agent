@@ -12,7 +12,6 @@ from sts2_env.cards.registry import (
     register_before_card_played_hook,
     register_before_hand_draw_hook,
     register_effect,
-    register_playability_hook,
     register_self_mutating_damage,
 )
 from sts2_env.core.enums import (
@@ -1357,12 +1356,32 @@ def make_second_wind(upgraded: bool = False) -> CardInstance:
 # --- Spite ---
 @register_effect(CardId.SPITE)
 def spite(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
+    """`DamageCmd.Attack(5).WithHitCount(LostHpThisTurn ? Repeat : 1)`.
+
+    THIS WAS A DIFFERENT CARD until 2026-08-19. The simulator dealt one hit of 6
+    (9 upgraded) and DREW A CARD if the owner had taken unblocked damage this
+    turn. `Spite.cs` never draws anything: losing HP this turn raises the HIT
+    COUNT from 1 to `RepeatVar(2)`, and `OnUpgrade` adds a hit
+    (`DynamicVars.Repeat.UpgradeValueBy(1m)`) rather than damage -- upgraded
+    Spite is still 5 per hit, three hits.
+
+    The condition is the same one the old code used (`LostHpThisTurn` == an
+    unblocked `DamageReceivedEntry` against the owner this turn); only what it
+    gates changed. So the divergence was never "when does it trigger", it was
+    "what does triggering do": 6 damage plus a card became 5+5, and per-hit
+    effects -- Thorns, Flame Barrier, on-hit relics, block depletion across
+    hits -- now fire twice, as the game fires them.
+    """
     assert target is not None
     owner = _owner(card, combat)
-    _deal_damage_to_target(card, combat, target)
-    draw = card.effect_vars.get("cards", 1)
+    hits = 1
     if combat.has_unblocked_damage_received_this_turn(owner, side=CombatSide.PLAYER):
-        _draw_cards(combat, draw, owner)
+        hits = card.effect_vars.get("repeat", 2)
+    for _ in range(hits):
+        if owner.is_dead or target.is_dead:
+            break
+        damage = calculate_damage(card.base_damage, owner, target, ValueProp.MOVE, combat)
+        apply_damage(target, damage, ValueProp.MOVE, combat, owner)
 
 
 def make_spite(upgraded: bool = False) -> CardInstance:
@@ -1372,8 +1391,9 @@ def make_spite(upgraded: bool = False) -> CardInstance:
         card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY,
         rarity=CardRarity.UNCOMMON,
-        base_damage=9 if upgraded else 6,
-        effect_vars={"cards": 1},
+        base_damage=5,
+        # `OnUpgrade: DynamicVars.Repeat.UpgradeValueBy(1m)` -- a hit, not damage.
+        effect_vars={"repeat": 3 if upgraded else 2},
         upgraded=upgraded,
         instance_id=_get_next_id(),
     )
@@ -1996,7 +2016,10 @@ def make_mangle(upgraded: bool = False) -> CardInstance:
         card_type=CardType.ATTACK,
         target_type=TargetType.ANY_ENEMY,
         rarity=CardRarity.RARE,
-        base_damage=20 if upgraded else 15,
+        # `DamageVar(20m)`, `OnUpgrade: Damage.UpgradeValueBy(6m)`. The literals
+        # here said 15/20 -- a whole tier low, and inert only because
+        # apply_derived_values overwrites base_damage from the decompile.
+        base_damage=26 if upgraded else 20,
         effect_vars={"strength_loss": 15 if upgraded else 10},
         upgraded=upgraded,
         instance_id=_get_next_id(),
@@ -2056,12 +2079,26 @@ def make_one_two_punch(upgraded: bool = False) -> CardInstance:
 # --- Pact's End ---
 @register_effect(CardId.PACTS_END)
 def pacts_end(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
+    """Damage all opponents, but only `if (CanDealDamage)` inside `OnPlay`.
+
+    The exhaust-count check was a PLAYABILITY hook until 2026-08-19, and it is
+    not one. `PactsEnd.cs` has no `IsPlayable` override -- the reference agrees,
+    `has_custom_playability=False` -- only `ShouldGlowGoldInternal => CanDealDamage`,
+    which is the card's gold glow, a UI hint. In the game you can always play
+    Pact's End; with fewer than 3 cards exhausted it simply deals nothing.
+
+    That difference is observable: the play still happens, so it costs the card,
+    counts as an Attack played, and triggers everything that watches for one
+    (Rage, Aggression, per-play relics). Modelling it as unplayable also hid the
+    card from the agent's action mask in exactly the state where the game offers
+    it. The other three playability hooks in the simulator (Clash, Grand Finale,
+    High Five) each have a real `IsPlayable` in their .cs; this one did not.
+    """
+    owner = _owner(card, combat)
+    owner_state = combat.combat_player_state_for(owner) or combat.current_player_state
+    if len(owner_state.exhaust) < card.effect_vars.get("cards", 3):
+        return
     _deal_damage_all_enemies(card, combat)
-
-
-@register_playability_hook(CardId.PACTS_END)
-def pacts_end_is_playable(card: CardInstance, owner_state, combat: CombatState, owner: Creature) -> bool:
-    return len(owner_state.exhaust) >= card.effect_vars["cards"]
 
 
 def make_pacts_end(upgraded: bool = False) -> CardInstance:
@@ -2071,7 +2108,8 @@ def make_pacts_end(upgraded: bool = False) -> CardInstance:
         card_type=CardType.ATTACK,
         target_type=TargetType.ALL_ENEMIES,
         rarity=CardRarity.RARE,
-        base_damage=23 if upgraded else 17,
+        # `DamageVar(18m)`, `OnUpgrade: Damage.UpgradeValueBy(6m)`.
+        base_damage=24 if upgraded else 18,
         effect_vars={"cards": 3},
         upgraded=upgraded,
         instance_id=_get_next_id(),

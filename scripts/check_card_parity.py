@@ -215,6 +215,31 @@ def parse_python(cards_dir: Path) -> dict[str, SimCard]:
 # Compare
 # ---------------------------------------------------------------------------
 
+def _constructed_values() -> dict:
+    """What each card actually IS once the factory has built it.
+
+    The AST says what the source declares; this says what the game gets. They
+    differ for every card whose value `apply_derived_values` rewrites from the
+    decompile, which is most of them. Never raises -- a card that will not build
+    simply is not cross-checked, and the literal comparison stands.
+    """
+    out: dict[str, dict] = {}
+    try:
+        import sts2_env.cards  # noqa: F401
+        from sts2_env.cards.factory import create_card
+        from sts2_env.core.enums import CardId
+    except Exception:  # noqa: BLE001
+        return out
+    for member in CardId:
+        try:
+            card = create_card(member)
+        except Exception:  # noqa: BLE001
+            continue
+        out[member.name] = {"cost": card.cost, "damage": card.base_damage,
+                            "block": card.base_block}
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -242,8 +267,11 @@ def main() -> int:
               file=sys.stderr)
         return 2
 
+    built = _constructed_values()
+
     mismatches = 0
     unresolved = 0
+    suppressed = 0
     for cid in sorted(game.keys() & sim.keys()):
         g, s = game[cid], sim[cid]
         problems = []
@@ -262,6 +290,39 @@ def main() -> int:
             if float(gv) != float(sv):
                 problems.append(f"{label}: game={gv} sim={sv}")
 
+        # THE LITERAL IS NOT WHAT SHIPS. `apply_derived_values` rewrites a
+        # card's cost, damage and block from the decompile when the factory
+        # builds it, so a stale literal in the source is inert -- and this
+        # extractor reads the AST, which is the literal.
+        #
+        # Measured 2026-08-19: all 20 mismatches this reported were stale
+        # literals. MANGLE's source said 15 and it ships 20; PACTS_END said 17
+        # and ships 18; SUNDER, HYPERBEAM, SPITE, every one of them already
+        # correct at runtime. Twenty false positives is not a noisy signal, it
+        # is an alarm nobody can act on, and it is how a real one gets ignored.
+        #
+        # So a problem is only reported when the CONSTRUCTED card still
+        # disagrees. A source literal that is merely stale is reported
+        # separately, as tidying rather than as drift.
+        if problems and cid in built:
+            live = built[cid]
+            still_wrong = []
+            for problem in problems:
+                field = problem.split(":", 1)[0]
+                value = live.get(field)
+                game_value = {"cost": g.cost, "damage": g.damage, "block": g.block}[field]
+                if value is None or game_value is None:
+                    continue
+                if float(value) != float(game_value):
+                    still_wrong.append(f"{field}: game={game_value} built={value}")
+            if not still_wrong:
+                suppressed += 1
+                if args.show_missing:
+                    print(f"stale literal only (correct at runtime): {cid}  "
+                          f"-- {'; '.join(problems)}")
+                continue
+            problems = still_wrong
+
         if problems:
             mismatches += 1
             note = f"  [{', '.join(g.ambiguous)}]" if g.ambiguous else ""
@@ -279,6 +340,8 @@ def main() -> int:
     print(f"\n--- summary ---")
     print(f"  compared:            {len(game.keys() & sim.keys())}")
     print(f"  value mismatches:    {mismatches}   <- real drift, fix these")
+    print(f"  stale literals only: {suppressed}   <- source says one thing, "
+          f"apply_derived_values ships another; tidy, not drift (--show-missing to list)")
     print(f"  not statically known:{unresolved}   <- sim computes it; this tool cannot check")
     print(f"  in game, not in sim: {len(only_game)}   <- structural drift, needs implementing")
     print(f"  in sim, not in game: {len(only_sim)}   <- removed/renamed upstream")
