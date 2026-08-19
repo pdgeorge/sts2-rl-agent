@@ -159,9 +159,16 @@ error line -- just a run that stops advancing. It is caused by claiming an actio
 the game cannot perform, so the fix is always the same: do not advertise it, and
 never return from a handler leaving the screen open.
 
-Concretely, on card rewards: `NCardRewardSelectionScreen` has no skip control and
-the game's own `CardRewardScreenHandler` always picks a card, so a card reward on
-the screen-driven path cannot be skipped at all. `RlCardSelector` is a different
+Concretely, on card rewards -- **and this paragraph was half wrong until the
+2026-08-19 audit, which is worth keeping because the wrong half shaped the
+policy.** What is true: the game's own `CardRewardScreenHandler` always picks a
+card, `random.NextItem(list)` and press. What is NOT true is the inference drawn
+from it, that `NCardRewardSelectionScreen` therefore has no skip control. It has
+one -- `CardRewardAlternative.Generate` adds a `"Skip"` alternative whenever
+`cardReward.CanSkip`, and our own `FindSkipButton` locates it under
+`UI/RewardAlternatives`. The game's demo AI ignoring a control is not the same
+as the control not existing, and reading it that way is why the agent was
+recorded as unable to skip at all. `RlCardSelector` is a different
 path that hooks the game's own selection API, where a skip *is* real
 (`SkipReward() => default`, meaning no card taken). The two disagree; only the
 selector may claim `can_skip`.
@@ -356,8 +363,11 @@ Ordered by how much they cost, not by effort.
 
 ### 1. Multi-select selection state is not in the run observation — BLOCKING
 
-**The one that matters.** `PendingCardChoice` with `is_multi=True` (a
-`TransformCardsReward`, for instance) presents N cards to toggle before
+**The one that matters.** `PendingCardChoice` with `is_multi=True` (our own
+`offer_transform_cards_reward`, for instance -- named here as though it were a
+game type in the original note, which it is not: the game has exactly eight
+reward types and no TransformCardsReward among them) presents N cards to toggle
+before
 confirming. Toggling works — `selected` flips 0→1→0 — but **the observation is
 byte-identical whether a card is selected or not.** Verified: unchanged across 8
 consecutive steps while selection flipped on and off.

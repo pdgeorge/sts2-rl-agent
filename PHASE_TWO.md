@@ -407,7 +407,11 @@ Everything above is chosen to still be worth having at act 3, but the act 3 plan
 is a different problem and needs its own analysis:
 
 - act 2 (Hive) matches the game; **act 3 (Glory) does not** — the simulator
-  rolls `doormaker_boss`, which exists nowhere in the decompile, and cannot roll
+  rolls `doormaker_boss` -- which is a boss the game REWORKED AWAY rather than one
+  we invented: `Doormaker` survives only in `CombatState` comments ("the Doormaker
+  combat") and in save migration V15ToV16, "MONSTER.DOOR ->
+  MONSTER.DEPRECATED_MONSTER (Door monster deleted in Doormaker rework)". So the
+  simulator models a removed build's boss, and cannot roll
   `AeonglassBoss`, which the game has. Same shape as the act 1 variant bug that
   left 57% of act 1 boss fights unmodelled. That must be fixed before any act 3
   number is trusted.

@@ -113,8 +113,12 @@ this deck" work, which is cheap now that `DeckDirection` is measured to steer
 ### M3A / M3B — act 3
 
 **Known blocker, must be fixed before any act 3 number is trusted:** the
-simulator's act 3 pool rolls `setup_doormaker_boss`, and Doormaker exists nowhere
-in the decompile. The game's third act 3 boss is `AeonglassBoss`, and the
+simulator's act 3 pool rolls `setup_doormaker_boss`. Doormaker has no monster
+class or encounter in this build, but the NAME is there -- `CombatState` comments
+refer to "the Doormaker combat", and save migration V15ToV16 records
+"MONSTER.DOOR -> MONSTER.DEPRECATED_MONSTER (Door monster deleted in Doormaker
+rework)". We are modelling a boss the game reworked away, not one we invented,
+which is a smaller and more tractable problem than the original note implied. The game's third act 3 boss is `AeonglassBoss`, and the
 simulator has neither the monster nor the encounter. That is the act 1 variant
 bug again — a boss it cannot roll, and one it rolls that does not exist — and it
 would silently invalidate a third of act 3 boss measurements.
