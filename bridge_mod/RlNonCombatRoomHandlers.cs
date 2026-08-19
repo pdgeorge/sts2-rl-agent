@@ -429,6 +429,13 @@ public class RlShopRoomHandler : IRoomHandler, IHandler
     /// runtime, and a purchase that silently failed would look exactly like one
     /// that worked.
     /// </summary>
+    /// <summary>A slot's name for a log line, without risking a throw in one.</summary>
+    private static string RewardLabelSafe(NMerchantSlot slot)
+    {
+        try { return slot.Entry?.ToString() ?? "?"; }
+        catch { return "?"; }
+    }
+
     private static void ObserveFault(Task task)
     {
         _ = task.ContinueWith(
@@ -447,6 +454,19 @@ public class RlShopRoomHandler : IRoomHandler, IHandler
         room.OpenInventory();
         await Task.Delay(InventoryOpenDelayMs, ct);
 
+        // Slots whose purchase left the shop exactly as it was. Re-offering one
+        // is how a session dies: on 2026-08-19 the agent chose WEAK_POTION on
+        // floor 45 twenty-four times running, holding 1320 gold, because the
+        // buy never consumed and a deterministic policy answers an identical
+        // screen identically. Python's stuck detector then dropped the
+        // connection, and the run reached the act 3 boss three floors later with
+        // no agent attached to fight it -- the only time this project has ever
+        // got there.
+        //
+        // `RlRewardsScreenHandler` has always done this with `attemptedButtons`;
+        // the shop simply never did.
+        HashSet<NMerchantSlot> deadSlots = new();
+
         int attempts = 0;
         while (attempts < MaxPurchaseAttempts)
         {
@@ -454,7 +474,8 @@ public class RlShopRoomHandler : IRoomHandler, IHandler
             attempts++;
 
             List<NMerchantSlot> purchasableSlots = room.Inventory.GetAllSlots()
-                .Where(slot => slot.Entry.IsStocked && slot.Entry.EnoughGold)
+                .Where(slot => slot.Entry.IsStocked && slot.Entry.EnoughGold
+                               && !deadSlots.Contains(slot))
                 .ToList();
 
             ShopChoice choice = await ChooseShopOption(purchasableSlots, random, ct);
@@ -464,6 +485,8 @@ public class RlShopRoomHandler : IRoomHandler, IHandler
             }
 
             AutoSlayLog.Action($"Buying shop option at index {choice.OptionIndex}");
+            int goldBefore = room.Inventory.Inventory.Player.Gold;
+            bool stockedBefore = choice.Slot!.Entry.IsStocked;
 
             // NOT awaited to completion, and that is the whole point.
             //
@@ -521,6 +544,19 @@ public class RlShopRoomHandler : IRoomHandler, IHandler
             }
 
             await Task.Delay(PurchaseSettleDelayMs, ct);
+
+            // Did anything actually happen? Gold spent or the slot emptied both
+            // count. Neither means the game advertised a purchase it will not
+            // perform, and offering it again just asks the same question.
+            if (room.Inventory.Inventory.Player.Gold == goldBefore
+                && choice.Slot!.Entry.IsStocked == stockedBefore)
+            {
+                deadSlots.Add(choice.Slot!);
+                AutoSlayLog.Warn(
+                    $"Shop option {choice.OptionIndex} ({RewardLabelSafe(choice.Slot!)}) "
+                    + "did not consume -- gold and stock unchanged. Not offering it again.");
+                continue;
+            }
 
             NOverlayStack? overlayStack = NOverlayStack.Instance;
             if (overlayStack != null && overlayStack.ScreenCount > 0)

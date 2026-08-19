@@ -386,3 +386,27 @@ def test_two_sessions_writing_one_file_stay_distinguishable(tmp_path) -> None:
 
     events = _read(path)
     assert len({(e["session"], e["run"]) for e in events}) == 2
+
+
+def test_a_wedged_screen_costs_the_run_not_the_session():
+    """The constants that decide what a stuck screen costs.
+
+    On 2026-08-19 a WEAK_POTION loop in an act 3 shop made this side
+    disconnect, and the run then walked on to the act 3 boss with no agent
+    attached -- the only time the project has reached one. The mod's watchdog
+    already ends a wedged run after 30s; it never got the chance because Python
+    left first.
+    """
+    from sts2_env.bridge import agent_runner as ar
+    import inspect
+
+    assert ar.STUCK_WARN_AFTER < ar.STUCK_ESCALATE_AFTER < ar.STUCK_ABANDON_AFTER
+    assert ar.STUCK_MAX_RUNS_LOST >= 1
+
+    src = inspect.getsource(ar.run_agent)
+    marker = src[src.index("if identical_states >= STUCK_ABANDON_AFTER:"):]
+    head = marker[:marker.index("if identical_states >= STUCK_ESCALATE_AFTER")]
+    # It must go back round the loop rather than leave it, except when the
+    # per-session budget is spent.
+    assert "continue" in head, "a wedged screen must not end the session outright"
+    assert "stuck_runs >= STUCK_MAX_RUNS_LOST" in head, "there must be a budget"

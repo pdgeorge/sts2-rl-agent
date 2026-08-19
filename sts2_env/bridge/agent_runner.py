@@ -168,6 +168,12 @@ REST_SMITH_OPTION_ID = "smith"
 STUCK_WARN_AFTER = 4
 STUCK_ESCALATE_AFTER = 12
 STUCK_ABANDON_AFTER = 24
+
+#: How many runs may be lost to a wedged screen before the session stops.
+#: One is bad luck and costs a run; five in a session is a bug, and grinding out
+#: ninety more watchdog timeouts to discover that wastes the night. Each one
+#: costs the mod's 30s watchdog, so five is 2.5 minutes of a three-hour session.
+STUCK_MAX_RUNS_LOST = 5
 """Give up only after trying the one action that is always available.
 
 The first threshold means "whatever we keep sending, the game is refusing".
@@ -424,6 +430,9 @@ def run_agent(
         # The action we last returned from live_search; mirrors into the local
         # sim on the next decide call. Reset on each combat_start.
         _live_search_last_action: int | None = None
+        # Runs lost to a wedged screen. A few are bad luck; a lot is a bug, and
+        # the session should stop rather than grind out watchdog timeouts.
+        stuck_runs = 0
         # Two-strike policy for live_search failures: the first exception in a
         # combat is logged; the second switches the rest of that combat to the
         # trained model so the run keeps playing. Re-enabled at the next
@@ -560,25 +569,49 @@ def run_agent(
                     _record_stuck_state(stuck_log, state, identical_states)
 
                 if identical_states >= STUCK_ABANDON_AFTER:
-                    # There is no abandon command: the mod abandons from the main
-                    # menu, and this side cannot reach it. So the honest response
-                    # is to stop cleanly rather than spin -- live_eval then prints
-                    # its summary and every finished run is kept, instead of the
-                    # session hanging until someone notices.
+                    # STOP ANSWERING, do not stop playing.
+                    #
+                    # This used to break out of the loop, which ends run_agent
+                    # and drops the connection. That cost a whole session for one
+                    # wedged screen -- and on 2026-08-19 it cost more than that:
+                    # the agent looped on a WEAK_POTION in an act 3 shop holding
+                    # 1320 gold, this side disconnected, and the run then walked
+                    # on to the act 3 boss with no agent attached. The mod
+                    # reached Aeonglass, logged "No agent response and fallback
+                    # disabled; ending the run rather than playing without the
+                    # agent", and that was the only time this project has ever
+                    # got there.
+                    #
+                    # The mod already knows how to handle this: its watchdog
+                    # aborts a run with no progress for 30s and starts the next
+                    # one. It never got the chance because this side left first.
+                    # So the screen simply goes unanswered -- the watchdog fires,
+                    # the run is recorded terminated, and the session continues.
+                    stuck_runs += 1
                     logger.error(
                         "Still stuck after %d identical states, including %d "
-                        "with end-turn forced. There is no abandon command on "
-                        "this side, so stopping here; the runs already finished "
-                        "are kept and summarised. The screen is in %s.",
+                        "with end-turn forced. Leaving the screen unanswered so "
+                        "the mod's watchdog ends THIS RUN rather than the "
+                        "session (%d run(s) lost this way). The screen is in %s.",
                         identical_states,
                         identical_states - STUCK_ESCALATE_AFTER,
-                        stuck_log,
+                        stuck_runs, stuck_log,
                     )
                     journal.write("stuck", states=identical_states,
                                   screen=state.get("type"),
                                   escalated=True,
-                                  ended_session=True)
-                    break
+                                  ended_session=stuck_runs >= STUCK_MAX_RUNS_LOST)
+                    if stuck_runs >= STUCK_MAX_RUNS_LOST:
+                        # Repeated wedging is a bug, not bad luck. Stop, so the
+                        # summary is printed rather than a session grinding out
+                        # a hundred watchdog timeouts.
+                        logger.error(
+                            "%d runs lost to stuck screens; stopping so the "
+                            "finished runs are summarised.", stuck_runs)
+                        break
+                    identical_states = 0
+                    last_fingerprint = None
+                    continue
 
                 if identical_states >= STUCK_ESCALATE_AFTER and phase in Phase.COMBAT_PHASES:
                     # Whatever we keep choosing, the game will not take it. End
