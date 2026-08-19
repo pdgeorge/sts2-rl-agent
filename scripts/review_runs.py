@@ -32,10 +32,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 import urllib.error
 import urllib.request
+from collections import Counter
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -128,6 +130,65 @@ def _extract(reply: str) -> dict | None:
     return _load_json(reply)
 
 
+#: Below this many claims a report is too small for the repetition test to mean
+#: anything -- two identical claims can be two identical mistakes.
+_MIN_CLAIMS_TO_JUDGE_REPETITION = 4
+
+#: A report where this fraction of claims share one `better` string, or one
+#: `cost_hp`, is filling a template rather than reading a run.
+_REPETITION_LIMIT = 0.6
+
+
+def _scaffolding() -> frozenset:
+    """Phrases lifted from the prompt itself, so the two cannot drift apart.
+
+    Derived rather than listed: anything in <angle brackets> is a placeholder,
+    and any quoted string in the example JSON is text the model has been shown.
+    If the prompt is edited, the detector follows automatically -- a hardcoded
+    copy would keep guarding the previous wording.
+    """
+    out = set(re.findall(r"<([^<>\n]{4,})>", TASK))
+    out |= {m for m in re.findall(r'"([^"\n]{12,})"', TASK)}
+    return frozenset(p.strip().lower() for p in out if p.strip())
+
+
+def _contamination(data: dict) -> str | None:
+    """Is this report echoing the prompt, or filling one template N times?
+
+    The tuesday pass returned my example's `better` sentence verbatim in 48 of
+    295 claims and its `cost_hp` of 22 in 31 of them, and I read the resulting
+    cluster as a discovered pattern. Catching it at collection time means the
+    model gets told and can answer again, which is worth more than flagging it
+    afterwards when the model is gone.
+    """
+    claims = data.get("mistakes") or []
+    if not claims:
+        return None
+
+    scaffold = _scaffolding()
+    for m in claims:
+        for field in ("did", "better"):
+            text = str(m.get(field) or "").strip().lower()
+            if not text:
+                continue
+            if any(p in text or text in p for p in scaffold):
+                return (f"the {field!r} of the claim on floor {m.get('floor')} repeats "
+                        f"the wording of the example in the instructions rather than "
+                        f"describing this run")
+
+    if len(claims) >= _MIN_CLAIMS_TO_JUDGE_REPETITION:
+        for field in ("better", "cost_hp"):
+            values = [str(m.get(field)) for m in claims if m.get(field) is not None]
+            if not values:
+                continue
+            common, count = Counter(values).most_common(1)[0]
+            if count / len(claims) >= _REPETITION_LIMIT:
+                return (f"{count} of {len(claims)} claims share the same {field!r} "
+                        f"({common[:60]!r}) -- that is one template applied repeatedly, "
+                        f"not {len(claims)} findings")
+    return None
+
+
 def _valid(data: dict) -> str | None:
     """None if the shape is usable, else what is wrong with it."""
     if not isinstance(data, dict):
@@ -216,7 +277,8 @@ def main() -> int:
                 break
 
             candidate = _extract(reply)
-            problem = "the reply was not JSON" if candidate is None else _valid(candidate)
+            problem = ("the reply was not JSON" if candidate is None
+                       else _valid(candidate) or _contamination(candidate))
             if problem is None:
                 parsed = candidate
                 break
@@ -226,7 +288,13 @@ def main() -> int:
             messages = messages + [
                 {"role": "assistant", "content": reply},
                 {"role": "user", "content":
-                    f"That reply could not be used: {problem}. "
+                    f"That reply could not be used: {problem}.\n\n"
+                    f"The instructions show the SHAPE of an answer, not an answer. "
+                    f"Every field must come from this run's transcript: quote the "
+                    f"cards it shows her playing on that turn, and estimate the HP "
+                    f"from what the enemies were telegraphing. If you cannot point "
+                    f"at the line in the transcript, leave the claim out -- an "
+                    f"empty list is a valid answer.\n\n"
                     f"Reply again with only the JSON object."},
             ]
 

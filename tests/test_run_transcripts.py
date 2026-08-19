@@ -164,3 +164,67 @@ def test_the_transcript_tells_the_reviewer_it_does_not_know_this_game():
     assert "not Slay the Spire 1" in text
     assert "**Bash** (Attack, cost 2, Basic): Deal 8 damage." in text
     assert "BYGONE_EFFIGY (108 HP)" in text
+
+
+# -- contamination: the model answering with the prompt instead of the run ----
+
+def _report(**over):
+    base = {"run": 1, "mistakes": [
+        {"floor": 3, "turn": 1, "did": "played Defend into a 12-damage intent",
+         "better": "Strike twice; the slug dies and stops hitting", "cost_hp": 7},
+    ]}
+    base.update(over)
+    return base
+
+
+def test_a_claim_echoing_the_prompt_is_sent_back():
+    """The tuesday pass returned my example's sentence in 48 of 295 claims.
+
+    Caught at collection time the model can be told and can answer again --
+    which is worth more than flagging it afterwards when the model is gone.
+    """
+    from scripts.review_runs import _contamination, _scaffolding
+
+    scaffold = sorted(_scaffolding())
+    assert scaffold, "the detector must derive phrases from the prompt itself"
+    bad = _report(mistakes=[{"floor": 3, "turn": 1, "did": scaffold[0],
+                             "better": "x", "cost_hp": 5}])
+    assert _contamination(bad), "an echoed placeholder must be rejected"
+
+
+def test_one_template_repeated_is_sent_back():
+    """Same advice and same HP on every claim is a template, not findings."""
+    from scripts.review_runs import _contamination
+
+    same = [{"floor": f, "turn": 1, "did": f"played Defend on floor {f}",
+             "better": "Bash then Strike; the kill was there", "cost_hp": 22}
+            for f in (3, 5, 7, 9, 11)]
+    problem = _contamination(_report(mistakes=same))
+    assert problem and "template" in problem
+
+
+def test_genuinely_varied_claims_pass():
+    """It must not punish a run that really did have several distinct mistakes."""
+    from scripts.review_runs import _contamination
+
+    varied = [
+        {"floor": 3, "turn": 1, "did": "blocked into a debuff", "better": "strike", "cost_hp": 4},
+        {"floor": 6, "turn": 2, "did": "skipped a rare card", "better": "take it", "cost_hp": 0},
+        {"floor": 9, "turn": 3, "did": "smithed at 30 HP", "better": "heal", "cost_hp": 18},
+        {"floor": 12, "turn": 1, "did": "drank a potion on trash", "better": "hold it", "cost_hp": 9},
+    ]
+    assert _contamination(_report(mistakes=varied)) is None
+
+
+def test_a_short_report_is_not_judged_for_repetition():
+    """Two identical claims can be two identical mistakes."""
+    from scripts.review_runs import _contamination
+
+    two = [{"floor": f, "turn": 1, "did": "played Defend", "better": "strike", "cost_hp": 6}
+           for f in (3, 5)]
+    assert _contamination(_report(mistakes=two)) is None
+
+
+def test_an_empty_report_is_never_contaminated():
+    from scripts.review_runs import _contamination
+    assert _contamination({"run": 1, "mistakes": []}) is None

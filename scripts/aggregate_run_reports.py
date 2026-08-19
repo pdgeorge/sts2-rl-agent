@@ -200,12 +200,34 @@ def main() -> int:
         for g in data.get("good_plays") or []:
             good[" ".join(re.sub(r"[^a-z ]", "", str(g).lower()).split()[:6])] += 1
 
+    # Contamination, measured rather than eyeballed. review_runs retries a
+    # report that echoes the prompt, so anything reaching here got past that --
+    # but a retry can fail, and a template can be the model's own invention
+    # rather than mine. Reported on every run so the aggregate states its own
+    # trustworthiness instead of someone squinting at eight rows, which is how
+    # the tuesday pass had 48 of 295 claims carrying one borrowed sentence read
+    # as a discovered pattern.
+    suspicious = 0
+    for _path, data in parsed:
+        ms = data.get("mistakes") or []
+        if len(ms) < 4:
+            continue
+        for field in ("better", "cost_hp"):
+            vals = [str(m.get(field)) for m in ms if m.get(field) is not None]
+            if vals and Counter(vals).most_common(1)[0][1] / len(ms) >= 0.6:
+                suspicious += 1
+                break
+
     n = len(parsed)
     print("=" * 74)
     print(f"{n} reports parsed"
           + (f", {len(unparsed)} UNPARSEABLE" if unparsed else "")
           + f"  |  {total_claims} claims  |  {empty_runs} runs reported clean")
     print("=" * 74)
+    if suspicious:
+        print(f"  WARNING: {suspicious}/{n} reports repeat one 'better' or one "
+              f"'cost_hp' across most of their claims -- that is a template, "
+              f"not findings. Treat their claims as unread.")
     if no_location or past_the_end:
         print(f"  discarded: {no_location} without a location, "
               f"{past_the_end} on a floor the run never reached")
