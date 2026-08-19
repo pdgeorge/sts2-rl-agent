@@ -112,10 +112,26 @@ $PY -m sts2_env.bridge.live_eval \
 # it is already written and flushed.
 echo
 echo "Rendering per-run transcripts..."
-$PY scripts/export_run_transcripts.py --tag "${TAG}" || \
-    echo "WARNING: transcript export failed; the journal is still intact." >&2
+
+# TWO SETS, and the default is act 1 only.
+#
+# The reviewing model reads output/transcripts/<tag>/, and act 1 is the
+# milestone -- a reviewer spending its attention on act 3 corridors is spending
+# it on a question we have parked. It is also what keeps a request inside a
+# local model's context: the deepest wednesday run rendered to 103 KB, about
+# 46k tokens once the game reference is prepended, and llama-server refused it
+# at a 40960 window. Cut at the act 1 boss the same run is 39 KB.
+$PY scripts/export_run_transcripts.py --tag "${TAG}" --max-floor 17 || \
+    echo "WARNING: act 1 transcript export failed; the journal is still intact." >&2
+
+# And the whole run, for reading by hand when something interesting happens
+# deeper -- the act 3 Aeonglass run on 2026-08-19 was reconstructed from these.
+$PY scripts/export_run_transcripts.py --tag "${TAG}" \
+    --out "output/transcripts/${TAG}_full" >/dev/null || \
+    echo "WARNING: full transcript export failed." >&2
 
 echo
 echo "Numbers:  $PY scripts/summarise_live_runs.py output/live_journal_${TAG}.jsonl"
-echo "Review:   output/transcripts/${TAG}/  (one .md per run, plus REVIEW_PROMPT.md)"
+echo "Review:   output/transcripts/${TAG}/       (act 1 only -- what the model reads)"
+echo "By hand:  output/transcripts/${TAG}_full/  (whole runs, all acts)"
 echo "Then:     $PY scripts/aggregate_run_reports.py --tag ${TAG}"

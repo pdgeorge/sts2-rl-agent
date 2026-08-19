@@ -211,6 +211,32 @@ def _appendix(events: list[dict], cards: dict) -> str:
     return "\n".join(lines)
 
 
+def _truncate(events: list[dict], max_floor: int) -> list[dict]:
+    """Everything up to and including `max_floor`, then the run's ending.
+
+    A deep run is the reason a transcript blows past a local model's context:
+    the longest `wednesday` run reached floor 45 and renders to 103 KB, about
+    46k tokens once the 28 KB game reference is prepended. Only 1 of 64 is that
+    big, but an 8B reading 46k tokens reviews it badly whether or not it fits.
+
+    Cutting at the act 1 boss is not only a size fix. Act 1 is the milestone, so
+    a reviewer spending its attention on act 3 corridors is spending it on the
+    wrong question.
+    """
+    if not max_floor:
+        return events
+    out, floor = [], 0
+    for e in events:
+        if e.get("floor") is not None:
+            try:
+                floor = int(e["floor"])
+            except (TypeError, ValueError):
+                pass
+        if floor <= max_floor or e.get("event") in ("run_start", "run_end"):
+            out.append(e)
+    return out
+
+
 def render(events: list[dict], cards: dict | None = None) -> str:
     out: list[str] = []
     if cards is not None:
@@ -325,6 +351,11 @@ def main() -> int:
     ap.add_argument("--tag", required=True, help="session tag, e.g. boss_telemetry")
     ap.add_argument("--journal", default=None, help="defaults to output/live_journal_<tag>.jsonl")
     ap.add_argument("--out", default=None, help="defaults to output/transcripts/<tag>")
+    ap.add_argument("--max-floor", type=int, default=0,
+                    help="stop the transcript after this floor. 17 is the act 1 "
+                         "boss, which is the milestone -- and it keeps every "
+                         "request small enough for a local model to read well. "
+                         "0 exports the whole run.")
     args = ap.parse_args()
 
     import sys
@@ -352,7 +383,7 @@ def main() -> int:
 
     total = 0
     for index, key in enumerate(sorted(runs, key=lambda k: (str(k[0]), k[1] or 0)), 1):
-        text = render(runs[key], cards)
+        text = render(_truncate(runs[key], args.max_floor), cards)
         path = outdir / f"run_{index:03d}.md"
         path.write_text(text, encoding="utf-8")
         total += len(text)
