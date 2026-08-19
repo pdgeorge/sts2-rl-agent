@@ -431,7 +431,15 @@ class TestIroncladCombatEdgeCardModelParity:
         assert combat.hand == drawn
         assert combat.player.get_power_amount(PowerId.DRUM_OF_BATTLE) == 1
 
-    def test_conflagration_scales_with_attacks_played_this_turn(self):
+    def test_conflagration_is_four_hits_of_two_and_does_not_scale(self):
+        """It never scaled with attacks played -- that mechanic is not in the game.
+
+        This test used to assert the opposite, and pinned an invented card in
+        place for as long as it stood. `Conflagration.cs` is a flat
+        `DamageVar(2m)` with `RepeatVar(4)` against all opponents; the simulator
+        dealt `8 + 2 * attacks_played_this_turn` as a single hit. Playing two
+        Strikes first must now change nothing about what Conflagration does.
+        """
         combat = _make_combat(extra_enemies=1)
         for enemy in combat.enemies:
             enemy.max_hp = 100
@@ -441,8 +449,27 @@ class TestIroncladCombatEdgeCardModelParity:
 
         assert combat.play_card(0, 0)
         assert combat.play_card(0, 0)
+        before = [enemy.current_hp for enemy in combat.enemies]
         assert combat.play_card(0)
-        assert [enemy.current_hp for enemy in combat.enemies] == [76, 88]
+        dealt = [b - e.current_hp for b, e in zip(before, combat.enemies)]
+        assert dealt == [8, 8], "2 damage x 4 hits to every enemy, whatever came before"
+
+    def test_conflagration_multiplies_strength_once_per_hit(self):
+        """Four hits take Strength four times -- the reason the shape matters.
+
+        At +2 Strength the real card deals 16 where a single 8-damage hit would
+        deal 10, so the old model under-valued it in exactly the deck built to
+        use it.
+        """
+        combat = _make_combat()
+        enemy = combat.enemies[0]
+        enemy.max_hp = enemy.current_hp = 100
+        combat.player.apply_power(PowerId.STRENGTH, 2, applier=combat.player)
+        combat.hand = [make_conflagration()]
+        combat.energy = 1
+
+        assert combat.play_card(0)
+        assert enemy.current_hp == 84, "4 x (2 + 2 Strength)"
 
     def test_conflagration_hits_only_hittable_enemies(self):
         combat = _make_combat(extra_enemies=1)
@@ -457,7 +484,8 @@ class TestIroncladCombatEdgeCardModelParity:
         assert combat.play_card(0)
 
         assert blocked.current_hp == 100
-        assert hittable.current_hp == 84
+        # Strike for 6, then Conflagration for 2 x 4.
+        assert hittable.current_hp == 100 - 6 - 8
 
     def test_fiend_fire_exhausts_all_hand_cards_before_damage_hits(self):
         combat = _make_combat()

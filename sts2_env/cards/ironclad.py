@@ -1732,16 +1732,39 @@ def make_colossus(upgraded: bool = False) -> CardInstance:
 # --- Conflagration ---
 @register_effect(CardId.CONFLAGRATION)
 def conflagration(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
-    calc_base = card.effect_vars.get("calc_base", 8)
-    extra = card.effect_vars.get("extra_damage", 2)
+    """`DamageCmd.Attack(2).WithHitCount(4).TargetingAllOpponents`.
+
+    THIS WAS A DIFFERENT CARD until 2026-08-19. The simulator dealt
+    `8 + 2 * attacks_played_this_turn` as ONE hit to each enemy -- a scaling
+    mechanic the game does not give this card at all. `Conflagration.cs` is a
+    flat `DamageVar(2m)` with `RepeatVar(4)`, and the upgrade adds a hit rather
+    than damage.
+
+    Where the two actually differ, measured rather than assumed -- the first
+    version of this note claimed a block difference and there is none, because
+    block depletes across hits: 5 block eats 3 of a 2x4 and 5 of an 8x1, and both
+    land 3.
+
+    They differ on SCALING, in both directions. Four hits each take Strength and
+    Vulnerable separately, so at +2 Strength the real card deals 16 where a
+    single 8 deals 10 -- under-valued exactly in the deck built to use it. And
+    the old scaling term ran the other way: after three attacks it dealt
+    8 + 2*3 = 14, a number the game never produces at all. Anything per-hit --
+    Thorns, Flame Barrier, on-hit relics -- also triggers four times instead of
+    once.
+
+    Found by `scripts/on_update.sh` step 4, which had not run on a drifting
+    build since 31 July.
+    """
+    hits = card.effect_vars.get("repeat", 4)
     owner = _owner(card, combat)
-    attack_count = combat.count_card_plays_finished_this_turn(owner, card_type=CardType.ATTACK)
-    base = calc_base + extra * attack_count
     if owner.is_dead:
         return
-    for enemy in list(combat.hittable_enemies):
-        damage = calculate_damage(base, owner, enemy, ValueProp.MOVE, combat)
-        apply_damage(enemy, damage, ValueProp.MOVE, combat, owner)
+    for _ in range(hits):
+        for enemy in list(combat.hittable_enemies):
+            damage = calculate_damage(
+                card.base_damage, owner, enemy, ValueProp.MOVE, combat)
+            apply_damage(enemy, damage, ValueProp.MOVE, combat, owner)
 
 
 def make_conflagration(upgraded: bool = False) -> CardInstance:
@@ -1751,11 +1774,9 @@ def make_conflagration(upgraded: bool = False) -> CardInstance:
         card_type=CardType.ATTACK,
         target_type=TargetType.ALL_ENEMIES,
         rarity=CardRarity.RARE,
-        base_damage=8,  # Dynamic
-        effect_vars={
-            "calc_base": 9 if upgraded else 8,
-            "extra_damage": 3 if upgraded else 2,
-        },
+        base_damage=2,
+        # `OnUpgrade: DynamicVars.Repeat.UpgradeValueBy(1m)` -- a hit, not damage.
+        effect_vars={"repeat": 5 if upgraded else 4},
         upgraded=upgraded,
         instance_id=_get_next_id(),
     )
