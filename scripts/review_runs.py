@@ -55,22 +55,23 @@ reward, shop, rest and map choice.
 Find where the run was decided. Say what should have been done instead, and be
 concrete about which floor and which turn.
 
-Reply with a single JSON object and nothing else:
+Reply with a single JSON object and nothing else. The placeholders show the
+SHAPE; fill them from this run and nothing else:
 
 ```json
 {
-  "run": 7,
-  "outcome": "died floor 13, elite, 0/80",
-  "summary": "one or two sentences on what decided this run",
+  "run": <number>,
+  "outcome": "<how the run ended>",
+  "summary": "<one or two sentences on what decided this run>",
   "mistakes": [
-    {"floor": 11, "turn": 4,
-     "did": "played Defend twice into a 6-damage intent",
-     "better": "Bash then Strike; the kill was there and removed 16 damage a turn",
-     "cost_hp": 22,
-     "kind": "combat",
-     "confidence": "high"}
+    {"floor": <n>, "turn": <n>,
+     "did": "<what she actually played, from the transcript>",
+     "better": "<what to play instead, and why>",
+     "cost_hp": <n>,
+     "kind": "<one of the kinds below>",
+     "confidence": "high|medium|low"}
   ],
-  "good_plays": ["floor 9: held Powdered Demise for the elite"]
+  "good_plays": ["<floor N: something this run genuinely did well>"]
 }
 ```
 
@@ -78,7 +79,15 @@ Reply with a single JSON object and nothing else:
 `confidence` is one of: high, medium, low.
 
 Every mistake MUST carry a `floor`, and a combat mistake a `turn` -- a claim
-without a location cannot be checked and will be discarded. If the run was
+without a location cannot be checked and will be discarded, as is any claim on
+a floor the run never reached. Quote only cards the transcript shows her
+playing on that turn.
+
+**Do not review only the fights.** Card rewards, shop purchases, rest sites and
+map choices are all in the transcript and all decide runs -- a deck that cannot
+kill the boss was assembled in the corridor. If the deckbuilding and routing
+were sound, say so; if a reward was taken that never got played, or a rest spent
+upgrading at low HP, that is a mistake worth more than most combat lines. If the run was
 already lost by the time of a mistake, say so in `summary` rather than listing
 ten consequences of one earlier error. An empty `mistakes` list is a valid and
 useful answer."""

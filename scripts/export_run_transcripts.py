@@ -56,6 +56,19 @@ REPO = Path(__file__).resolve().parent.parent
 #: boss turn to a few lines rather than a screenful.
 SHOW_REJECTED = 3
 
+#: Alternatives closer than this to the line she played are NOT shown.
+#:
+#: The searcher always plays its top-scored line, so a rejected line 0.002
+#: behind is a position the evaluator had no opinion about -- roughly a sixth of
+#: one HP. Telling a reviewer "ignore near-ties" does not work: on the tuesday
+#: session 51% of the decisions it flagged were inside 0.005, having been told
+#: in the prompt that those are coin flips. Not showing them is a design, where
+#: asking is a plea.
+#:
+#: The turn still appears, with a note of how many lines were tied, so the fight
+#: still reads as a fight and a genuinely close decision is visible as close.
+MIN_GAP_TO_SHOW = 0.02
+
 RULES_PRIMER = """## What you are reading
 
 Slay the Spire 2, act 1: 17 floors ending in a boss. The player is the Ironclad,
@@ -78,57 +91,34 @@ considered them near-identical; a gap of 0.1 means it was confident.
 
 REVIEW_PROMPT = """# Reviewing a run
 
-You are reading one complete run of an AI playing Slay the Spire 2 as the
-Ironclad. Act 1 is 17 floors and ends with a boss. The agent picks its line by
-searching every legal ordering of its hand and scoring the position two turns
-ahead; the scores you see are that evaluation, in units where about 1.0 is a
-full health bar.
+This file is for a human deciding whether the review pipeline is behaving. The
+prompt the model actually receives is built by `scripts/review_runs.py` from
+`output/review_context.md` plus its own task section -- there is deliberately
+only one copy of it, because a second would drift.
 
-## How to read a fight
+    .venv/bin/python scripts/build_review_context.py      # the game reference
+    .venv/bin/python scripts/review_runs.py --tag <tag>   # sends it
+
+## How to read a transcript
 
 ```
-=== f11 Elite | hp 62/80 | deck 19 | BYGONE_EFFIGY 108hp
-T1  hp 62  blk 0  nrg 3 | BYGONE_EFFIGY 108hp ATTACK 16
-    played  BASH->0, STRIKE->0                     0.612
-    passed  DEFEND, BASH->0                        0.608
-    passed  STRIKE->0, STRIKE->0                   0.571
+=== f11 Elite | hp 62/80 | deck 19 | BYGONE_EFFIGY 108hp [ATTACK 16]
+T1  hp 62  blk 0 | BYGONE_EFFIGY 108hp [ATTACK 16]
+    played  BASH->0, STRIKE_IRONCLAD->0                     0.612  (replans: 2)
+    passed  STRIKE_IRONCLAD->0, STRIKE_IRONCLAD->0          0.571
+    -> hp 62 to 46 over 2 turns, 3 cards
 ```
 
-`played` is the line taken. `passed` are lines it considered and rejected, with
-their scores. A gap of 0.004 means the two were near-identical to the
-evaluator; a gap of 0.1 means it was confident.
+`played` is what she did, from the game's own record. `passed` are lines the
+search considered and rejected, with their scores -- but only those at least
+MIN_GAP_TO_SHOW behind, because anything closer is a position the evaluator had
+no opinion about. A turn whose alternatives were all that close says so instead.
 
-## What to report
+## What a good review looks like
 
-Go through the run and identify where it went wrong. Judgement is expected:
-a line that was 0.002 behind is not a mistake, it is a coin flip. Report things
-that plausibly cost real HP or the run.
-
-Answer with JSON and nothing else:
-
-```json
-{
-  "run": 7,
-  "outcome": "died floor 13, elite, 0/80",
-  "summary": "one or two sentences",
-  "mistakes": [
-    {"floor": 11, "turn": 4,
-     "did": "played Defend twice into a 6-damage intent",
-     "better": "Bash then Strike; the kill was available and removed 16/turn",
-     "cost_hp": 22,
-     "kind": "combat|card_reward|map|shop|rest|potion",
-     "confidence": "high|medium|low"}
-  ],
-  "good_plays": ["floor 9: held Powdered Demise for the elite"]
-}
-```
-
-Rules:
-- Every mistake MUST cite the floor and, for a fight, the turn. A claim without
-  a location cannot be checked and will be discarded.
-- If the run was already lost when the mistake happened, say so in `summary`
-  rather than listing ten consequences of one earlier error.
-- An empty `mistakes` list is a valid and useful answer.
+Specific, located, and willing to say a run was played well. Every claim carries
+a floor, and a combat claim a turn, so it can be checked against the journal
+afterwards -- `scripts/aggregate_run_reports.py` discards the ones that cannot.
 """
 
 
@@ -313,9 +303,19 @@ def _flush(out: list[str], pending: dict) -> None:
         if pending["replans"] > 1:
             head += f"   (replans: {pending['replans']})"
         out.append(head)
+        shown = 0
+        near = 0
         for line, alt_score in pending["alts"] or []:
+            if alt_score is not None and score is not None:
+                if score - alt_score < MIN_GAP_TO_SHOW:
+                    near += 1
+                    continue
             out.append(f"    passed  {line}{'':<4}{alt_score:>8.3f}"
                        if alt_score is not None else f"    passed  {line}")
+            shown += 1
+        if near and not shown:
+            out.append(f"    (no clear alternative -- {near} line(s) within "
+                       f"{MIN_GAP_TO_SHOW} of what she played)")
     pending.update(_new_turn())
 
 

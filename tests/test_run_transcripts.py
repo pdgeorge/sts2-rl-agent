@@ -45,15 +45,32 @@ def _events():
     ]
 
 
-def test_the_transcript_shows_what_was_rejected_with_its_score():
-    """The rejected lines are the whole point.
-
-    What she played only supports "that looks wrong". What she passed over
-    supports "she had X and took Y, and they scored 0.004 apart".
-    """
-    text = render(_events())
+def test_a_clearly_better_alternative_is_shown_with_its_score():
+    """The rejected lines are the point -- when the gap is real."""
+    events = _events()
+    events[2]["options"][1]["score"] = 0.50   # 0.11 behind: a real difference
+    text = render(events)
     assert "passed  DEFEND_IRONCLAD, BASH->0" in text
-    assert "0.608" in text and "0.612" in text
+    assert "0.612" in text
+
+
+def test_near_ties_are_not_shown_at_all():
+    """Asking a reviewer to ignore coin flips does not work; not showing them does.
+
+    On the tuesday session 51% of the decisions the model flagged were inside
+    0.005 of the line she played -- having been told in the prompt that those
+    are coin flips. The searcher always plays its top-scored line, so a
+    rejected line 0.002 behind is a position the evaluator had no opinion
+    about, roughly a sixth of one HP.
+    """
+    events = _events()
+    for alt in events[2]["options"][1:]:
+        alt["score"] = 0.610          # every alternative within 0.002
+    text = render(events)
+    assert "passed" not in text
+    assert "no clear alternative" in text
+    # the turn itself still appears, so the fight still reads as a fight
+    assert "played  BASH->0, STRIKE_IRONCLAD->0" in text
 
 
 def test_no_raw_action_integers_reach_the_reader():
@@ -94,10 +111,25 @@ def test_a_refusal_is_not_silently_counted_as_a_clean_run():
     assert _load_json("I'm sorry, I cannot help with that.") is None
 
 
-def test_outcomes_are_read_from_the_journal_for_checking_claims(tmp_path):
+def test_outcomes_are_keyed_by_transcript_number_not_journal_run_index(tmp_path):
+    """A session restarts on a crash and the run counter restarts with it.
+
+    `tuesday` held 103 runs under 53 distinct indices, so matching report N
+    against journal run N compared a report to a different run in another
+    segment -- and the "claim on a floor the run never reached" check was
+    validating against the wrong ground truth. Correctly keyed, that check went
+    from 26 claims discarded to 68.
+    """
     j = tmp_path / "j.jsonl"
-    j.write_text(json.dumps({"event": "run_end", "run": 3, "floor": 9, "act": 1}))
-    assert _run_outcomes(j)[3]["floor"] == 9
+    j.write_text("\n".join(json.dumps(r) for r in [
+        {"event": "run_end", "session": "A", "run": 1, "floor": 9, "act": 1},
+        {"event": "run_end", "session": "A", "run": 2, "floor": 17, "act": 2},
+        # the game crashed; the counter restarted, so run 1 appears twice
+        {"event": "run_end", "session": "B", "run": 1, "floor": 33, "act": 3},
+    ]))
+    out = _run_outcomes(j)
+    assert [out[i]["floor"] for i in (1, 2, 3)] == [9, 17, 33]
+    assert len(out) == 3, "three runs, not two collapsed onto one index"
 
 
 # -- the review loop's contract check ---------------------------------------

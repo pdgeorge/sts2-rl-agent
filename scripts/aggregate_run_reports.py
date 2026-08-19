@@ -65,6 +65,47 @@ def _load_json(text: str) -> dict | None:
         return None
 
 
+#: Words that carry no information about WHAT went wrong. Dropped before
+#: clustering so "played Defend twice into a 6-damage intent" and "played
+#: DEFEND_IRONCLAD into a damage intent" land in the same bucket -- the first
+#: version keyed on the first six words and split that one claim across five
+#: rows, which under-counts every real pattern and inflates the apparent
+#: variety of them.
+_FILLER = frozenset("""
+a an the and or but into onto with without for from to of on at in by
+played play plays playing used use uses using did does turn turn's card cards
+twice thrice once again then when while that this it its her his their
+was were is are be been being had has have having would should could
+damage dmg hp intent enemy enemies point points instead rather than
+one two three four five six seven eight nine ten
+ironclad silent defect necrobinder regent watcher
+move moves turn turns round rounds floor player agent she her
+""".split())
+
+#: Card names the model writes several ways. Canonicalised so the cluster key
+#: does not depend on whether it wrote DEFEND_IRONCLAD, Defend Ironclad or
+#: just Defend.
+_ALIASES = {
+    "defendironclad": "defend", "strikeironclad": "strike",
+    "bashironclad": "bash", "defends": "defend", "strikes": "strike",
+    "blocks": "block", "blocking": "block", "attacks": "attack",
+    "kills": "kill", "killing": "kill", "blocked": "block",
+}
+
+
+def _claim_key(text: object) -> str:
+    """A cluster key for one claim: what it is about, not how it was worded."""
+    words = re.sub(r"[^a-z ]", " ", str(text or "").lower()).split()
+    out = []
+    for w in words:
+        w = _ALIASES.get(w, w)
+        if w in _FILLER or len(w) < 3:
+            continue
+        if w not in out:
+            out.append(w)
+    return " ".join(sorted(out)[:5]) or "(unlabelled)"
+
+
 def _run_outcomes(journal: Path) -> dict[int, dict]:
     """How each run ended, keyed by TRANSCRIPT NUMBER, not by journal run index.
 
@@ -155,9 +196,7 @@ def main() -> int:
                 continue
             kinds[kind] += 1
             hp_by_kind[kind] += hp if isinstance(hp, (int, float)) else 0
-            key = re.sub(r"[^a-z ]", "", str(m.get("did") or "").lower())
-            key = " ".join(key.split()[:6]) or "(unlabelled)"
-            by_phrase[key].append((run, floor, hp, conf))
+            by_phrase[_claim_key(m.get("did"))].append((run, floor, hp, conf))
         for g in data.get("good_plays") or []:
             good[" ".join(re.sub(r"[^a-z ]", "", str(g).lower()).split()[:6])] += 1
 
