@@ -112,6 +112,33 @@ def _describe(option: Any) -> Any:
     return identifier if identifier is not None else option
 
 
+def _deck_cards(state: dict[str, Any]) -> list[str] | None:
+    """The deck as a compact list of card labels, `BASH+` meaning upgraded.
+
+    THE BRIDGE HAS ALWAYS SENT THIS. `RlRunInfo.cs` attaches every card as
+    `{id, upgraded}` and the journal recorded only `deck_size`, which is why
+    500 pooled runs cannot answer the most important deck-building question
+    there is -- which cards were in the decks that lost the boss. A count
+    cannot be argued with; a list can.
+
+    Labels rather than the raw dicts because this is written at every floor and
+    at every elite and boss, and `["STRIKE_IRONCLAD", "BASH+"]` costs a third of
+    what the dict form does while losing nothing anyone has asked for.
+    """
+    deck = state.get("deck")
+    if not isinstance(deck, list) or not deck:
+        return None
+    labels: list[str] = []
+    for card in deck:
+        if isinstance(card, dict):
+            name = str(card.get("id") or card.get("card_id") or "?")
+            labels.append(name + "+" if card.get("upgraded") else name)
+        elif card is not None:
+            labels.append(str(card))
+    return labels or None
+
+
+
 class RunJournal:
     """Watches the state stream and the agent's actions, and writes both down."""
 
@@ -174,6 +201,13 @@ class RunJournal:
         # and is exactly where the 42-point boss gap could be hiding.
         self._searches_this_combat = 0
         self._search_failures_this_combat = 0
+        # The run's own history, kept so `run_end` is self-contained: the path
+        # walked, and the last deck and relics seen. Deriving these by scanning
+        # backwards through a session's journal for the right `floor` rows is
+        # possible but nobody does it, which is the same as not having them.
+        self._path: list[dict[str, Any]] = []
+        self._last_deck: list[str] | None = None
+        self._last_relics: Any = None
 
     def start_run(self, run_index: int) -> None:
         self.run_index = run_index
@@ -224,6 +258,15 @@ class RunJournal:
         floor = state.get("floor", self._floor)
         room = state.get("room_type", self._room)
 
+        # Latched from whatever state carries them. The run-over screen does
+        # not, so reading the deck at `run_end` alone would record nothing for
+        # exactly the runs worth studying -- the ones that died.
+        deck = _deck_cards(state)
+        if deck is not None:
+            self._last_deck = deck
+        if state.get("relics"):
+            self._last_relics = state.get("relics")
+
         if not self._started:
             self._started = True
             self._floor = floor
@@ -252,7 +295,9 @@ class RunJournal:
             if isinstance(self._act, int) and act > self._act:
                 self.write("act_clear", act_from=self._act, act_to=act,
                            floor=self._floor, room_type=self._room,
-                           hp=state.get("run_hp"), max_hp=state.get("run_max_hp"))
+                           hp=state.get("run_hp"), max_hp=state.get("run_max_hp"),
+                           deck=self._last_deck, relics=self._last_relics,
+                           path=list(self._path))
                 self._act = act
             elif not isinstance(self._act, int):
                 self._act = act
@@ -261,10 +306,15 @@ class RunJournal:
 
         if floor != self._floor and floor is not None:
             self._floor = floor
+            self._path.append({
+                "floor": floor, "room_type": room,
+                "hp": state.get("run_hp"), "gold": state.get("gold"),
+                "deck_size": state.get("deck_size"),
+            })
             self.write("floor", room_type=room,
                        hp=state.get("run_hp"), max_hp=state.get("run_max_hp"),
                        gold=state.get("gold"), deck_size=state.get("deck_size"),
-                       relics=state.get("relics"))
+                       relics=state.get("relics"), deck=self._last_deck)
         if room is not None:
             self._room = room
 
@@ -308,6 +358,7 @@ class RunJournal:
             enemies=self._combat_enemies,
             deck_size=state.get("deck_size"),
             relics=state.get("relics"),
+            deck=self._last_deck,
             potions=state.get("potion_slots"),
         )
 
@@ -412,10 +463,26 @@ class RunJournal:
             hp=self._state.get("run_hp"),
             gold=self._state.get("gold"),
             deck_size=self._state.get("deck_size"),
+            # Shop, removal, upgrade and event choices are all deck-building
+            # decisions, and every one of them was recorded against a deck
+            # SIZE. What was bought only means something next to what was
+            # already held.
+            deck=self._last_deck,
         )
 
     def record_run_end(self, summary: dict[str, Any]) -> None:
-        self.write("run_end", **{k: v for k, v in summary.items() if k != "run"})
+        """The run's outcome, WITH the deck, the relics and the path that made it.
+
+        Previously this wrote `deck_size` and `relic_count` -- two integers
+        describing a run whose whole shape was already in memory. A lost boss
+        fight is only diagnosable next to what she brought to it, and the
+        counts cannot be argued with.
+        """
+        fields = {k: v for k, v in summary.items() if k != "run"}
+        fields.setdefault("deck", self._last_deck)
+        fields.setdefault("relics", self._last_relics)
+        fields.setdefault("path", list(self._path))
+        self.write("run_end", **fields)
 
     # -- plumbing ----------------------------------------------------------
 

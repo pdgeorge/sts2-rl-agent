@@ -1009,6 +1009,7 @@ def run_agent(
 
                 elif phase == Phase.SHOP:
                     choice = _pick_shop_option(state)
+                    _log_shop_options(journal, state, choice)
                     # The card_select that follows a bought removal is the only
                     # one we can identify, and identifying it is what lets that
                     # screen target a curse instead of guessing. Set here rather
@@ -1839,6 +1840,60 @@ def _pick_rest_option(state: dict[str, Any]) -> int:
     if option is None:
         option = options[0]
     return _read_index(option, DEFAULT_CHOICE_INDEX)
+
+
+
+def _log_shop_options(journal: Any, state: dict[str, Any], choice: int | None) -> None:
+    """What was on the shelf, what was bought, and WHICH RULE bought it.
+
+    The third of the non-combat decision logs, and deliberately not a list of
+    scores: `_pick_shop_option` does not score anything. It walks
+    `SHOP_PURCHASE_ACTION_PRIORITY` and takes the first action available, so
+    inventing a number per option would be recording a quantity that played no
+    part in the decision -- the failure this project keeps paying for.
+
+    What IS recoverable is the rule that fired and the state it fired in, which
+    is enough to ask the question that matters: at 250 gold with an 18-card
+    deck, did the priority order buy the right thing? Answering that needs the
+    gold and the deck next to the shelf, and none of the three were recorded.
+
+    Never raises. A log line must not be able to cost a run.
+    """
+    try:
+        options = _enabled_options(state)
+        if not options:
+            return
+        fired = None
+        for action in SHOP_PURCHASE_ACTION_PRIORITY:
+            if action == "remove_card" and not _has_removal_target(state):
+                continue
+            if _first_matching_option(options, actions=(action,)) is not None:
+                fired = action
+                break
+        journal.write(
+            "shop_options",
+            gold=state.get("gold"),
+            deck_size=_read_deck_size(state),
+            chosen=choice,
+            rule=fired or "leave",
+            has_removal_target=_has_removal_target(state),
+            options=[{"index": _read_index(o, -1),
+                      "action": o.get("action") if isinstance(o, dict) else None,
+                      "label": _describe_shop_option(o)}
+                     for o in options],
+        )
+    except Exception:  # noqa: BLE001 - a diagnostic must never end a run
+        logger.debug("could not log the shop options", exc_info=True)
+
+
+def _describe_shop_option(option: Any) -> str:
+    """A readable label for a shelf entry, whatever shape the bridge sent."""
+    if isinstance(option, dict):
+        for key in ("label", "name", "card", "relic", "text", "id"):
+            value = option.get(key)
+            if value:
+                return str(value)
+    return str(option)
 
 
 def _is_removal_option(state: dict[str, Any], chosen_index: int) -> bool:
