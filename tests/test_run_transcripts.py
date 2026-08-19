@@ -228,3 +228,22 @@ def test_a_short_report_is_not_judged_for_repetition():
 def test_an_empty_report_is_never_contaminated():
     from scripts.review_runs import _contamination
     assert _contamination({"run": 1, "mistakes": []}) is None
+
+
+def test_a_repeated_cost_hp_of_zero_is_not_treated_as_a_template():
+    """A model declining to estimate is honest, not templated.
+
+    Nine of the 23 wednesday failures were the template check, and several were
+    reports whose only shared value was cost_hp 0 -- rejected, retried, rejected
+    again, discarded. That cost real reports for no gain.
+    """
+    from scripts.review_runs import _contamination
+
+    zeros = [{"floor": f, "turn": 1, "did": f"played Defend on floor {f}",
+              "better": f"a different line on {f}", "cost_hp": 0}
+             for f in (3, 5, 7, 9, 11)]
+    assert _contamination({"run": 1, "mistakes": zeros}) is None
+
+    # A repeated NON-zero cost is still a template.
+    same = [dict(m, cost_hp=22) for m in zeros]
+    assert _contamination({"run": 1, "mistakes": same})

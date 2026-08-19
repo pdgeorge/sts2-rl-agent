@@ -179,6 +179,11 @@ def _contamination(data: dict) -> str | None:
     if len(claims) >= _MIN_CLAIMS_TO_JUDGE_REPETITION:
         for field in ("better", "cost_hp"):
             values = [str(m.get(field)) for m in claims if m.get(field) is not None]
+            # A repeated cost_hp of 0 is a model declining to estimate, which is
+            # honest rather than templated. Rejecting it cost real reports on the
+            # wednesday pass for no gain.
+            if field == "cost_hp":
+                values = [v for v in values if v not in ("0", "0.0", "None")]
             if not values:
                 continue
             common, count = Counter(values).most_common(1)[0]
@@ -220,7 +225,11 @@ def main() -> int:
     ap.add_argument("--timeout", type=float, default=900.0)
     ap.add_argument("--temperature", type=float, default=0.2,
                     help="low on purpose: this is analysis, not prose")
-    ap.add_argument("--max-tokens", type=int, default=2000)
+    ap.add_argument("--max-tokens", type=int, default=4000,
+                    help="A truncated reply is unparseable JSON, and retrying it "
+                         "under the same cap truncates identically -- 13 of 23 "
+                         "failures on the wednesday pass were exactly that. "
+                         "Raised from 2000 after measuring it.")
     ap.add_argument("--redo", action="store_true", help="re-review runs already done")
     ap.add_argument("--context", default=None,
                     help="generated game reference used as the system prompt; "
@@ -270,26 +279,39 @@ def main() -> int:
                     "model": args.model, "messages": messages,
                     "temperature": args.temperature, "max_tokens": args.max_tokens,
                 }, args.timeout, args.api_key)
-                reply = resp["choices"][0]["message"]["content"]
+                choice = resp["choices"][0]
+                reply = choice["message"]["content"]
+                truncated = choice.get("finish_reason") == "length"
             except (urllib.error.URLError, OSError, KeyError, TimeoutError) as exc:
                 last_error = f"{type(exc).__name__}: {exc}"
                 print(f"  [{i}/{len(files)}] {path.name}: {last_error}")
                 break
 
             candidate = _extract(reply)
-            problem = ("the reply was not JSON" if candidate is None
-                       else _valid(candidate) or _contamination(candidate))
+            if truncated and candidate is None:
+                # Naming it matters. "not JSON" sends you to the prompt; the
+                # actual fault is the output cap, and retrying under the same
+                # cap truncates in the same place.
+                problem = (f"the reply ran past the {args.max_tokens}-token "
+                           f"output limit and was cut off mid-JSON")
+            else:
+                problem = ("the reply was not JSON" if candidate is None
+                           else _valid(candidate) or _contamination(candidate))
             if problem is None:
                 parsed = candidate
                 break
             last_error = problem
             # Feed the error back rather than just re-rolling: a small model
             # usually fixes a named contract violation on the second pass.
+            advice = ("Report only the mistakes that plausibly decided the run, "
+                      "and keep each 'better' to one sentence. Ten well-chosen "
+                      "claims are worth more than forty."
+                      if truncated else
+                      "The instructions show the SHAPE of an answer, not an answer.")
             messages = messages + [
                 {"role": "assistant", "content": reply},
                 {"role": "user", "content":
-                    f"That reply could not be used: {problem}.\n\n"
-                    f"The instructions show the SHAPE of an answer, not an answer. "
+                    f"That reply could not be used: {problem}.\n\n{advice}\n\n"
                     f"Every field must come from this run's transcript: quote the "
                     f"cards it shows her playing on that turn, and estimate the HP "
                     f"from what the enemies were telegraphing. If you cannot point "
