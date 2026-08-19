@@ -67,6 +67,14 @@ _ENCOUNTER_MODULES = (
     "sts2_env.encounters.act2",
     "sts2_env.encounters.act3",
     "sts2_env.encounters.act4",
+    # The event fights, which are ordinary Monster rooms reached through an
+    # event. Omitted here until it was noticed that the registry is built by
+    # import and this module was simply not on the list -- so eight encounters
+    # that were fully written could not be resolved by name, and the live game
+    # sent two of them 104 times. The same omission in `monsters/factory.py`
+    # had been hiding 16 monsters. Adding a module file is not enough; it has
+    # to be named here.
+    "sts2_env.encounters.events",
 )
 
 _ENCOUNTER_CACHE: dict[str, Callable[..., None]] | None = None
@@ -124,6 +132,39 @@ def _setup_name_for_encounter_id(encounter_id: str) -> str:
     return "setup_" + s.lower()
 
 
+def _encounter_name_candidates(name: str) -> list[str]:
+    """Every setup name `name` could reasonably mean, best guess first.
+
+    A LIST RATHER THAN ONE MORE REGEX, because the wire form and the registry
+    form disagree in more than one way at once and each new mismatch was being
+    answered by making a single transform cleverer.
+
+    The two that were live: the game sends `DENSE_VEGETATION_EVENT_ENCOUNTER`
+    and `BATTLEWORN_DUMMY_EVENT_V1_ENCOUNTER` -- the C# class names
+    `DenseVegetationEventEncounter` and `BattlewornDummyEventV1Encounter` -- and
+    the registry keys them `setup_dense_vegetation` and
+    `setup_battleworn_dummy_v1`. Both encounters were fully modelled the whole
+    time; only the name failed to land, which is the FLAME_BARRIER /
+    FLAME_BARRIER_CARD failure again, and that one cost 68 unplayable cards.
+
+    Suffixes are stripped, never added: dropping `_encounter` from a name that
+    does not end in it, or `_event` from an encounter genuinely called that,
+    would fabricate a match rather than find one. Each candidate is only ever
+    returned if the registry actually holds it.
+    """
+    base = _setup_name_for_encounter_id(name)
+    candidates = [base]
+    trimmed = base
+    if trimmed.endswith("_encounter"):
+        trimmed = trimmed[: -len("_encounter")]
+        candidates.append(trimmed)
+    # `_event` sits in the MIDDLE of the versioned names
+    # (`battleworn_dummy_event_v1`), so it cannot be handled as a suffix.
+    if "_event" in trimmed:
+        candidates.append(trimmed.replace("_event", "", 1))
+    return candidates
+
+
 def resolve_encounter(name: str) -> Callable[..., None]:
     """Look up an encounter setup function by any of its common names.
 
@@ -136,9 +177,9 @@ def resolve_encounter(name: str) -> Callable[..., None]:
     registry = encounter_registry()
     if name in registry:
         return registry[name]
-    normalised = _setup_name_for_encounter_id(name)
-    if normalised in registry:
-        return registry[normalised]
+    for candidate in _encounter_name_candidates(name):
+        if candidate in registry:
+            return registry[candidate]
     raise KeyError(
         f"No encounter setup named {name!r}. A fixture written against an "
         f"older build can name an encounter this one has renamed or removed; "
