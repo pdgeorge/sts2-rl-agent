@@ -7,7 +7,7 @@
 # matching and a policy that trains confidently against a game that no longer
 # exists. The mod fails loudly; the simulator does not. This script is the noise.
 #
-# It does six things, in order:
+# It does seven things, in order:
 #
 #   1. Notices whether the installed build actually changed.
 #   2. Decompiles it, keeping the previous decompile so there is something to
@@ -19,6 +19,11 @@
 #   5. Diffs content inventory (cards, relics, monsters, ...) against the simulator.
 #   6. Reports content the simulator has no name for at all -- the enum members
 #      scripts/sync_content.py --write would add.
+#   7. Diffs MONSTER constants against the simulator. Cards are covered by step
+#      4 and by derived_values.py building them from the decompile; monsters are
+#      hand-copied, and every parity bug found in the week of 2026-08-19 was one
+#      -- including an Axebot at 40-44 HP against the game's 70-78, which cost
+#      51 HP of 93 in a single fight of the deepest run on record.
 #
 # What it deliberately does NOT do is edit sts2_env/ for you. Auto-applying the
 # value diffs was the obvious next step and it is a trap: the extractor reads a
@@ -85,7 +90,7 @@ DLL="$DATA_DIR/sts2.dll"
 [ -f "$DLL" ] || die "sts2.dll not found at $DLL"
 
 # ---------------------------------------------------------------------------
-step "1/6  Installed build"
+step "1/7  Installed build"
 # ---------------------------------------------------------------------------
 
 DLL_HASH="$(sha256sum "$DLL" | cut -d' ' -f1)"
@@ -108,7 +113,7 @@ if [ "$DLL_HASH" = "$PREV_HASH" ] && [ "$FORCE" -eq 0 ] && [ "$DO_DECOMPILE" -eq
 fi
 
 # ---------------------------------------------------------------------------
-step "2/6  Decompile"
+step "2/7  Decompile"
 # ---------------------------------------------------------------------------
 
 PREV_DIR="$DECOMPILE_DIR.prev"
@@ -166,7 +171,7 @@ mkdir -p "$OUT"
 drift=0
 
 # ---------------------------------------------------------------------------
-step "3/6  What the patch changed (game vs game)"
+step "3/7  What the patch changed (game vs game)"
 # ---------------------------------------------------------------------------
 
 # `.prev` is the only real baseline. The fallback below used to be described as
@@ -228,9 +233,23 @@ if [ -n "$BASELINE" ]; then
         echo "[sim has it]      = the simulator already implements this"
         echo "[sim never had it] = the simulator has never seen this"
         echo ""
+        # `|| true` is load-bearing. diff_decompiles.py exits 1 when it finds
+        # drift, which is the normal outcome of an update, and this group is the
+        # last command in it -- so under `set -e` a successful run of the whole
+        # script's REASON FOR EXISTING killed it right here.
+        #
+        # It did, silently, from the commit that added changes.txt until
+        # 2026-08-19. The evidence was sitting in reports/: patch-diff.txt and
+        # changes.txt dated today, card-parity.txt, inventory.txt and
+        # unnamed-content.txt still dated 31 July. Steps 4 to 6 had not run on a
+        # drifting build in three weeks, and step 4 is the card parity check --
+        # the one thing here that guards the numbers the policy trains on.
+        #
+        # The exit code is already captured from the first invocation above;
+        # this one exists only to write the file.
         "$PYTHON" "$REPO/scripts/diff_decompiles.py" \
             --old "$BASELINE" --new "$DECOMPILE_DIR" --repo "$REPO" \
-            --show-changed
+            --show-changed || true
     } > "$OUT/changes.txt"
 else
     echo "  nothing to compare against -- this decompile becomes the baseline."
@@ -238,7 +257,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-step "4/6  Card values (game vs simulator)"
+step "4/7  Card values (game vs simulator)"
 # ---------------------------------------------------------------------------
 
 set +e
@@ -250,7 +269,7 @@ set -e
 [ "$rc" -eq 2 ] && die "card parity check could not run"
 
 # ---------------------------------------------------------------------------
-step "5/6  Content inventory (game vs simulator)"
+step "5/7  Content inventory (game vs simulator)"
 # ---------------------------------------------------------------------------
 
 "$PYTHON" "$REPO/scripts/parity_reference_audit.py" \
@@ -258,13 +277,24 @@ step "5/6  Content inventory (game vs simulator)"
     --code-implementation-references --show-missing | tee "$OUT/inventory.txt"
 
 # ---------------------------------------------------------------------------
-step "6/6  Content the simulator has no name for"
+step "6/7  Content the simulator has no name for"
 # ---------------------------------------------------------------------------
 
 # Report only. Adding enum members is additive and safe, but it edits tracked
 # source, so it stays an explicit choice rather than something a refresh does to
 # you: run scripts/sync_content.py --write when you want it.
 "$PYTHON" "$REPO/scripts/sync_content.py" | tee "$OUT/unnamed-content.txt"
+
+# ---------------------------------------------------------------------------
+step "7/7  Monster constants (game vs simulator)"
+# ---------------------------------------------------------------------------
+
+set +e
+"$PYTHON" "$REPO/scripts/audit_monster_constants.py" | tee "$OUT/monster-constants.txt"
+rc=${PIPESTATUS[0]}
+set -e
+[ "$rc" -eq 1 ] && drift=1
+[ "$rc" -eq 2 ] && die "monster constant audit could not run"
 
 # ---------------------------------------------------------------------------
 echo
@@ -288,6 +318,12 @@ What to do with this, in order:
      first DamageVar.
   4. patch-diff.txt ADDED and inventory.txt -- new content. Real work, not a
      mechanical edit: behaviour has to be written, not copied.
+
+  5. monster-constants.txt HP RANGE MISMATCH -- trust these. The game declares
+     MinInitialHp and MaxInitialHp outright, so there is no extractor guesswork
+     of the kind that makes card-parity.txt need a second look. A damage
+     difference in the same file is softer: it compares values rather than move
+     names, so a renamed move reads as a difference. Read the .cs either way.
 
   changes.txt is the exhaustive version of patch-diff.txt -- every single class
   that changed, not just the summary. Good for sharing or for grepping when you
