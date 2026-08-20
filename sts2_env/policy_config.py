@@ -99,6 +99,13 @@ class PolicyConfig:
     Sweeping it as a global is the trap `PHASE_TWO.md` section 3.1 records --
     400 runs with a baseline arm doing the opposite of its name."""
 
+    card_prior_weight: float = 0.0
+    """How much the Untapped act-1 card-reward winrate delta counts in
+    `score_card`. 0.0 is the shipped behaviour and makes the term inert.
+
+    A policy field rather than a constant because prediction 14 is an A/B and
+    the arms must not be able to see each other's value."""
+
     tie_break: str = "enumeration"
     """How an EXACT tie between two scored lines is settled.
 
@@ -132,6 +139,7 @@ class PolicyConfig:
             hold_potions_for_big_fights=tuple(
                 str(x) for x in data.get("hold_potions_for_big_fights", ())),
             tie_break=str(data.get("tie_break", "enumeration")),
+            card_prior_weight=float(data.get("card_prior_weight", 0.0)),
         )
 
     @classmethod
@@ -215,7 +223,7 @@ def _validate(data: dict[str, Any], source_path: str) -> None:
     #: written before the key existed still loads and still means what it meant;
     #: listed here so it is still rejected if misspelled, which is the whole
     #: point of the unknown-key check.
-    optional = {"hold_potions_for_big_fights", "tie_break"}
+    optional = {"hold_potions_for_big_fights", "tie_break", "card_prior_weight"}
 
     missing = required - set(data)
     if missing:

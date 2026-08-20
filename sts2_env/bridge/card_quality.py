@@ -24,7 +24,9 @@ overrides everything here.
 
 from __future__ import annotations
 
+import json
 import logging
+from pathlib import Path
 from typing import Any
 
 from sts2_env.core.enums import CardId, CardRarity, CardType
@@ -153,6 +155,80 @@ def deck_shape(deck: list[Any]) -> dict[str, float]:
     }
 
 
+
+# ---------------------------------------------------------------------------
+# The community prior
+# ---------------------------------------------------------------------------
+
+#: Act 1 card-reward winrate DELTA per card, from sts2.untapped.gg, keyed by
+#: CardId name. Loaded lazily and cached; missing file means the term is simply
+#: unavailable and every card scores as it did before.
+_PRIOR_PATH = Path(__file__).resolve().parents[2] / "data/untapped/act1_card_reward_prior.json"
+_PRIOR: dict[str, dict] | None = None
+
+#: Divides the raw winrate delta. The deltas run -18 to +16 while `score_card`
+#: mostly lives in 0..5, so raw addition would not be a prior, it would BE the
+#: score. At 10 a +14 card gains 1.4 -- enough to break the tie blocks the
+#: formula produces (OFFERING, INFLAME and DEMON_FORM all score exactly 4.200)
+#: without overturning a genuine quality gap.
+PRIOR_SCALE = 10.0
+
+#: The most the prior may move a card, either way. Same reasoning as
+#: `EvalWeights.powers_cap`, which exists because an uncapped power term once
+#: scored a sleeping elite at -1.2 and made the searcher refuse to attack: a
+#: prior is a tiebreaker between cards of similar quality, not a replacement
+#: for reading what the card does.
+PRIOR_CAP = 1.5
+
+#: Below this many observations the delta is not used. Untapped suppresses its
+#: own numbers at small samples (an em-dash rather than a figure), so this only
+#: catches the ones it publishes thinly.
+PRIOR_MIN_N = 500
+
+
+def _prior_table() -> dict[str, dict]:
+    global _PRIOR
+    if _PRIOR is None:
+        try:
+            _PRIOR = json.loads(_PRIOR_PATH.read_text(encoding="utf-8"))["cards"]
+        except Exception:  # noqa: BLE001 - a missing prior is not a crash
+            logger.debug("no card prior at %s", _PRIOR_PATH, exc_info=True)
+            _PRIOR = {}
+    return _PRIOR
+
+
+
+def _active_prior_weight() -> float:
+    """How much the community prior counts, from the active policy.
+
+    Read through `policy_config` rather than a module constant, so an A/B is
+    two JSON files and neither arm can see the other's value. `PHASE_TWO.md`
+    3.1 records the alternative: 400 runs whose baseline arm did the opposite
+    of its name. Defaults to 0.0, which makes `v001` bit-identical to the
+    behaviour before the prior existed.
+    """
+    try:
+        from sts2_env.policy_config import active_policy
+        return float(getattr(active_policy(), "card_prior_weight", 0.0) or 0.0)
+    except Exception:  # noqa: BLE001 - scoring must not depend on config loading
+        return 0.0
+
+
+def card_prior_bonus(card_id_name: str, weight: float) -> float:
+    """The prior's contribution to a card's score, scaled, capped and gated.
+
+    Zero weight -- the shipped default -- returns 0.0 without touching the
+    table, so `v001` is bit-identical to the behaviour before this existed.
+    """
+    if not weight:
+        return 0.0
+    entry = _prior_table().get(card_id_name)
+    if not entry or entry.get("n", 0) < PRIOR_MIN_N:
+        return 0.0
+    raw = weight * float(entry["wr"]) / PRIOR_SCALE
+    return max(-PRIOR_CAP, min(PRIOR_CAP, raw))
+
+
 def score_card(card: Any, deck: list[Any] | None = None) -> float:
     """How much this card is worth to this deck. Higher is better.
 
@@ -166,6 +242,13 @@ def score_card(card: Any, deck: list[Any] | None = None) -> float:
 
     if card_id.name in CARD_RATINGS:
         return CARD_RATINGS[card_id.name]
+
+    # The prior is added to the DERIVED score below rather than returned here,
+    # so the deck-context terms still apply. Putting it in CARD_RATINGS instead
+    # would have been the obvious place and is wrong: that lookup returns
+    # immediately, switching off the block-density bonus, the diminishing
+    # return on a second Power and everything else that reads the deck.
+    prior = card_prior_bonus(card_id.name, _active_prior_weight())
 
     try:
         meta, preview = _metadata(card_id, _is_upgraded(card))
@@ -203,7 +286,12 @@ def score_card(card: Any, deck: list[Any] | None = None) -> float:
     # there is no damage or block to divide: 0/3 and 0/2 are both zero. A
     # cheaper card is better whatever else it does.
     score += (CHEAPNESS_REFERENCE_COST - cost) * CHEAPNESS_VALUE
-    return score
+
+    # Last, and capped, so it reorders cards this formula scored alike rather
+    # than deciding on its own. Measured reason it is here at all: over 1,478
+    # act 1 card rewards the agent took cards averaging -0.28 winrate delta
+    # where the best offered averaged +3.37 and a RANDOM pick averaged -0.79.
+    return score + prior
 
 
 CHEAPNESS_REFERENCE_COST = 3.0

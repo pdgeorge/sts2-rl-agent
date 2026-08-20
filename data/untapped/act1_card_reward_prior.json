@@ -1,0 +1,1702 @@
+{
+ "source": "sts2.untapped.gg act 1 card-reward act-winrate delta",
+ "pulled": "2026-08-20",
+ "cards": {
+  "ADAPTIVE_STRIKE": {
+   "wr": 7.0,
+   "n": 2100
+  },
+  "ALL_FOR_ONE": {
+   "wr": 4.0,
+   "n": 2100
+  },
+  "BALL_LIGHTNING": {
+   "wr": 3.0,
+   "n": 66000
+  },
+  "BARRAGE": {
+   "wr": 1.0,
+   "n": 66000
+  },
+  "BEAM_CELL": {
+   "wr": -1.0,
+   "n": 65000
+  },
+  "BOOST_AWAY": {
+   "wr": -1.0,
+   "n": 65000
+  },
+  "BOOT_SEQUENCE": {
+   "wr": 1.0,
+   "n": 22000
+  },
+  "BUFFER_CARD": {
+   "wr": 6.0,
+   "n": 2200
+  },
+  "BULK_UP": {
+   "wr": 2.0,
+   "n": 23000
+  },
+  "CAPACITOR": {
+   "wr": -6.0,
+   "n": 23000
+  },
+  "CHAOS": {
+   "wr": -8.0,
+   "n": 22000
+  },
+  "CHARGE_BATTERY": {
+   "wr": 1.0,
+   "n": 65000
+  },
+  "CHILL": {
+   "wr": 6.0,
+   "n": 22000
+  },
+  "CLAW": {
+   "wr": -2.0,
+   "n": 66000
+  },
+  "COLD_SNAP": {
+   "wr": 5.0,
+   "n": 65000
+  },
+  "COMPACT": {
+   "wr": -3.0,
+   "n": 23000
+  },
+  "COMPILE_DRIVER": {
+   "wr": -1.0,
+   "n": 66000
+  },
+  "CONSUMING_SHADOW": {
+   "wr": 2.0,
+   "n": 2200
+  },
+  "COOLANT": {
+   "wr": 6.0,
+   "n": 2100
+  },
+  "COOLHEADED": {
+   "wr": 0.0,
+   "n": 65000
+  },
+  "CREATIVE_AI_CARD": {
+   "wr": -3.0,
+   "n": 2100
+  },
+  "DARKNESS_CARD": {
+   "wr": 2.0,
+   "n": 22000
+  },
+  "DEFRAGMENT": {
+   "wr": 7.0,
+   "n": 2100
+  },
+  "DOUBLE_ENERGY": {
+   "wr": -11.0,
+   "n": 22000
+  },
+  "ECHO_FORM_CARD": {
+   "wr": 9.0,
+   "n": 2100
+  },
+  "ENERGY_SURGE": {
+   "wr": 2.0,
+   "n": 7000
+  },
+  "FERAL": {
+   "wr": -6.0,
+   "n": 23000
+  },
+  "FIGHT_THROUGH": {
+   "wr": 1.0,
+   "n": 22000
+  },
+  "FLAK_CANNON": {
+   "wr": 4.0,
+   "n": 2100
+  },
+  "FOCUSED_STRIKE_CARD": {
+   "wr": -2.0,
+   "n": 65000
+  },
+  "FTL": {
+   "wr": 5.0,
+   "n": 22000
+  },
+  "FUSION": {
+   "wr": -7.0,
+   "n": 22000
+  },
+  "GENETIC_ALGORITHM": {
+   "wr": -3.0,
+   "n": 2200
+  },
+  "GLACIER": {
+   "wr": 8.0,
+   "n": 22000
+  },
+  "GLASSWORK": {
+   "wr": 5.0,
+   "n": 22000
+  },
+  "GO_FOR_THE_EYES": {
+   "wr": 3.0,
+   "n": 66000
+  },
+  "GUNK_UP": {
+   "wr": -2.0,
+   "n": 65000
+  },
+  "HAILSTORM": {
+   "wr": 6.0,
+   "n": 23000
+  },
+  "HELIX_DRILL": {
+   "wr": 4.0,
+   "n": 2200
+  },
+  "HIBERNATE": {
+   "wr": 8.0,
+   "n": 2300
+  },
+  "HOLOGRAM": {
+   "wr": -2.0,
+   "n": 66000
+  },
+  "HOTFIX": {
+   "wr": -5.0,
+   "n": 65000
+  },
+  "HYPERBEAM": {
+   "wr": -3.0,
+   "n": 2100
+  },
+  "ICE_LANCE": {
+   "wr": 13.0,
+   "n": 2100
+  },
+  "IGNITION": {
+   "wr": 6.0,
+   "n": 2700
+  },
+  "IMITATION_LEARNING": {
+   "wr": 11.0,
+   "n": 200
+  },
+  "ITERATION_CARD": {
+   "wr": -6.0,
+   "n": 23000
+  },
+  "LEAP": {
+   "wr": -2.0,
+   "n": 66000
+  },
+  "LIGHTNING_ROD": {
+   "wr": 4.0,
+   "n": 66000
+  },
+  "LOOP_CARD": {
+   "wr": -6.0,
+   "n": 22000
+  },
+  "MACHINE_LEARNING_CARD": {
+   "wr": 5.0,
+   "n": 2100
+  },
+  "METEOR_STRIKE": {
+   "wr": -3.0,
+   "n": 2100
+  },
+  "MODDED": {
+   "wr": 1.0,
+   "n": 2100
+  },
+  "MOMENTUM_STRIKE": {
+   "wr": -3.0,
+   "n": 66000
+  },
+  "MULTI_CAST": {
+   "wr": -5.0,
+   "n": 2000
+  },
+  "NULL_CARD": {
+   "wr": 11.0,
+   "n": 23000
+  },
+  "ONE_FOR_ALL": {
+   "wr": 12.0,
+   "n": 220
+  },
+  "OVERCLOCK": {
+   "wr": -5.0,
+   "n": 22000
+  },
+  "RAINBOW": {
+   "wr": 6.0,
+   "n": 2100
+  },
+  "REBOOT": {
+   "wr": 2.0,
+   "n": 2000
+  },
+  "REFRACT": {
+   "wr": 5.0,
+   "n": 22000
+  },
+  "ROCKET_PUNCH": {
+   "wr": 2.0,
+   "n": 22000
+  },
+  "SCAVENGE": {
+   "wr": -8.0,
+   "n": 22000
+  },
+  "SCRAPE": {
+   "wr": -4.0,
+   "n": 22000
+  },
+  "SHADOW_SHIELD": {
+   "wr": 8.0,
+   "n": 23000
+  },
+  "SHATTER": {
+   "wr": 4.0,
+   "n": 2100
+  },
+  "SIGNAL_BOOST": {
+   "wr": -1.0,
+   "n": 2100
+  },
+  "SKIM": {
+   "wr": -4.0,
+   "n": 22000
+  },
+  "SMOKESTACK": {
+   "wr": -7.0,
+   "n": 23000
+  },
+  "SPINNER_CARD": {
+   "wr": 10.0,
+   "n": 2100
+  },
+  "STORM_CARD": {
+   "wr": -14.0,
+   "n": 23000
+  },
+  "SUBROUTINE": {
+   "wr": -13.0,
+   "n": 23000
+  },
+  "SUNDER": {
+   "wr": -2.0,
+   "n": 22000
+  },
+  "SUPERCRITICAL": {
+   "wr": 0.0,
+   "n": 2100
+  },
+  "SWEEPING_BEAM": {
+   "wr": -5.0,
+   "n": 65000
+  },
+  "SYNCHRONIZE": {
+   "wr": -3.0,
+   "n": 22000
+  },
+  "SYNTHESIS": {
+   "wr": -11.0,
+   "n": 22000
+  },
+  "TEMPEST": {
+   "wr": -4.0,
+   "n": 22000
+  },
+  "TESLA_COIL": {
+   "wr": 0.0,
+   "n": 22000
+  },
+  "THUNDER_CARD": {
+   "wr": -1.0,
+   "n": 23000
+  },
+  "TRASH_TO_TREASURE": {
+   "wr": 1.0,
+   "n": 2100
+  },
+  "TURBO": {
+   "wr": -7.0,
+   "n": 65000
+  },
+  "UPROAR": {
+   "wr": -2.0,
+   "n": 65000
+  },
+  "VOLTAIC": {
+   "wr": -2.0,
+   "n": 2100
+  },
+  "WHITE_NOISE": {
+   "wr": -5.0,
+   "n": 22000
+  },
+  "AGGRESSION_CARD": {
+   "wr": 9.0,
+   "n": 2600
+  },
+  "ANGER": {
+   "wr": 6.0,
+   "n": 77000
+  },
+  "ARMAMENTS": {
+   "wr": -2.0,
+   "n": 77000
+  },
+  "ASHEN_STRIKE": {
+   "wr": 0.0,
+   "n": 26000
+  },
+  "BARRICADE_CARD": {
+   "wr": -2.0,
+   "n": 2600
+  },
+  "BATTLE_TRANCE": {
+   "wr": 6.0,
+   "n": 27000
+  },
+  "BLAZE": {
+   "wr": 12.0,
+   "n": 3200
+  },
+  "BLOOD_WALL": {
+   "wr": -6.0,
+   "n": 77000
+  },
+  "BLOODLETTING": {
+   "wr": -2.0,
+   "n": 65000
+  },
+  "BLUDGEON": {
+   "wr": 5.0,
+   "n": 26000
+  },
+  "BODY_SLAM": {
+   "wr": -9.0,
+   "n": 77000
+  },
+  "BRAND": {
+   "wr": 5.0,
+   "n": 2500
+  },
+  "BREAKTHROUGH": {
+   "wr": -3.0,
+   "n": 77000
+  },
+  "BULLY": {
+   "wr": 7.0,
+   "n": 26000
+  },
+  "BURNING_PACT": {
+   "wr": -7.0,
+   "n": 26000
+  },
+  "CASCADE": {
+   "wr": -3.0,
+   "n": 2600
+  },
+  "CINDER": {
+   "wr": -6.0,
+   "n": 77000
+  },
+  "COLOSSUS_CARD": {
+   "wr": 0.0,
+   "n": 26000
+  },
+  "CONFLAGRATION": {
+   "wr": 5.0,
+   "n": 2500
+  },
+  "CRIMSON_MANTLE": {
+   "wr": 13.0,
+   "n": 2600
+  },
+  "CRUELTY_CARD": {
+   "wr": -5.0,
+   "n": 8700
+  },
+  "DARK_EMBRACE_CARD": {
+   "wr": -8.0,
+   "n": 2500
+  },
+  "DEMON_FORM_CARD": {
+   "wr": 10.0,
+   "n": 2700
+  },
+  "DEMONIC_SHIELD": {
+   "wr": 0.0,
+   "n": 9200
+  },
+  "DISMANTLE": {
+   "wr": 4.0,
+   "n": 27000
+  },
+  "DOMINATE": {
+   "wr": 9.0,
+   "n": 20000
+  },
+  "DRUM_OF_BATTLE_CARD": {
+   "wr": -11.0,
+   "n": 27000
+  },
+  "EVIL_EYE": {
+   "wr": -4.0,
+   "n": 26000
+  },
+  "EXPECT_A_FIGHT": {
+   "wr": -4.0,
+   "n": 27000
+  },
+  "FEED": {
+   "wr": -3.0,
+   "n": 2600
+  },
+  "FEEL_NO_PAIN_CARD": {
+   "wr": -7.0,
+   "n": 27000
+  },
+  "FIEND_FIRE": {
+   "wr": 2.0,
+   "n": 2500
+  },
+  "FIGHT_ME": {
+   "wr": 7.0,
+   "n": 26000
+  },
+  "FLAME_BARRIER_CARD": {
+   "wr": -1.0,
+   "n": 26000
+  },
+  "FORGOTTEN_RITUAL": {
+   "wr": -7.0,
+   "n": 26000
+  },
+  "HAVOC": {
+   "wr": -7.0,
+   "n": 77000
+  },
+  "HEADBUTT": {
+   "wr": 0.0,
+   "n": 77000
+  },
+  "HELLRAISER_CARD": {
+   "wr": 5.0,
+   "n": 2500
+  },
+  "HEMOKINESIS": {
+   "wr": 0.0,
+   "n": 26000
+  },
+  "HOWL_FROM_BEYOND": {
+   "wr": -5.0,
+   "n": 26000
+  },
+  "IMPERVIOUS": {
+   "wr": 4.0,
+   "n": 2500
+  },
+  "INFERNAL_BLADE": {
+   "wr": 1.0,
+   "n": 26000
+  },
+  "INFERNO_CARD": {
+   "wr": 3.0,
+   "n": 27000
+  },
+  "INFLAME": {
+   "wr": 2.0,
+   "n": 27000
+  },
+  "IRON_WAVE": {
+   "wr": -4.0,
+   "n": 78000
+  },
+  "JUGGERNAUT_CARD": {
+   "wr": 8.0,
+   "n": 2500
+  },
+  "JUGGLING_CARD": {
+   "wr": -5.0,
+   "n": 27000
+  },
+  "MANGLE": {
+   "wr": 0.0,
+   "n": 2600
+  },
+  "MIDNIGHT": {
+   "wr": 7.0,
+   "n": 310
+  },
+  "MOLTEN_FIST": {
+   "wr": 0.0,
+   "n": 76000
+  },
+  "NOT_YET": {
+   "wr": -1.0,
+   "n": 2500
+  },
+  "OFFERING": {
+   "wr": 7.0,
+   "n": 2500
+  },
+  "ONE_TWO_PUNCH_CARD": {
+   "wr": 0.0,
+   "n": 2500
+  },
+  "OUTRAGE": {
+   "wr": 10.0,
+   "n": 3200
+  },
+  "PACTS_END": {
+   "wr": 1.0,
+   "n": 2500
+  },
+  "PERFECTED_STRIKE": {
+   "wr": 4.0,
+   "n": 77000
+  },
+  "PILLAGE": {
+   "wr": -2.0,
+   "n": 26000
+  },
+  "POMMEL_STRIKE": {
+   "wr": 0.0,
+   "n": 77000
+  },
+  "PRIMAL_FORCE": {
+   "wr": 14.0,
+   "n": 2600
+  },
+  "PYRE": {
+   "wr": 8.0,
+   "n": 2600
+  },
+  "RAGE_CARD": {
+   "wr": 0.0,
+   "n": 26000
+  },
+  "RAMPAGE": {
+   "wr": 0.0,
+   "n": 27000
+  },
+  "RUPTURE_CARD": {
+   "wr": -5.0,
+   "n": 27000
+  },
+  "SECOND_WIND": {
+   "wr": -6.0,
+   "n": 26000
+  },
+  "SETUP_STRIKE_CARD": {
+   "wr": -3.0,
+   "n": 77000
+  },
+  "SHRUG_IT_OFF": {
+   "wr": 0.0,
+   "n": 77000
+  },
+  "SPITE": {
+   "wr": 1.0,
+   "n": 26000
+  },
+  "STAMPEDE_CARD": {
+   "wr": 3.0,
+   "n": 27000
+  },
+  "STOKE": {
+   "wr": 10.0,
+   "n": 2500
+  },
+  "STOMP": {
+   "wr": 0.0,
+   "n": 26000
+  },
+  "STONE_ARMOR": {
+   "wr": -1.0,
+   "n": 27000
+  },
+  "SWORD_BOOMERANG": {
+   "wr": 2.0,
+   "n": 77000
+  },
+  "TAUNT": {
+   "wr": 2.0,
+   "n": 39000
+  },
+  "TEAR_ASUNDER": {
+   "wr": 5.0,
+   "n": 2600
+  },
+  "THRASH": {
+   "wr": 11.0,
+   "n": 2500
+  },
+  "THUNDERCLAP": {
+   "wr": -4.0,
+   "n": 77000
+  },
+  "TREMBLE": {
+   "wr": -1.0,
+   "n": 77000
+  },
+  "TRUE_GRIT": {
+   "wr": -7.0,
+   "n": 77000
+  },
+  "TWIN_STRIKE": {
+   "wr": 2.0,
+   "n": 77000
+  },
+  "UNMOVABLE": {
+   "wr": 9.0,
+   "n": 2500
+  },
+  "UNRELENTING": {
+   "wr": 11.0,
+   "n": 27000
+  },
+  "UPPERCUT": {
+   "wr": 5.0,
+   "n": 26000
+  },
+  "VICIOUS_CARD": {
+   "wr": -9.0,
+   "n": 27000
+  },
+  "WHIRLWIND": {
+   "wr": -5.0,
+   "n": 26000
+  },
+  "AFTERLIFE": {
+   "wr": -2.0,
+   "n": 58000
+  },
+  "BANSHEES_CRY": {
+   "wr": 9.0,
+   "n": 1700
+  },
+  "BLIGHT_STRIKE": {
+   "wr": -4.0,
+   "n": 58000
+  },
+  "BONE_SHARDS": {
+   "wr": 5.0,
+   "n": 20000
+  },
+  "BORROWED_TIME": {
+   "wr": -2.0,
+   "n": 20000
+  },
+  "BURY": {
+   "wr": -1.0,
+   "n": 20000
+  },
+  "CACOPHONY": {
+   "wr": 9.0,
+   "n": 230
+  },
+  "CALCIFY_CARD": {
+   "wr": 2.0,
+   "n": 20000
+  },
+  "CALL_OF_THE_VOID": {
+   "wr": 10.0,
+   "n": 1700
+  },
+  "CAPTURE_SPIRIT": {
+   "wr": -5.0,
+   "n": 19000
+  },
+  "CLEANSE": {
+   "wr": -3.0,
+   "n": 19000
+  },
+  "COUNTDOWN_CARD": {
+   "wr": 2.0,
+   "n": 20000
+  },
+  "DANSE_MACABRE": {
+   "wr": -3.0,
+   "n": 20000
+  },
+  "DEATH_MARCH": {
+   "wr": -3.0,
+   "n": 19000
+  },
+  "DEATHBRINGER": {
+   "wr": 7.0,
+   "n": 20000
+  },
+  "DEATHS_DOOR": {
+   "wr": 1.0,
+   "n": 20000
+  },
+  "DEBILITATE_CARD": {
+   "wr": 1.0,
+   "n": 19000
+  },
+  "DEFILE": {
+   "wr": -4.0,
+   "n": 57000
+  },
+  "DEFY": {
+   "wr": 4.0,
+   "n": 58000
+  },
+  "DELAY": {
+   "wr": 1.0,
+   "n": 20000
+  },
+  "DEMESNE": {
+   "wr": 15.0,
+   "n": 1800
+  },
+  "DEVOUR_LIFE_CARD": {
+   "wr": -4.0,
+   "n": 1800
+  },
+  "DIRGE": {
+   "wr": -3.0,
+   "n": 20000
+  },
+  "DRAIN_POWER": {
+   "wr": 0.0,
+   "n": 57000
+  },
+  "DREDGE": {
+   "wr": -2.0,
+   "n": 20000
+  },
+  "EIDOLON": {
+   "wr": -9.0,
+   "n": 1800
+  },
+  "END_OF_DAYS": {
+   "wr": 5.0,
+   "n": 1700
+  },
+  "ENFEEBLING_TOUCH": {
+   "wr": -1.0,
+   "n": 19000
+  },
+  "ERADICATE": {
+   "wr": 11.0,
+   "n": 1700
+  },
+  "FEAR": {
+   "wr": -4.0,
+   "n": 58000
+  },
+  "FETCH": {
+   "wr": 4.0,
+   "n": 20000
+  },
+  "FLATTEN": {
+   "wr": 2.0,
+   "n": 58000
+  },
+  "FRIENDSHIP": {
+   "wr": 1.0,
+   "n": 20000
+  },
+  "GLIMPSE_BEYOND": {
+   "wr": 4.0,
+   "n": 630
+  },
+  "GRAVE_WARDEN": {
+   "wr": 1.0,
+   "n": 58000
+  },
+  "GRAVEBLAST": {
+   "wr": -3.0,
+   "n": 57000
+  },
+  "HANG": {
+   "wr": 11.0,
+   "n": 1800
+  },
+  "HAUNT": {
+   "wr": -4.0,
+   "n": 20000
+  },
+  "HIGH_FIVE": {
+   "wr": 3.0,
+   "n": 19000
+  },
+  "INVOKE": {
+   "wr": -2.0,
+   "n": 57000
+  },
+  "LEGION_OF_BONE": {
+   "wr": 4.0,
+   "n": 7600
+  },
+  "LETHALITY_CARD": {
+   "wr": 3.0,
+   "n": 20000
+  },
+  "MELANCHOLY": {
+   "wr": 2.0,
+   "n": 19000
+  },
+  "MISERY": {
+   "wr": 4.0,
+   "n": 1800
+  },
+  "NECRO_MASTERY_CARD": {
+   "wr": 10.0,
+   "n": 1700
+  },
+  "NEGATIVE_PULSE": {
+   "wr": -1.0,
+   "n": 58000
+  },
+  "NEUROSURGE": {
+   "wr": 1.0,
+   "n": 1800
+  },
+  "NO_ESCAPE": {
+   "wr": -1.0,
+   "n": 20000
+  },
+  "OBLIVION": {
+   "wr": 4.0,
+   "n": 1700
+  },
+  "PAGESTORM": {
+   "wr": -8.0,
+   "n": 20000
+  },
+  "PARSE": {
+   "wr": -6.0,
+   "n": 20000
+  },
+  "POKE": {
+   "wr": 0.0,
+   "n": 57000
+  },
+  "PULL_AGGRO": {
+   "wr": -4.0,
+   "n": 57000
+  },
+  "PULL_FROM_BELOW": {
+   "wr": -1.0,
+   "n": 20000
+  },
+  "PUTREFY": {
+   "wr": 4.0,
+   "n": 19000
+  },
+  "RATTLE": {
+   "wr": 1.0,
+   "n": 20000
+  },
+  "REANIMATE": {
+   "wr": 8.0,
+   "n": 1800
+  },
+  "REAP": {
+   "wr": 0.0,
+   "n": 57000
+  },
+  "REAPER_FORM": {
+   "wr": 4.0,
+   "n": 1700
+  },
+  "REAVE": {
+   "wr": -6.0,
+   "n": 57000
+  },
+  "RIGHT_HAND_HAND": {
+   "wr": 2.0,
+   "n": 19000
+  },
+  "SACRIFICE": {
+   "wr": -2.0,
+   "n": 1700
+  },
+  "SCOURGE": {
+   "wr": -4.0,
+   "n": 57000
+  },
+  "SCULPTING_STRIKE": {
+   "wr": -6.0,
+   "n": 57000
+  },
+  "SEANCE": {
+   "wr": 2.0,
+   "n": 1700
+  },
+  "SENTRY_MODE": {
+   "wr": 13.0,
+   "n": 1800
+  },
+  "SEVERANCE": {
+   "wr": -3.0,
+   "n": 20000
+  },
+  "SHARED_FATE": {
+   "wr": 4.0,
+   "n": 1700
+  },
+  "SHROUD": {
+   "wr": -7.0,
+   "n": 20000
+  },
+  "SIC_EM": {
+   "wr": -5.0,
+   "n": 19000
+  },
+  "SLEIGHT_OF_FLESH": {
+   "wr": 3.0,
+   "n": 20000
+  },
+  "SNAP": {
+   "wr": -4.0,
+   "n": 58000
+  },
+  "SOUL_STORM": {
+   "wr": 4.0,
+   "n": 1700
+  },
+  "SOULBOUND": {
+   "wr": -3.0,
+   "n": 2500
+  },
+  "SOW": {
+   "wr": -7.0,
+   "n": 57000
+  },
+  "SPIRIT_OF_ASH": {
+   "wr": 3.0,
+   "n": 1800
+  },
+  "SPUR": {
+   "wr": -3.0,
+   "n": 20000
+  },
+  "SQUEEZE": {
+   "wr": 8.0,
+   "n": 1700
+  },
+  "THE_SCYTHE": {
+   "wr": -3.0,
+   "n": 1800
+  },
+  "TIMES_UP": {
+   "wr": 1.0,
+   "n": 1800
+  },
+  "TRANSFIGURE": {
+   "wr": -4.0,
+   "n": 1800
+  },
+  "UNDEATH": {
+   "wr": 12.0,
+   "n": 1700
+  },
+  "UNDERWORLD": {
+   "wr": -3.0,
+   "n": 2600
+  },
+  "VEILPIERCER": {
+   "wr": 1.0,
+   "n": 20000
+  },
+  "WISP": {
+   "wr": -5.0,
+   "n": 57000
+  },
+  "ALIGNMENT": {
+   "wr": -10.0,
+   "n": 20000
+  },
+  "ARSENAL": {
+   "wr": 2.0,
+   "n": 1900
+  },
+  "ASTRAL_PULSE": {
+   "wr": -6.0,
+   "n": 58000
+  },
+  "BEAT_INTO_SHAPE": {
+   "wr": 2.0,
+   "n": 1900
+  },
+  "BEGONE": {
+   "wr": -1.0,
+   "n": 58000
+  },
+  "BIG_BANG": {
+   "wr": 9.0,
+   "n": 1900
+  },
+  "BLACK_HOLE": {
+   "wr": 0.0,
+   "n": 20000
+  },
+  "BOMBARDMENT": {
+   "wr": 15.0,
+   "n": 1900
+  },
+  "BULWARK": {
+   "wr": 9.0,
+   "n": 20000
+  },
+  "BUNDLE_OF_JOY": {
+   "wr": 5.0,
+   "n": 1900
+  },
+  "CELESTIAL_MIGHT": {
+   "wr": -2.0,
+   "n": 58000
+  },
+  "CHARGE": {
+   "wr": 7.0,
+   "n": 20000
+  },
+  "CHILD_OF_THE_STARS": {
+   "wr": -4.0,
+   "n": 20000
+  },
+  "CLOAK_OF_STARS": {
+   "wr": -3.0,
+   "n": 58000
+  },
+  "COLLISION_COURSE": {
+   "wr": 4.0,
+   "n": 58000
+  },
+  "COMET": {
+   "wr": 7.0,
+   "n": 2000
+  },
+  "CONQUEROR": {
+   "wr": -1.0,
+   "n": 20000
+  },
+  "CONSTELLATION": {
+   "wr": 2.0,
+   "n": 2400
+  },
+  "CONVERGENCE": {
+   "wr": -1.0,
+   "n": 20000
+  },
+  "COSMIC_INDIFFERENCE": {
+   "wr": 1.0,
+   "n": 58000
+  },
+  "CRASH_LANDING": {
+   "wr": -1.0,
+   "n": 1900
+  },
+  "CRESCENT_SPEAR": {
+   "wr": -7.0,
+   "n": 58000
+  },
+  "CRUSH_UNDER": {
+   "wr": -4.0,
+   "n": 58000
+  },
+  "DECISIONS_DECISIONS": {
+   "wr": -1.0,
+   "n": 1900
+  },
+  "DEVASTATE": {
+   "wr": -7.0,
+   "n": 20000
+  },
+  "DYING_STAR": {
+   "wr": -3.0,
+   "n": 1900
+  },
+  "FOREGONE_CONCLUSION": {
+   "wr": -3.0,
+   "n": 1900
+  },
+  "FURNACE": {
+   "wr": 2.0,
+   "n": 20000
+  },
+  "GAMMA_BLAST": {
+   "wr": 8.0,
+   "n": 20000
+  },
+  "GATHER_LIGHT": {
+   "wr": 1.0,
+   "n": 58000
+  },
+  "GENESIS": {
+   "wr": 2.0,
+   "n": 1900
+  },
+  "GLIMMER": {
+   "wr": -4.0,
+   "n": 20000
+  },
+  "GLITTERSTREAM": {
+   "wr": 0.0,
+   "n": 58000
+  },
+  "GLOW": {
+   "wr": -4.0,
+   "n": 58000
+  },
+  "GUARDS": {
+   "wr": 7.0,
+   "n": 1900
+  },
+  "GUIDING_STAR": {
+   "wr": -6.0,
+   "n": 58000
+  },
+  "HAMMER_TIME": {
+   "wr": 2.0,
+   "n": 670
+  },
+  "HEAVENLY_DRILL": {
+   "wr": 1.0,
+   "n": 1900
+  },
+  "HEGEMONY": {
+   "wr": -1.0,
+   "n": 20000
+  },
+  "HEIRLOOM_HAMMER": {
+   "wr": 6.0,
+   "n": 1900
+  },
+  "HIDDEN_CACHE": {
+   "wr": -4.0,
+   "n": 58000
+  },
+  "I_AM_INVINCIBLE": {
+   "wr": 2.0,
+   "n": 1800
+  },
+  "KINGLY_KICK": {
+   "wr": 3.0,
+   "n": 20000
+  },
+  "KINGLY_PUNCH": {
+   "wr": 4.0,
+   "n": 20000
+  },
+  "KNOCKOUT_BLOW": {
+   "wr": -2.0,
+   "n": 20000
+  },
+  "KNOW_THY_PLACE": {
+   "wr": 1.0,
+   "n": 58000
+  },
+  "LARGESSE": {
+   "wr": 1.0,
+   "n": 7200
+  },
+  "LUNAR_BLAST": {
+   "wr": -4.0,
+   "n": 20000
+  },
+  "MAKE_IT_SO": {
+   "wr": 6.0,
+   "n": 1900
+  },
+  "MANIFEST_AUTHORITY": {
+   "wr": 6.0,
+   "n": 20000
+  },
+  "MONARCHS_GAZE_CARD": {
+   "wr": -3.0,
+   "n": 2000
+  },
+  "MONOLOGUE_CARD": {
+   "wr": -13.0,
+   "n": 20000
+  },
+  "NEUTRON_AEGIS": {
+   "wr": -5.0,
+   "n": 2000
+  },
+  "ORBIT": {
+   "wr": -5.0,
+   "n": 20000
+  },
+  "PALE_BLUE_DOT": {
+   "wr": -7.0,
+   "n": 20000
+  },
+  "PARRY_CARD": {
+   "wr": 2.0,
+   "n": 20000
+  },
+  "PARTICLE_WALL": {
+   "wr": -2.0,
+   "n": 20000
+  },
+  "PATTER": {
+   "wr": -2.0,
+   "n": 58000
+  },
+  "PHOTON_CUT": {
+   "wr": 1.0,
+   "n": 58000
+  },
+  "PILLAR_OF_CREATION": {
+   "wr": 0.0,
+   "n": 20000
+  },
+  "PLOT": {
+   "wr": 6.0,
+   "n": 2400
+  },
+  "PROPHESIZE": {
+   "wr": -12.0,
+   "n": 20000
+  },
+  "QUASAR": {
+   "wr": -4.0,
+   "n": 20000
+  },
+  "RADIATE": {
+   "wr": -5.0,
+   "n": 20000
+  },
+  "REFINE_BLADE": {
+   "wr": 3.0,
+   "n": 58000
+  },
+  "REFLECT_CARD": {
+   "wr": 1.0,
+   "n": 20000
+  },
+  "RESONANCE": {
+   "wr": -11.0,
+   "n": 20000
+  },
+  "ROYAL_GAMBLE": {
+   "wr": -9.0,
+   "n": 20000
+  },
+  "ROYALTIES_CARD": {
+   "wr": -7.0,
+   "n": 1900
+  },
+  "SEEKING_EDGE": {
+   "wr": 5.0,
+   "n": 1900
+  },
+  "SEVEN_STARS": {
+   "wr": -4.0,
+   "n": 1900
+  },
+  "SHINING_STRIKE": {
+   "wr": 6.0,
+   "n": 20000
+  },
+  "SOLAR_STRIKE": {
+   "wr": -3.0,
+   "n": 58000
+  },
+  "SPECTRUM_SHIFT": {
+   "wr": 4.0,
+   "n": 20000
+  },
+  "SPOILS_OF_BATTLE": {
+   "wr": -1.0,
+   "n": 58000
+  },
+  "STARDUST": {
+   "wr": -1.0,
+   "n": 20000
+  },
+  "SUMMON_FORTH": {
+   "wr": 2.0,
+   "n": 20000
+  },
+  "SUPERMASSIVE": {
+   "wr": 1.0,
+   "n": 20000
+  },
+  "SWORD_SAGE": {
+   "wr": 8.0,
+   "n": 1900
+  },
+  "TERRAFORMING": {
+   "wr": -9.0,
+   "n": 20000
+  },
+  "THE_SMITH": {
+   "wr": 4.0,
+   "n": 1900
+  },
+  "TYRANNY_CARD": {
+   "wr": 10.0,
+   "n": 1900
+  },
+  "VOID_FORM": {
+   "wr": 7.0,
+   "n": 2000
+  },
+  "WROUGHT_IN_WAR": {
+   "wr": 3.0,
+   "n": 58000
+  },
+  "ABRASIVE": {
+   "wr": 8.0,
+   "n": 2500
+  },
+  "ACCELERANT": {
+   "wr": 4.0,
+   "n": 8600
+  },
+  "ACCURACY_CARD": {
+   "wr": 6.0,
+   "n": 26000
+  },
+  "ACROBATICS": {
+   "wr": -5.0,
+   "n": 26000
+  },
+  "ADRENALINE": {
+   "wr": 6.0,
+   "n": 2300
+  },
+  "AFTERIMAGE_CARD": {
+   "wr": 11.0,
+   "n": 2400
+  },
+  "ANTICIPATE": {
+   "wr": -8.0,
+   "n": 75000
+  },
+  "ASSASSINATE": {
+   "wr": 6.0,
+   "n": 2400
+  },
+  "BACKFLIP": {
+   "wr": 0.0,
+   "n": 75000
+  },
+  "BACKSTAB": {
+   "wr": 2.0,
+   "n": 26000
+  },
+  "BLADE_DANCE": {
+   "wr": 2.0,
+   "n": 75000
+  },
+  "BLADE_OF_INK": {
+   "wr": 13.0,
+   "n": 2300
+  },
+  "BLADE_SYMPHONY": {
+   "wr": 9.0,
+   "n": 3000
+  },
+  "BLUR_CARD": {
+   "wr": -2.0,
+   "n": 26000
+  },
+  "BOUNCING_FLASK": {
+   "wr": 8.0,
+   "n": 26000
+  },
+  "BUBBLE_BUBBLE": {
+   "wr": 9.0,
+   "n": 26000
+  },
+  "BULLET_TIME": {
+   "wr": -1.0,
+   "n": 2400
+  },
+  "BURST": {
+   "wr": -2.0,
+   "n": 2300
+  },
+  "CALCULATED_GAMBLE": {
+   "wr": -4.0,
+   "n": 26000
+  },
+  "CLOAK_AND_DAGGER": {
+   "wr": 3.0,
+   "n": 75000
+  },
+  "CONCOCT": {
+   "wr": 9.0,
+   "n": 3000
+  },
+  "CORROSIVE_WAVE": {
+   "wr": -6.0,
+   "n": 2400
+  },
+  "DAGGER_SPRAY": {
+   "wr": -5.0,
+   "n": 75000
+  },
+  "DAGGER_THROW": {
+   "wr": -4.0,
+   "n": 76000
+  },
+  "DASH": {
+   "wr": 3.0,
+   "n": 26000
+  },
+  "DEADLY_POISON": {
+   "wr": 6.0,
+   "n": 75000
+  },
+  "DEFLECT": {
+   "wr": 0.0,
+   "n": 75000
+  },
+  "DODGE_AND_ROLL": {
+   "wr": -2.0,
+   "n": 75000
+  },
+  "ECHOING_SLASH": {
+   "wr": 6.0,
+   "n": 5800
+  },
+  "ENVENOM_CARD": {
+   "wr": 10.0,
+   "n": 2300
+  },
+  "ESCAPE_PLAN": {
+   "wr": -1.0,
+   "n": 26000
+  },
+  "EXPERTISE": {
+   "wr": -9.0,
+   "n": 26000
+  },
+  "EXPOSE": {
+   "wr": 0.0,
+   "n": 26000
+  },
+  "FADE": {
+   "wr": 3.0,
+   "n": 3100
+  },
+  "FAN_OF_KNIVES_CARD": {
+   "wr": 3.0,
+   "n": 2300
+  },
+  "FINISHER": {
+   "wr": 0.0,
+   "n": 26000
+  },
+  "FLANKING": {
+   "wr": 0.0,
+   "n": 6200
+  },
+  "FLECHETTES": {
+   "wr": -2.0,
+   "n": 26000
+  },
+  "FLICK_FLACK": {
+   "wr": -9.0,
+   "n": 75000
+  },
+  "FOOTWORK": {
+   "wr": 6.0,
+   "n": 26000
+  },
+  "GRAND_FINALE": {
+   "wr": -10.0,
+   "n": 2400
+  },
+  "HAND_TRICK": {
+   "wr": -7.0,
+   "n": 26000
+  },
+  "HAZE": {
+   "wr": 1.0,
+   "n": 26000
+  },
+  "HIDDEN_DAGGERS": {
+   "wr": 4.0,
+   "n": 26000
+  },
+  "INFINITE_BLADES_CARD": {
+   "wr": 8.0,
+   "n": 26000
+  },
+  "KNIFE_TRAP": {
+   "wr": 6.0,
+   "n": 2500
+  },
+  "LEADING_STRIKE": {
+   "wr": 4.0,
+   "n": 75000
+  },
+  "LEG_SWEEP": {
+   "wr": 5.0,
+   "n": 26000
+  },
+  "MALAISE": {
+   "wr": 5.0,
+   "n": 2400
+  },
+  "MASTER_PLANNER": {
+   "wr": -11.0,
+   "n": 2400
+  },
+  "MEMENTO_MORI": {
+   "wr": -10.0,
+   "n": 26000
+  },
+  "MIRAGE": {
+   "wr": 4.0,
+   "n": 26000
+  },
+  "MURDER": {
+   "wr": -1.0,
+   "n": 2400
+  },
+  "NIGHTMARE": {
+   "wr": -5.0,
+   "n": 2400
+  },
+  "NOXIOUS_FUMES_CARD": {
+   "wr": 12.0,
+   "n": 26000
+  },
+  "OUTBREAK_CARD": {
+   "wr": 1.0,
+   "n": 22000
+  },
+  "PHANTOM_BLADES_CARD": {
+   "wr": 9.0,
+   "n": 26000
+  },
+  "PIERCING_WAIL": {
+   "wr": -4.0,
+   "n": 76000
+  },
+  "PINPOINT": {
+   "wr": -3.0,
+   "n": 25000
+  },
+  "POISONED_STAB": {
+   "wr": 3.0,
+   "n": 75000
+  },
+  "POUNCE": {
+   "wr": 3.0,
+   "n": 26000
+  },
+  "PRECISE_CUT": {
+   "wr": 4.0,
+   "n": 26000
+  },
+  "PREDATOR": {
+   "wr": -4.0,
+   "n": 71000
+  },
+  "PREPARED": {
+   "wr": -5.0,
+   "n": 75000
+  },
+  "REFLEX": {
+   "wr": -12.0,
+   "n": 25000
+  },
+  "RICOCHET": {
+   "wr": -6.0,
+   "n": 75000
+  },
+  "SCARE": {
+   "wr": -6.0,
+   "n": 19000
+  },
+  "SERPENT_FORM_CARD": {
+   "wr": 16.0,
+   "n": 2500
+  },
+  "SHADOW_STEP": {
+   "wr": -3.0,
+   "n": 2300
+  },
+  "SHADOWMELD": {
+   "wr": -3.0,
+   "n": 2400
+  },
+  "SIDESTEP": {
+   "wr": 1.0,
+   "n": 4000
+  },
+  "SKEWER": {
+   "wr": -7.0,
+   "n": 26000
+  },
+  "SLICE": {
+   "wr": -4.0,
+   "n": 75000
+  },
+  "SNAKEBITE": {
+   "wr": 4.0,
+   "n": 76000
+  },
+  "SNEAKY_CARD": {
+   "wr": 1.0,
+   "n": 760
+  },
+  "SPEEDSTER_CARD": {
+   "wr": -18.0,
+   "n": 26000
+  },
+  "STORM_OF_STEEL": {
+   "wr": -1.0,
+   "n": 2400
+  },
+  "STRANGLE": {
+   "wr": -1.0,
+   "n": 26000
+  },
+  "SUCKER_PUNCH": {
+   "wr": -4.0,
+   "n": 75000
+  },
+  "TACTICIAN": {
+   "wr": -14.0,
+   "n": 26000
+  },
+  "THE_HUNT": {
+   "wr": -3.0,
+   "n": 2300
+  },
+  "TOOLS_OF_THE_TRADE": {
+   "wr": 9.0,
+   "n": 2400
+  },
+  "TRACKING": {
+   "wr": 4.0,
+   "n": 2400
+  },
+  "UNTOUCHABLE": {
+   "wr": -10.0,
+   "n": 75000
+  },
+  "UP_MY_SLEEVE": {
+   "wr": -1.0,
+   "n": 26000
+  },
+  "WELL_LAID_PLANS": {
+   "wr": 1.0,
+   "n": 20000
+  }
+ }
+}
