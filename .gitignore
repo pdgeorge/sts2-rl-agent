@@ -74,3 +74,5 @@ decompiled/
 scaffold/
 
 HANDOFF.md
+# Untapped raw page cache (30MB of HTML; the parsed JSON beside it is what matters)
+data/untapped/cache/
