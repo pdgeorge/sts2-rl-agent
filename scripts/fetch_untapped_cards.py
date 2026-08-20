@@ -1,7 +1,8 @@
 """Pull the community card statistics from sts2.untapped.gg.
 
-    .venv/bin/python scripts/fetch_untapped_cards.py --character ironclad
-    .venv/bin/python scripts/fetch_untapped_cards.py --character ironclad --parse-only
+    .venv/bin/python scripts/fetch_untapped_cards.py --characters all
+    .venv/bin/python scripts/fetch_untapped_cards.py --characters ironclad colorless
+    .venv/bin/python scripts/fetch_untapped_cards.py --characters ironclad --parse-only
 
 PERMISSION. pd contacted Untapped and they approved the bulk pull (2026-08-20).
 The crawl is still deliberately gentle -- one request at a time, a delay between
@@ -54,6 +55,12 @@ CACHE = REPO / "data/untapped/cache"
 OUT = REPO / "data/untapped"
 
 BASE = "https://sts2.untapped.gg"
+
+#: Every card list the site publishes, read off its own navigation rather than
+#: guessed. COLORLESS matters as much as IRONCLAD for us right now: those cards
+#: are offered in an Ironclad run, so they are decisions the agent actually
+#: makes. The class lists are for when it plays something other than Ironclad.
+CHARACTERS = ("ironclad", "silent", "defect", "necrobinder", "regent", "colorless")
 UA = "sts2-rl-agent research crawler (approved by Untapped, contact via repo)"
 
 #: Seconds between requests. Slow on purpose, and slower than it needs to be.
@@ -200,7 +207,8 @@ def _check_no_blocks_dropped(cards: list[dict]) -> list[tuple[str, int, int]]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--character", default="ironclad")
+    ap.add_argument("--characters", nargs="+", default=["ironclad"],
+                    help=f"one or more of {', '.join(CHARACTERS)}, or 'all'")
     ap.add_argument("--parse-only", action="store_true",
                     help="re-parse the cache without touching the network")
     ap.add_argument("--refetch", action="store_true", help="ignore the cache")
@@ -212,14 +220,25 @@ def main() -> int:
 
     CACHE.mkdir(parents=True, exist_ok=True)
 
+    characters = list(CHARACTERS) if "all" in args.characters else args.characters
+    unknown = [c for c in characters if c not in CHARACTERS]
+    if unknown:
+        raise SystemExit(f"unknown character(s) {unknown}; known: {list(CHARACTERS)}")
+
+    for character in characters:
+        _pull(character, args)
+    return 0
+
+
+def _pull(character: str, args) -> None:
     if args.parse_only:
         slugs = sorted(p.stem for p in CACHE.glob("card-*.html"))
         slugs = [s[len("card-"):] for s in slugs]
         if not slugs:
             raise SystemExit("nothing cached yet -- run without --parse-only first")
     else:
-        slugs = _slugs(args.character, refetch=args.refetch, delay=args.delay)
-        print(f"{len(slugs)} cards linked from the {args.character} tier list")
+        slugs = _slugs(character, refetch=args.refetch, delay=args.delay)
+        print(f"\n=== {character}: {len(slugs)} cards linked from the tier list")
 
     if args.limit:
         slugs = slugs[:args.limit]
@@ -243,7 +262,7 @@ def main() -> int:
 
     dropped = _check_no_blocks_dropped(cards)
 
-    out = OUT / f"cards_{args.character}.json"
+    out = OUT / f"cards_{character}.json"
     out.write_text(json.dumps(cards, indent=1) + "\n", encoding="utf-8")
 
     total = sum(len(c["blocks"]) for c in cards)
@@ -264,7 +283,6 @@ def main() -> int:
         print("  A silent zero here is the failure mode that matters -- the site "
               "is server-rendered\n  with hashed class names, so a redeploy can "
               "break the regex while every request still 200s.")
-    return 0
 
 
 if __name__ == "__main__":

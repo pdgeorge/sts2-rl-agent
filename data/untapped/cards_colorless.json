@@ -1,0 +1,4282 @@
+[
+ {
+  "slug": "alchemize",
+  "name": "Alchemize",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7600,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 48.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1300,
+    "action": "Upgraded",
+    "action_pct": 32.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1400,
+    "action": "Upgraded",
+    "action_pct": 14.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -9.0
+   }
+  ]
+ },
+ {
+  "slug": "anointed",
+  "name": "Anointed",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7900,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 360,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "automation",
+  "name": "Automation",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 14.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 21.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2000,
+    "action": "Upgraded",
+    "action_pct": 42.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 32.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 20.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   }
+  ]
+ },
+ {
+  "slug": "beacon-of-hope",
+  "name": "Beacon of Hope",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4900,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 13.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 3900,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 8.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 2900,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 750,
+    "action": "Upgraded",
+    "action_pct": 63.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 52.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1800,
+    "action": "Upgraded",
+    "action_pct": 50.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   }
+  ]
+ },
+ {
+  "slug": "beat-down",
+  "name": "Beat Down",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7900,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 140,
+    "action": "Upgraded",
+    "action_pct": 29.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 340,
+    "action": "Upgraded",
+    "action_pct": 20.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "believe-in-you",
+  "name": "Believe in You",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 3000,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2500,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1900,
+    "action": "Bought",
+    "action_pct": 17.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 5100,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4000,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2900,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 6.0
+   }
+  ]
+ },
+ {
+  "slug": "bolas",
+  "name": "Bolas",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 26000,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": 10.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 8.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 8000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 380,
+    "action": "Upgraded",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 540,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 730,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "calamity",
+  "name": "Calamity",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7800,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 260,
+    "action": "Upgraded",
+    "action_pct": 80.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 390,
+    "action": "Upgraded",
+    "action_pct": 58.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 490,
+    "action": "Upgraded",
+    "action_pct": 36.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   }
+  ]
+ },
+ {
+  "slug": "catastrophe",
+  "name": "Catastrophe",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 59.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 520,
+    "action": "Upgraded",
+    "action_pct": 42.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 430,
+    "action": "Upgraded",
+    "action_pct": 28.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   }
+  ]
+ },
+ {
+  "slug": "coordinate",
+  "name": "Coordinate",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 3100,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2600,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 2000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 980,
+    "action": "Upgraded",
+    "action_pct": 26.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 640,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 480,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "dark-shackles",
+  "name": "Dark Shackles",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 19.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 26.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 29.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 5700,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 6000,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 5100,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   }
+  ]
+ },
+ {
+  "slug": "discovery",
+  "name": "Discovery",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 32.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 29.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 25.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 7200,
+    "action": "Upgraded",
+    "action_pct": 57.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4300,
+    "action": "Upgraded",
+    "action_pct": 32.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3000,
+    "action": "Upgraded",
+    "action_pct": 26.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   }
+  ]
+ },
+ {
+  "slug": "dramatic-entrance",
+  "name": "Dramatic Entrance",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 19.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 6500,
+    "action": "Upgraded",
+    "action_pct": 13.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3900,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2200,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "entropy",
+  "name": "Entropy",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7800,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 380,
+    "action": "Upgraded",
+    "action_pct": 45.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 490,
+    "action": "Upgraded",
+    "action_pct": 26.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 730,
+    "action": "Upgraded",
+    "action_pct": 25.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   }
+  ]
+ },
+ {
+  "slug": "equilibrium",
+  "name": "Equilibrium",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 4400,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3900,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2900,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "eternal-armor",
+  "name": "Eternal Armor",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": 8.0,
+    "run_winrate_delta": 8.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": 9.0,
+    "run_winrate_delta": 7.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7900,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 370,
+    "action": "Upgraded",
+    "action_pct": 63.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 720,
+    "action": "Upgraded",
+    "action_pct": 48.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 910,
+    "action": "Upgraded",
+    "action_pct": 34.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   }
+  ]
+ },
+ {
+  "slug": "fasten",
+  "name": "Fasten",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 100,
+    "action": "Picked",
+    "action_pct": 55.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 43.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 34.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 26.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 8900,
+    "action": "Upgraded",
+    "action_pct": 43.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 5500,
+    "action": "Upgraded",
+    "action_pct": 23.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3400,
+    "action": "Upgraded",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   }
+  ]
+ },
+ {
+  "slug": "finesse",
+  "name": "Finesse",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 33.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 38.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5000,
+    "action": "Bought",
+    "action_pct": 37.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 8300,
+    "action": "Upgraded",
+    "action_pct": 11.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 7600,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 6400,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 4.0
+   }
+  ]
+ },
+ {
+  "slug": "fisticuffs",
+  "name": "Fisticuffs",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 21.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 6700,
+    "action": "Upgraded",
+    "action_pct": 18.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4700,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3200,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "flash-of-steel",
+  "name": "Flash of Steel",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 17000,
+    "action": "Bought",
+    "action_pct": 29.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 29.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 29.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 7900,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": -10.0,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 6800,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 5400,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "gang-up",
+  "name": "Gang Up",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 3200,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2700,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 2000,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2900,
+    "action": "Upgraded",
+    "action_pct": 33.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1200,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 13.0
+   }
+  ]
+ },
+ {
+  "slug": "gold-axe",
+  "name": "Gold Axe",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7800,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 320,
+    "action": "Upgraded",
+    "action_pct": 23.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 400,
+    "action": "Upgraded",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 640,
+    "action": "Upgraded",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "hand-of-greed",
+  "name": "Hand of Greed",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": -14.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7900,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 630,
+    "action": "Upgraded",
+    "action_pct": 48.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 280,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 240,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "hidden-gem",
+  "name": "Hidden Gem",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 14.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 8000,
+    "action": "Bought",
+    "action_pct": 29.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2200,
+    "action": "Upgraded",
+    "action_pct": 59.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2800,
+    "action": "Upgraded",
+    "action_pct": 44.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2800,
+    "action": "Upgraded",
+    "action_pct": 40.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   }
+  ]
+ },
+ {
+  "slug": "huddle-up",
+  "name": "Huddle Up",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 3100,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2500,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1900,
+    "action": "Bought",
+    "action_pct": 14.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 3500,
+    "action": "Upgraded",
+    "action_pct": 11.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2800,
+    "action": "Upgraded",
+    "action_pct": 8.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 8.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2100,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 5.0
+   }
+  ]
+ },
+ {
+  "slug": "impatience",
+  "name": "Impatience",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 7.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 770,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 670,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 720,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "intercept",
+  "name": "Intercept",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 3100,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2500,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 2000,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 490,
+    "action": "Upgraded",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 300,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 280,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "jack-of-all-trades",
+  "name": "Jack of All Trades",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1400,
+    "action": "Upgraded",
+    "action_pct": 30.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 910,
+    "action": "Upgraded",
+    "action_pct": 14.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 660,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "jackpot",
+  "name": "Jackpot",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": 17.0,
+    "run_winrate_delta": 9.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7900,
+    "action": "Bought",
+    "action_pct": 14.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 76.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 54.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1500,
+    "action": "Upgraded",
+    "action_pct": 40.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   }
+  ]
+ },
+ {
+  "slug": "knockdown",
+  "name": "Knockdown",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4900,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": 10.0,
+    "run_winrate_delta": 15.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3200,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 200,
+    "action": "Upgraded",
+    "action_pct": 88.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 420,
+    "action": "Upgraded",
+    "action_pct": 74.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 620,
+    "action": "Upgraded",
+    "action_pct": 65.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   }
+  ]
+ },
+ {
+  "slug": "lift",
+  "name": "Lift",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 3100,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2600,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 2000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 950,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 720,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "master-of-strategy",
+  "name": "Master of Strategy",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7800,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2800,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": 8.0,
+    "run_winrate_delta": 13.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3800,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   }
+  ]
+ },
+ {
+  "slug": "mayhem",
+  "name": "Mayhem",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7800,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 580,
+    "action": "Upgraded",
+    "action_pct": 75.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 780,
+    "action": "Upgraded",
+    "action_pct": 56.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 37.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   }
+  ]
+ },
+ {
+  "slug": "mimic",
+  "name": "Mimic",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4900,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3100,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 200,
+    "action": "Upgraded",
+    "action_pct": 61.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 340,
+    "action": "Upgraded",
+    "action_pct": 52.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 650,
+    "action": "Upgraded",
+    "action_pct": 39.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   }
+  ]
+ },
+ {
+  "slug": "mind-blast",
+  "name": "Mind Blast",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 17000,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 780,
+    "action": "Upgraded",
+    "action_pct": 35.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 320,
+    "action": "Upgraded",
+    "action_pct": 18.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 320,
+    "action": "Upgraded",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "nostalgia",
+  "name": "Nostalgia",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7700,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 250,
+    "action": "Upgraded",
+    "action_pct": 47.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 400,
+    "action": "Upgraded",
+    "action_pct": 36.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 670,
+    "action": "Upgraded",
+    "action_pct": 20.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -8.0
+   }
+  ]
+ },
+ {
+  "slug": "omnislice",
+  "name": "Omnislice",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 6200,
+    "action": "Upgraded",
+    "action_pct": 14.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3400,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2100,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "panache",
+  "name": "Panache",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 21.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 3600,
+    "action": "Upgraded",
+    "action_pct": 14.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3200,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2800,
+    "action": "Upgraded",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   }
+  ]
+ },
+ {
+  "slug": "panic-button",
+  "name": "Panic Button",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2100,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1900,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "prep-time",
+  "name": "Prep Time",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 100,
+    "action": "Picked",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 29.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 870,
+    "action": "Upgraded",
+    "action_pct": 15.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 730,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "production",
+  "name": "Production",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 17.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Bought",
+    "action_pct": 26.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 28.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 4700,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4500,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 4000,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 4.0
+   }
+  ]
+ },
+ {
+  "slug": "prolong",
+  "name": "Prolong",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 12.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 3100,
+    "action": "Upgraded",
+    "action_pct": 47.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2400,
+    "action": "Upgraded",
+    "action_pct": 39.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1800,
+    "action": "Upgraded",
+    "action_pct": 37.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   }
+  ]
+ },
+ {
+  "slug": "prowess",
+  "name": "Prowess",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 100,
+    "action": "Picked",
+    "action_pct": 63.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 31.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 29.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 26.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 5500,
+    "action": "Upgraded",
+    "action_pct": 74.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3000,
+    "action": "Upgraded",
+    "action_pct": 52.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2100,
+    "action": "Upgraded",
+    "action_pct": 41.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   }
+  ]
+ },
+ {
+  "slug": "purity",
+  "name": "Purity",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9500,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "rally",
+  "name": "Rally",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4900,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3100,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 550,
+    "action": "Upgraded",
+    "action_pct": 45.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 960,
+    "action": "Upgraded",
+    "action_pct": 30.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 19.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 5.0
+   }
+  ]
+ },
+ {
+  "slug": "rend",
+  "name": "Rend",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7800,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 180,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "restlessness",
+  "name": "Restlessness",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": -10.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 610,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 420,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 450,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "rolling-boulder",
+  "name": "Rolling Boulder",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": 9.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7900,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 690,
+    "action": "Upgraded",
+    "action_pct": 44.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 840,
+    "action": "Upgraded",
+    "action_pct": 26.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 20.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -7.0
+   }
+  ]
+ },
+ {
+  "slug": "salvo",
+  "name": "Salvo",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": 8.0,
+    "run_winrate_delta": 7.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7700,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 420,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 380,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 520,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "scrawl",
+  "name": "Scrawl",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": 9.0,
+    "run_winrate_delta": 10.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7800,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 8.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 400,
+    "action": "Upgraded",
+    "action_pct": 17.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 980,
+    "action": "Upgraded",
+    "action_pct": 17.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1400,
+    "action": "Upgraded",
+    "action_pct": 14.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   }
+  ]
+ },
+ {
+  "slug": "secret-technique",
+  "name": "Secret Technique",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 8000,
+    "action": "Bought",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 8.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 290,
+    "action": "Upgraded",
+    "action_pct": 37.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 690,
+    "action": "Upgraded",
+    "action_pct": 29.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1200,
+    "action": "Upgraded",
+    "action_pct": 27.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   }
+  ]
+ },
+ {
+  "slug": "secret-weapon",
+  "name": "Secret Weapon",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 9.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 7800,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 100,
+    "action": "Upgraded",
+    "action_pct": 29.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 250,
+    "action": "Upgraded",
+    "action_pct": 31.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 520,
+    "action": "Upgraded",
+    "action_pct": 18.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "seeker-strike",
+  "name": "Seeker Strike",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1800,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 900,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "shockwave",
+  "name": "Shockwave",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 17000,
+    "action": "Bought",
+    "action_pct": 27.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 28.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 26.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 6500,
+    "action": "Upgraded",
+    "action_pct": 41.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4600,
+    "action": "Upgraded",
+    "action_pct": 25.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3300,
+    "action": "Upgraded",
+    "action_pct": 17.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   }
+  ]
+ },
+ {
+  "slug": "splash",
+  "name": "Splash",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 17000,
+    "action": "Bought",
+    "action_pct": 38.0,
+    "act_winrate_delta": 14.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 31.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 26.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 8300,
+    "action": "Upgraded",
+    "action_pct": 64.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4500,
+    "action": "Upgraded",
+    "action_pct": 33.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2800,
+    "action": "Upgraded",
+    "action_pct": 26.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   }
+  ]
+ },
+ {
+  "slug": "stratagem",
+  "name": "Stratagem",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 9.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 870,
+    "action": "Upgraded",
+    "action_pct": 31.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 660,
+    "action": "Upgraded",
+    "action_pct": 21.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 730,
+    "action": "Upgraded",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -6.0
+   }
+  ]
+ },
+ {
+  "slug": "tag-team",
+  "name": "Tag Team",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 3200,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2600,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 2000,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1900,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1200,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "the-ball",
+  "name": "The Ball",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 31.0,
+    "act_winrate_delta": 12.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 930,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 800,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2400,
+    "action": "Upgraded",
+    "action_pct": 65.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1200,
+    "action": "Upgraded",
+    "action_pct": 34.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 850,
+    "action": "Upgraded",
+    "action_pct": 26.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   }
+  ]
+ },
+ {
+  "slug": "the-bomb",
+  "name": "The Bomb",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": -18.0,
+    "run_winrate_delta": -11.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5300,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 25.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 830,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 490,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "the-gambit",
+  "name": "The Gambit",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 25000,
+    "action": "Bought",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 14000,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 8000,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 110,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 260,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "thinking-ahead",
+  "name": "Thinking Ahead",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9900,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1300,
+    "action": "Upgraded",
+    "action_pct": 25.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 16.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 13.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   }
+  ]
+ },
+ {
+  "slug": "thrumming-hatchet",
+  "name": "Thrumming Hatchet",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 100,
+    "action": "Picked",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": 8.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2700,
+    "action": "Upgraded",
+    "action_pct": 27.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 670,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "ultimate-defend",
+  "name": "Ultimate Defend",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 14.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4900,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 4600,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 10000,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 7200,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -6.0
+   }
+  ]
+ },
+ {
+  "slug": "ultimate-strike",
+  "name": "Ultimate Strike",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 160,
+    "action": "Picked",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": -11.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2900,
+    "action": "Upgraded",
+    "action_pct": 24.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 14000,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 8700,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "volley",
+  "name": "Volley",
+  "blocks": [
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 16000,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1200,
+    "action": "Upgraded",
+    "action_pct": 46.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 450,
+    "action": "Upgraded",
+    "action_pct": 15.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 370,
+    "action": "Upgraded",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ }
+]

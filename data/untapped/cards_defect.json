@@ -1,0 +1,8391 @@
+[
+ {
+  "slug": "adaptive-strike",
+  "name": "Adaptive Strike",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 36.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 8900,
+    "action": "Picked",
+    "action_pct": 15.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 600,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 290,
+    "action": "Bought",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 35.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1400,
+    "action": "Upgraded",
+    "action_pct": 13.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "all-for-one",
+  "name": "All for One",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 67.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 8.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9100,
+    "action": "Picked",
+    "action_pct": 55.0,
+    "act_winrate_delta": 9.0,
+    "run_winrate_delta": 9.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Picked",
+    "action_pct": 53.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 8.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 990,
+    "action": "Bought",
+    "action_pct": 26.0,
+    "act_winrate_delta": 9.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 560,
+    "action": "Bought",
+    "action_pct": 35.0,
+    "act_winrate_delta": 9.0,
+    "run_winrate_delta": 9.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 280,
+    "action": "Bought",
+    "action_pct": 38.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2200,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 6300,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 6100,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "ball-lightning",
+  "name": "Ball Lightning",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 66000,
+    "action": "Picked",
+    "action_pct": 36.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 10.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -10.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 11000,
+    "action": "Picked",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -19.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6500,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3400,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 24000,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 15000,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 7800,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "barrage",
+  "name": "Barrage",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 66000,
+    "action": "Picked",
+    "action_pct": 18.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 10.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6500,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3400,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 10000,
+    "action": "Upgraded",
+    "action_pct": 17.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 7300,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 4200,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   }
+  ]
+ },
+ {
+  "slug": "beam-cell",
+  "name": "Beam Cell",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 65000,
+    "action": "Picked",
+    "action_pct": 32.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 19.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6500,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3400,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 18000,
+    "action": "Upgraded",
+    "action_pct": 22.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 12000,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 7500,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   }
+  ]
+ },
+ {
+  "slug": "biased-cognition",
+  "name": "Biased Cognition",
+  "blocks": []
+ },
+ {
+  "slug": "boost-away",
+  "name": "Boost Away",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 65000,
+    "action": "Picked",
+    "action_pct": 40.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 32.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 11000,
+    "action": "Picked",
+    "action_pct": 21.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 32.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 27.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 20.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 25000,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 23000,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 15000,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 11.0
+   }
+  ]
+ },
+ {
+  "slug": "boot-sequence",
+  "name": "Boot Sequence",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 52.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9500,
+    "action": "Picked",
+    "action_pct": 43.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3700,
+    "action": "Picked",
+    "action_pct": 33.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4600,
+    "action": "Bought",
+    "action_pct": 27.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2800,
+    "action": "Bought",
+    "action_pct": 25.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1500,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 11000,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 12000,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 8300,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "buffer",
+  "name": "Buffer",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2200,
+    "action": "Picked",
+    "action_pct": 65.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9200,
+    "action": "Picked",
+    "action_pct": 37.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 40.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 460,
+    "action": "Bought",
+    "action_pct": 17.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 250,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 110,
+    "action": "Bought",
+    "action_pct": 32.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1500,
+    "action": "Upgraded",
+    "action_pct": 53.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2800,
+    "action": "Upgraded",
+    "action_pct": 45.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2300,
+    "action": "Upgraded",
+    "action_pct": 43.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   }
+  ]
+ },
+ {
+  "slug": "bulk-up",
+  "name": "Bulk Up",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 23000,
+    "action": "Picked",
+    "action_pct": 34.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 23.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Picked",
+    "action_pct": 18.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 19.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6300,
+    "action": "Bought",
+    "action_pct": 14.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3300,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 6400,
+    "action": "Upgraded",
+    "action_pct": 55.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4300,
+    "action": "Upgraded",
+    "action_pct": 29.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2900,
+    "action": "Upgraded",
+    "action_pct": 20.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   }
+  ]
+ },
+ {
+  "slug": "capacitor",
+  "name": "Capacitor",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 23000,
+    "action": "Picked",
+    "action_pct": 33.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 41.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Picked",
+    "action_pct": 37.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 22.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6300,
+    "action": "Bought",
+    "action_pct": 30.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3200,
+    "action": "Bought",
+    "action_pct": 31.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 6500,
+    "action": "Upgraded",
+    "action_pct": 13.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 8000,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 5800,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   }
+  ]
+ },
+ {
+  "slug": "chaos",
+  "name": "Chaos",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 9.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Picked",
+    "action_pct": 4.0,
+    "act_winrate_delta": -18.0,
+    "run_winrate_delta": -10.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3500,
+    "action": "Picked",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4500,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2800,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1500,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 46.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 840,
+    "action": "Upgraded",
+    "action_pct": 20.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 480,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "charge-battery",
+  "name": "Charge Battery",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 65000,
+    "action": "Picked",
+    "action_pct": 37.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 21.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -11.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 24000,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 19000,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 10000,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   }
+  ]
+ },
+ {
+  "slug": "chill",
+  "name": "Chill",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 58.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Picked",
+    "action_pct": 45.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3700,
+    "action": "Picked",
+    "action_pct": 25.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4600,
+    "action": "Bought",
+    "action_pct": 32.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2900,
+    "action": "Bought",
+    "action_pct": 28.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1400,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 11000,
+    "action": "Upgraded",
+    "action_pct": 27.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 10000,
+    "action": "Upgraded",
+    "action_pct": 13.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 6500,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -11.0
+   }
+  ]
+ },
+ {
+  "slug": "claw",
+  "name": "Claw",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 66000,
+    "action": "Picked",
+    "action_pct": 45.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 32.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 26.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 39.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6600,
+    "action": "Bought",
+    "action_pct": 29.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3300,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 21000,
+    "action": "Upgraded",
+    "action_pct": 20.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 13000,
+    "action": "Upgraded",
+    "action_pct": 11.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 8800,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   }
+  ]
+ },
+ {
+  "slug": "cold-snap",
+  "name": "Cold Snap",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 65000,
+    "action": "Picked",
+    "action_pct": 39.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 11.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6600,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3400,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 26000,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 18000,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 9900,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "compact",
+  "name": "Compact",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 23000,
+    "action": "Picked",
+    "action_pct": 40.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Picked",
+    "action_pct": 41.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3600,
+    "action": "Picked",
+    "action_pct": 43.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4600,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2900,
+    "action": "Bought",
+    "action_pct": 28.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1400,
+    "action": "Bought",
+    "action_pct": 35.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 7600,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 8400,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 6300,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   }
+  ]
+ },
+ {
+  "slug": "compile-driver",
+  "name": "Compile Driver",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 66000,
+    "action": "Picked",
+    "action_pct": 18.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 14.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 11000,
+    "action": "Picked",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6600,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3400,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 11000,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": -13.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 10000,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 6700,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "consuming-shadow",
+  "name": "Consuming Shadow",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2200,
+    "action": "Picked",
+    "action_pct": 17.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9100,
+    "action": "Picked",
+    "action_pct": 6.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4200,
+    "action": "Picked",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -17.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 460,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 250,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 130,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 800,
+    "action": "Upgraded",
+    "action_pct": 18.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 900,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 580,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "coolant",
+  "name": "Coolant",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 47.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9100,
+    "action": "Picked",
+    "action_pct": 26.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4200,
+    "action": "Picked",
+    "action_pct": 25.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 460,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 250,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 140,
+    "action": "Bought",
+    "action_pct": 21.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 25.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 7.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2500,
+    "action": "Upgraded",
+    "action_pct": 17.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2100,
+    "action": "Upgraded",
+    "action_pct": 14.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   }
+  ]
+ },
+ {
+  "slug": "coolheaded",
+  "name": "Coolheaded",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 65000,
+    "action": "Picked",
+    "action_pct": 37.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 28.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 18.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 27.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9900,
+    "action": "Bought",
+    "action_pct": 20.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 17.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 22000,
+    "action": "Upgraded",
+    "action_pct": 14.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 17000,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 10000,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   }
+  ]
+ },
+ {
+  "slug": "creative-ai",
+  "name": "Creative AI",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 39.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9100,
+    "action": "Picked",
+    "action_pct": 23.0,
+    "act_winrate_delta": -10.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4200,
+    "action": "Picked",
+    "action_pct": 27.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 440,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 230,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 140,
+    "action": "Bought",
+    "action_pct": 23.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 810,
+    "action": "Upgraded",
+    "action_pct": 59.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1400,
+    "action": "Upgraded",
+    "action_pct": 44.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1300,
+    "action": "Upgraded",
+    "action_pct": 33.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   }
+  ]
+ },
+ {
+  "slug": "darkness",
+  "name": "Darkness",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 29.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Picked",
+    "action_pct": 16.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3600,
+    "action": "Picked",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -12.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4600,
+    "action": "Bought",
+    "action_pct": 14.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2800,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1500,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 5100,
+    "action": "Upgraded",
+    "action_pct": 36.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3500,
+    "action": "Upgraded",
+    "action_pct": 19.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1900,
+    "action": "Upgraded",
+    "action_pct": 13.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -7.0
+   }
+  ]
+ },
+ {
+  "slug": "defend-defect",
+  "name": "Defend",
+  "blocks": [
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 120000,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 57000,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 30000,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "defragment",
+  "name": "Defragment",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 85.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9000,
+    "action": "Picked",
+    "action_pct": 71.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4200,
+    "action": "Picked",
+    "action_pct": 66.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 430,
+    "action": "Bought",
+    "action_pct": 36.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 9.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 270,
+    "action": "Bought",
+    "action_pct": 51.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 120,
+    "action": "Bought",
+    "action_pct": 49.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 76.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4200,
+    "action": "Upgraded",
+    "action_pct": 64.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3000,
+    "action": "Upgraded",
+    "action_pct": 54.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   }
+  ]
+ },
+ {
+  "slug": "double-energy",
+  "name": "Double Energy",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 11.0,
+    "act_winrate_delta": -11.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Picked",
+    "action_pct": 14.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3700,
+    "action": "Picked",
+    "action_pct": 14.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4600,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2900,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": -14.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1400,
+    "action": "Bought",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1900,
+    "action": "Upgraded",
+    "action_pct": 24.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 22.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1300,
+    "action": "Upgraded",
+    "action_pct": 15.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   }
+  ]
+ },
+ {
+  "slug": "dualcast",
+  "name": "Dualcast",
+  "blocks": [
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 110000,
+    "action": "Upgraded",
+    "action_pct": 8.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 42000,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 20000,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -7.0
+   }
+  ]
+ },
+ {
+  "slug": "echo-form",
+  "name": "Echo Form",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 86.0,
+    "act_winrate_delta": 9.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 8900,
+    "action": "Picked",
+    "action_pct": 70.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4200,
+    "action": "Picked",
+    "action_pct": 68.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 460,
+    "action": "Bought",
+    "action_pct": 36.0,
+    "act_winrate_delta": 16.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 240,
+    "action": "Bought",
+    "action_pct": 45.0,
+    "act_winrate_delta": 9.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 110,
+    "action": "Bought",
+    "action_pct": 51.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 22.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 5800,
+    "action": "Upgraded",
+    "action_pct": 13.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 5600,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   }
+  ]
+ },
+ {
+  "slug": "energy-surge",
+  "name": "Energy Surge",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 7000,
+    "action": "Picked",
+    "action_pct": 60.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 3300,
+    "action": "Picked",
+    "action_pct": 57.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1700,
+    "action": "Picked",
+    "action_pct": 53.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 850,
+    "action": "Bought",
+    "action_pct": 27.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 590,
+    "action": "Bought",
+    "action_pct": 30.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 470,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 4800,
+    "action": "Upgraded",
+    "action_pct": 13.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 5500,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 9.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3700,
+    "action": "Upgraded",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 11.0
+   }
+  ]
+ },
+ {
+  "slug": "feral",
+  "name": "Feral",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 23000,
+    "action": "Picked",
+    "action_pct": 41.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 38.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Picked",
+    "action_pct": 36.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 30.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6600,
+    "action": "Bought",
+    "action_pct": 30.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3300,
+    "action": "Bought",
+    "action_pct": 30.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 7.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 7000,
+    "action": "Upgraded",
+    "action_pct": 57.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 5600,
+    "action": "Upgraded",
+    "action_pct": 44.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 4100,
+    "action": "Upgraded",
+    "action_pct": 29.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   }
+  ]
+ },
+ {
+  "slug": "fight-through",
+  "name": "Fight Through",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 28.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Picked",
+    "action_pct": 26.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3800,
+    "action": "Picked",
+    "action_pct": 22.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4600,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2800,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1500,
+    "action": "Bought",
+    "action_pct": 17.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 6100,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 6300,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 4500,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "flak-cannon",
+  "name": "Flak Cannon",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 45.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 8800,
+    "action": "Picked",
+    "action_pct": 35.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Picked",
+    "action_pct": 40.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 610,
+    "action": "Bought",
+    "action_pct": 19.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 310,
+    "action": "Bought",
+    "action_pct": 31.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1300,
+    "action": "Upgraded",
+    "action_pct": 14.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3200,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3000,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 5.0
+   }
+  ]
+ },
+ {
+  "slug": "focused-strike",
+  "name": "Focused Strike",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 65000,
+    "action": "Picked",
+    "action_pct": 17.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 7.0,
+    "act_winrate_delta": -10.0,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 11000,
+    "action": "Picked",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -13.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6700,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": -10.0,
+    "run_winrate_delta": -10.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3500,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -10.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 10000,
+    "action": "Upgraded",
+    "action_pct": 19.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 6100,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3100,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   }
+  ]
+ },
+ {
+  "slug": "ftl",
+  "name": "FTL",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 49.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Picked",
+    "action_pct": 37.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3600,
+    "action": "Picked",
+    "action_pct": 25.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 26.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6300,
+    "action": "Bought",
+    "action_pct": 22.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3100,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 11000,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": -10.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 10000,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 7500,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   }
+  ]
+ },
+ {
+  "slug": "fusion",
+  "name": "Fusion",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 12.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Picked",
+    "action_pct": 9.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3600,
+    "action": "Picked",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4600,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2800,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1500,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2400,
+    "action": "Upgraded",
+    "action_pct": 16.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2100,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -10.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1400,
+    "action": "Upgraded",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -12.0
+   }
+  ]
+ },
+ {
+  "slug": "genetic-algorithm",
+  "name": "Genetic Algorithm",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2200,
+    "action": "Picked",
+    "action_pct": 73.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9000,
+    "action": "Picked",
+    "action_pct": 37.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 21.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 620,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 300,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 17.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3800,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": -10.0,
+    "run_winrate_delta": -12.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2500,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "glacier",
+  "name": "Glacier",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 75.0,
+    "act_winrate_delta": 8.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Picked",
+    "action_pct": 58.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3500,
+    "action": "Picked",
+    "action_pct": 41.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4600,
+    "action": "Bought",
+    "action_pct": 51.0,
+    "act_winrate_delta": 9.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2900,
+    "action": "Bought",
+    "action_pct": 43.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1400,
+    "action": "Bought",
+    "action_pct": 36.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 17000,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 16000,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 10000,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -8.0
+   }
+  ]
+ },
+ {
+  "slug": "glasswork",
+  "name": "Glasswork",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 43.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Picked",
+    "action_pct": 19.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": -10.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3600,
+    "action": "Picked",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -20.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4500,
+    "action": "Bought",
+    "action_pct": 22.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2900,
+    "action": "Bought",
+    "action_pct": 12.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -11.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1400,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 10000,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 7700,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 4100,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "go-for-the-eyes",
+  "name": "Go for the Eyes",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 66000,
+    "action": "Picked",
+    "action_pct": 47.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 26.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 31.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6600,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3400,
+    "action": "Bought",
+    "action_pct": 14.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 27000,
+    "action": "Upgraded",
+    "action_pct": 21.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 18000,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 11000,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   }
+  ]
+ },
+ {
+  "slug": "gunk-up",
+  "name": "Gunk Up",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 65000,
+    "action": "Picked",
+    "action_pct": 22.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 10.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6500,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3400,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 9.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 13000,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": -11.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 8800,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 5400,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "hailstorm",
+  "name": "Hailstorm",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 23000,
+    "action": "Picked",
+    "action_pct": 17.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 15.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3900,
+    "action": "Picked",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 12.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6500,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3300,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 3900,
+    "action": "Upgraded",
+    "action_pct": 17.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4000,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2700,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -6.0
+   }
+  ]
+ },
+ {
+  "slug": "helix-drill",
+  "name": "Helix Drill",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2200,
+    "action": "Picked",
+    "action_pct": 44.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 8900,
+    "action": "Picked",
+    "action_pct": 22.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 22.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 600,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 300,
+    "action": "Bought",
+    "action_pct": 14.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1300,
+    "action": "Upgraded",
+    "action_pct": 27.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2300,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2000,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   }
+  ]
+ },
+ {
+  "slug": "hello-world",
+  "name": "Hello World",
+  "blocks": [
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 330,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 180,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "hibernate",
+  "name": "Hibernate",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2300,
+    "action": "Picked",
+    "action_pct": 57.0,
+    "act_winrate_delta": 8.0,
+    "run_winrate_delta": 16.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 1100,
+    "action": "Picked",
+    "action_pct": 47.0,
+    "act_winrate_delta": 13.0,
+    "run_winrate_delta": 18.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 640,
+    "action": "Picked",
+    "action_pct": 47.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 290,
+    "action": "Bought",
+    "action_pct": 26.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 220,
+    "action": "Bought",
+    "action_pct": 25.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 170,
+    "action": "Bought",
+    "action_pct": 23.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 44.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 23.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 15.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   }
+  ]
+ },
+ {
+  "slug": "hologram",
+  "name": "Hologram",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 66000,
+    "action": "Picked",
+    "action_pct": 47.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 46.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 39.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 34.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 33.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 31.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 25000,
+    "action": "Upgraded",
+    "action_pct": 32.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 20000,
+    "action": "Upgraded",
+    "action_pct": 24.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 12000,
+    "action": "Upgraded",
+    "action_pct": 22.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   }
+  ]
+ },
+ {
+  "slug": "hotfix",
+  "name": "Hotfix",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 65000,
+    "action": "Picked",
+    "action_pct": 15.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 14.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -10.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9900,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 8100,
+    "action": "Upgraded",
+    "action_pct": 28.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 7000,
+    "action": "Upgraded",
+    "action_pct": 17.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3800,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   }
+  ]
+ },
+ {
+  "slug": "hyperbeam",
+  "name": "Hyperbeam",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 16.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9000,
+    "action": "Picked",
+    "action_pct": 6.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Picked",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 580,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 300,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 40.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 750,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 490,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "ice-lance",
+  "name": "Ice Lance",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 67.0,
+    "act_winrate_delta": 13.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 8900,
+    "action": "Picked",
+    "action_pct": 37.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 22.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": 16.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 540,
+    "action": "Bought",
+    "action_pct": 17.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 300,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2100,
+    "action": "Upgraded",
+    "action_pct": 17.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4800,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": -11.0,
+    "run_winrate_delta": -12.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3500,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "ignition",
+  "name": "Ignition",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2700,
+    "action": "Picked",
+    "action_pct": 42.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 3400,
+    "action": "Picked",
+    "action_pct": 31.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1800,
+    "action": "Picked",
+    "action_pct": 28.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 400,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 310,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 240,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 21.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2200,
+    "action": "Upgraded",
+    "action_pct": 11.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 5.0
+   }
+  ]
+ },
+ {
+  "slug": "imitation-learning",
+  "name": "Imitation Learning",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 200,
+    "action": "Picked",
+    "action_pct": 61.0,
+    "act_winrate_delta": 11.0,
+    "run_winrate_delta": 7.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 1200,
+    "action": "Picked",
+    "action_pct": 49.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 830,
+    "action": "Picked",
+    "action_pct": 52.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 8.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 250,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 16.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 930,
+    "action": "Upgraded",
+    "action_pct": 19.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   }
+  ]
+ },
+ {
+  "slug": "iteration",
+  "name": "Iteration",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 23000,
+    "action": "Picked",
+    "action_pct": 19.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 27.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Picked",
+    "action_pct": 26.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6400,
+    "action": "Bought",
+    "action_pct": 17.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3300,
+    "action": "Bought",
+    "action_pct": 22.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 4100,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 5600,
+    "action": "Upgraded",
+    "action_pct": 8.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 7.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 4700,
+    "action": "Upgraded",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 5.0
+   }
+  ]
+ },
+ {
+  "slug": "leap",
+  "name": "Leap",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 66000,
+    "action": "Picked",
+    "action_pct": 15.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 7.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -16.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5100,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 9300,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 7300,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 4200,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "lightning-rod",
+  "name": "Lightning Rod",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 66000,
+    "action": "Picked",
+    "action_pct": 35.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 13.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -14.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 22.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": -10.0,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5200,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 22000,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 15000,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 8200,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "loop",
+  "name": "Loop",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 18.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 16.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 13.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6400,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3300,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 3200,
+    "action": "Upgraded",
+    "action_pct": 31.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2900,
+    "action": "Upgraded",
+    "action_pct": 18.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1900,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   }
+  ]
+ },
+ {
+  "slug": "machine-learning",
+  "name": "Machine Learning",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 74.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9000,
+    "action": "Picked",
+    "action_pct": 51.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4200,
+    "action": "Picked",
+    "action_pct": 51.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 420,
+    "action": "Bought",
+    "action_pct": 20.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 240,
+    "action": "Bought",
+    "action_pct": 31.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 120,
+    "action": "Bought",
+    "action_pct": 38.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1400,
+    "action": "Upgraded",
+    "action_pct": 26.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4200,
+    "action": "Upgraded",
+    "action_pct": 22.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3700,
+    "action": "Upgraded",
+    "action_pct": 21.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   }
+  ]
+ },
+ {
+  "slug": "meteor-strike",
+  "name": "Meteor Strike",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 15.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 8900,
+    "action": "Picked",
+    "action_pct": 9.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4200,
+    "action": "Picked",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 560,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 300,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 710,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "modded",
+  "name": "Modded",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 82.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 8900,
+    "action": "Picked",
+    "action_pct": 63.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Picked",
+    "action_pct": 60.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 30.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 630,
+    "action": "Bought",
+    "action_pct": 42.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 280,
+    "action": "Bought",
+    "action_pct": 41.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2000,
+    "action": "Upgraded",
+    "action_pct": 20.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 5300,
+    "action": "Upgraded",
+    "action_pct": 19.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 4400,
+    "action": "Upgraded",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   }
+  ]
+ },
+ {
+  "slug": "momentum-strike",
+  "name": "Momentum Strike",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 66000,
+    "action": "Picked",
+    "action_pct": 8.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 2.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -11.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 11000,
+    "action": "Picked",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6600,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": -11.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3400,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 5800,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3200,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "multi-cast",
+  "name": "Multi-Cast",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2000,
+    "action": "Picked",
+    "action_pct": 18.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 8900,
+    "action": "Picked",
+    "action_pct": 9.0,
+    "act_winrate_delta": -10.0,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -10.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 620,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 310,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 670,
+    "action": "Upgraded",
+    "action_pct": 29.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 880,
+    "action": "Upgraded",
+    "action_pct": 15.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 660,
+    "action": "Upgraded",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "null",
+  "name": "Null",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 23000,
+    "action": "Picked",
+    "action_pct": 36.0,
+    "act_winrate_delta": 11.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Picked",
+    "action_pct": 16.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3600,
+    "action": "Picked",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": 13.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6100,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3200,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 8300,
+    "action": "Upgraded",
+    "action_pct": 23.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 6300,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3500,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   }
+  ]
+ },
+ {
+  "slug": "one-for-all",
+  "name": "One for All",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 220,
+    "action": "Picked",
+    "action_pct": 56.0,
+    "act_winrate_delta": 12.0,
+    "run_winrate_delta": 9.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 1200,
+    "action": "Picked",
+    "action_pct": 36.0,
+    "act_winrate_delta": 11.0,
+    "run_winrate_delta": 11.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 820,
+    "action": "Picked",
+    "action_pct": 39.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 250,
+    "action": "Upgraded",
+    "action_pct": 17.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 750,
+    "action": "Upgraded",
+    "action_pct": 13.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 720,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "overclock",
+  "name": "Overclock",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 52.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Picked",
+    "action_pct": 59.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3700,
+    "action": "Picked",
+    "action_pct": 56.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4700,
+    "action": "Bought",
+    "action_pct": 35.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2800,
+    "action": "Bought",
+    "action_pct": 43.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1500,
+    "action": "Bought",
+    "action_pct": 43.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 10000,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 11000,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 8000,
+    "action": "Upgraded",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 6.0
+   }
+  ]
+ },
+ {
+  "slug": "quadcast",
+  "name": "Quadcast",
+  "blocks": [
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1300,
+    "action": "Upgraded",
+    "action_pct": 49.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 340,
+    "action": "Upgraded",
+    "action_pct": 24.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "rainbow",
+  "name": "Rainbow",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 31.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 8900,
+    "action": "Picked",
+    "action_pct": 11.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -15.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 560,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 310,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1000,
+    "action": "Upgraded",
+    "action_pct": 31.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1300,
+    "action": "Upgraded",
+    "action_pct": 18.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": -11.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 800,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "reboot",
+  "name": "Reboot",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2000,
+    "action": "Picked",
+    "action_pct": 41.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9000,
+    "action": "Picked",
+    "action_pct": 25.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 26.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 980,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 560,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 280,
+    "action": "Bought",
+    "action_pct": 14.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1200,
+    "action": "Upgraded",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2600,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2400,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   }
+  ]
+ },
+ {
+  "slug": "rebound",
+  "name": "Rebound",
+  "blocks": [
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 240,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 120,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "refract",
+  "name": "Refract",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 38.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Picked",
+    "action_pct": 16.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3800,
+    "action": "Picked",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -13.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 9900,
+    "action": "Bought",
+    "action_pct": 19.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6000,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3200,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 9000,
+    "action": "Upgraded",
+    "action_pct": 18.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 6400,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3500,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "rip-and-tear",
+  "name": "Rip and Tear",
+  "blocks": [
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 320,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 170,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "rocket-punch",
+  "name": "Rocket Punch",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 43.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Picked",
+    "action_pct": 39.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3700,
+    "action": "Picked",
+    "action_pct": 36.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Bought",
+    "action_pct": 27.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 7.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6000,
+    "action": "Bought",
+    "action_pct": 28.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 7.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3200,
+    "action": "Bought",
+    "action_pct": 27.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 8.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 8800,
+    "action": "Upgraded",
+    "action_pct": 37.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 7200,
+    "action": "Upgraded",
+    "action_pct": 26.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 5100,
+    "action": "Upgraded",
+    "action_pct": 21.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   }
+  ]
+ },
+ {
+  "slug": "scavenge",
+  "name": "Scavenge",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 12.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Picked",
+    "action_pct": 13.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3500,
+    "action": "Picked",
+    "action_pct": 15.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -10.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4500,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2900,
+    "action": "Bought",
+    "action_pct": 7.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1500,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2500,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2600,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2100,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "scrape",
+  "name": "Scrape",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 14.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Picked",
+    "action_pct": 14.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3800,
+    "action": "Picked",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 9900,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6100,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3200,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 3200,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": 5.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3000,
+    "action": "Upgraded",
+    "action_pct": 8.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2200,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   }
+  ]
+ },
+ {
+  "slug": "shadow-shield",
+  "name": "Shadow Shield",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 23000,
+    "action": "Picked",
+    "action_pct": 46.0,
+    "act_winrate_delta": 8.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Picked",
+    "action_pct": 23.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3700,
+    "action": "Picked",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4700,
+    "action": "Bought",
+    "action_pct": 24.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2800,
+    "action": "Bought",
+    "action_pct": 12.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1500,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 10000,
+    "action": "Upgraded",
+    "action_pct": 11.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 8400,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 4700,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "shatter",
+  "name": "Shatter",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 63.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 8900,
+    "action": "Picked",
+    "action_pct": 35.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 25.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 990,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": 16.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 600,
+    "action": "Bought",
+    "action_pct": 19.0,
+    "act_winrate_delta": 4.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 280,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2100,
+    "action": "Upgraded",
+    "action_pct": 11.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4400,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": -13.0,
+    "run_winrate_delta": -14.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3200,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "signal-boost",
+  "name": "Signal Boost",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 26.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9000,
+    "action": "Picked",
+    "action_pct": 22.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Picked",
+    "action_pct": 27.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 560,
+    "action": "Bought",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 290,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 860,
+    "action": "Upgraded",
+    "action_pct": 21.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 24.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 18.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   }
+  ]
+ },
+ {
+  "slug": "skim",
+  "name": "Skim",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 28.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Picked",
+    "action_pct": 41.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3600,
+    "action": "Picked",
+    "action_pct": 40.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4500,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2900,
+    "action": "Bought",
+    "action_pct": 26.0,
+    "act_winrate_delta": 8.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1400,
+    "action": "Bought",
+    "action_pct": 31.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 5100,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 6800,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 9.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 5700,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 6.0
+   }
+  ]
+ },
+ {
+  "slug": "smokestack",
+  "name": "Smokestack",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 23000,
+    "action": "Picked",
+    "action_pct": 24.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 23.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 21.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6400,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3300,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 4900,
+    "action": "Upgraded",
+    "action_pct": 16.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4900,
+    "action": "Upgraded",
+    "action_pct": 9.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3900,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   }
+  ]
+ },
+ {
+  "slug": "spinner",
+  "name": "Spinner",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 62.0,
+    "act_winrate_delta": 10.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9200,
+    "action": "Picked",
+    "action_pct": 36.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4200,
+    "action": "Picked",
+    "action_pct": 22.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -10.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 420,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 270,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 110,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 32.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3400,
+    "action": "Upgraded",
+    "action_pct": 15.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -10.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2400,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -9.0
+   }
+  ]
+ },
+ {
+  "slug": "stack",
+  "name": "Stack",
+  "blocks": [
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 280,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 170,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 100,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "storm",
+  "name": "Storm",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 23000,
+    "action": "Picked",
+    "action_pct": 14.0,
+    "act_winrate_delta": -14.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 15.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 15.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6400,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3400,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 6.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 2400,
+    "action": "Upgraded",
+    "action_pct": 26.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2400,
+    "action": "Upgraded",
+    "action_pct": 24.0,
+    "act_winrate_delta": 7.0,
+    "run_winrate_delta": 5.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1800,
+    "action": "Upgraded",
+    "action_pct": 21.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 4.0
+   }
+  ]
+ },
+ {
+  "slug": "strike-defect",
+  "name": "Strike",
+  "blocks": [
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 120000,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 50000,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 22000,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "subroutine",
+  "name": "Subroutine",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 23000,
+    "action": "Picked",
+    "action_pct": 20.0,
+    "act_winrate_delta": -13.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 26.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Picked",
+    "action_pct": 27.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 11.0,
+    "act_winrate_delta": -13.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6300,
+    "action": "Bought",
+    "action_pct": 18.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3400,
+    "action": "Bought",
+    "action_pct": 22.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 3700,
+    "action": "Upgraded",
+    "action_pct": 26.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3800,
+    "action": "Upgraded",
+    "action_pct": 26.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3000,
+    "action": "Upgraded",
+    "action_pct": 19.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -1.0
+   }
+  ]
+ },
+ {
+  "slug": "sunder",
+  "name": "Sunder",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 23.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Picked",
+    "action_pct": 4.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3600,
+    "action": "Picked",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 9900,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6300,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": -12.0,
+    "run_winrate_delta": -12.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3300,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 5100,
+    "action": "Upgraded",
+    "action_pct": 28.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2300,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": -10.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1200,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "supercritical",
+  "name": "Supercritical",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 67.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 8900,
+    "action": "Picked",
+    "action_pct": 44.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4000,
+    "action": "Picked",
+    "action_pct": 44.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 17.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 550,
+    "action": "Bought",
+    "action_pct": 28.0,
+    "act_winrate_delta": 8.0,
+    "run_winrate_delta": 9.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 280,
+    "action": "Bought",
+    "action_pct": 29.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1600,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4500,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 4100,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 8.0
+   }
+  ]
+ },
+ {
+  "slug": "sweeping-beam",
+  "name": "Sweeping Beam",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 65000,
+    "action": "Picked",
+    "action_pct": 8.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 2.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6700,
+    "action": "Bought",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3300,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 5900,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3300,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 0.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "synchronize",
+  "name": "Synchronize",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 16.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Picked",
+    "action_pct": 18.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3600,
+    "action": "Picked",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4600,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2800,
+    "action": "Bought",
+    "action_pct": 10.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1400,
+    "action": "Bought",
+    "action_pct": 12.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 3100,
+    "action": "Upgraded",
+    "action_pct": 33.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2800,
+    "action": "Upgraded",
+    "action_pct": 24.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 20.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   }
+  ]
+ },
+ {
+  "slug": "synthesis",
+  "name": "Synthesis",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 6.0,
+    "act_winrate_delta": -11.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Picked",
+    "action_pct": 5.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3600,
+    "action": "Picked",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -16.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 9900,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6300,
+    "action": "Bought",
+    "action_pct": 2.0,
+    "act_winrate_delta": -10.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3200,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1500,
+    "action": "Upgraded",
+    "action_pct": 8.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 800,
+    "action": "Upgraded",
+    "action_pct": 1.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "tempest",
+  "name": "Tempest",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 16.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9600,
+    "action": "Picked",
+    "action_pct": 10.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3600,
+    "action": "Picked",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -12.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4500,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2800,
+    "action": "Bought",
+    "action_pct": 6.0,
+    "act_winrate_delta": -9.0,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1500,
+    "action": "Bought",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 3000,
+    "action": "Upgraded",
+    "action_pct": 36.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1900,
+    "action": "Upgraded",
+    "action_pct": 16.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 8.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "tesla-coil",
+  "name": "Tesla Coil",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 34.0,
+    "act_winrate_delta": 0.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Picked",
+    "action_pct": 19.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3700,
+    "action": "Picked",
+    "action_pct": 11.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -13.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 9700,
+    "action": "Bought",
+    "action_pct": 17.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6000,
+    "action": "Bought",
+    "action_pct": 12.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -8.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3100,
+    "action": "Bought",
+    "action_pct": 9.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 6700,
+    "action": "Upgraded",
+    "action_pct": 33.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4400,
+    "action": "Upgraded",
+    "action_pct": 16.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2500,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -8.0
+   }
+  ]
+ },
+ {
+  "slug": "thunder",
+  "name": "Thunder",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 23000,
+    "action": "Picked",
+    "action_pct": 25.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 20.0,
+    "act_winrate_delta": -6.0,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6400,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3200,
+    "action": "Bought",
+    "action_pct": 14.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 5400,
+    "action": "Upgraded",
+    "action_pct": 12.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": 1.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 4800,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": 3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3100,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 7.0
+   }
+  ]
+ },
+ {
+  "slug": "trash-to-treasure",
+  "name": "Trash to Treasure",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 55.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9100,
+    "action": "Picked",
+    "action_pct": 40.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4200,
+    "action": "Picked",
+    "action_pct": 41.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 490,
+    "action": "Bought",
+    "action_pct": 19.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 280,
+    "action": "Bought",
+    "action_pct": 26.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 130,
+    "action": "Bought",
+    "action_pct": 32.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1200,
+    "action": "Upgraded",
+    "action_pct": 37.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 4.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 3100,
+    "action": "Upgraded",
+    "action_pct": 29.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 2600,
+    "action": "Upgraded",
+    "action_pct": 22.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   }
+  ]
+ },
+ {
+  "slug": "turbo",
+  "name": "TURBO",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 65000,
+    "action": "Picked",
+    "action_pct": 33.0,
+    "act_winrate_delta": -7.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 34.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Picked",
+    "action_pct": 29.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 15000,
+    "action": "Bought",
+    "action_pct": 29.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9900,
+    "action": "Bought",
+    "action_pct": 30.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 5000,
+    "action": "Bought",
+    "action_pct": 27.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 20000,
+    "action": "Upgraded",
+    "action_pct": 5.0,
+    "act_winrate_delta": 1.0,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 20000,
+    "action": "Upgraded",
+    "action_pct": 6.0,
+    "act_winrate_delta": 6.0,
+    "run_winrate_delta": 8.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 13000,
+    "action": "Upgraded",
+    "action_pct": 7.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 6.0
+   }
+  ]
+ },
+ {
+  "slug": "uproar",
+  "name": "Uproar",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 65000,
+    "action": "Picked",
+    "action_pct": 8.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 28000,
+    "action": "Picked",
+    "action_pct": 4.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -1.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 11000,
+    "action": "Picked",
+    "action_pct": 4.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -6.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 10000,
+    "action": "Bought",
+    "action_pct": 4.0,
+    "act_winrate_delta": 2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 6600,
+    "action": "Bought",
+    "action_pct": 3.0,
+    "act_winrate_delta": -3.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3400,
+    "action": "Bought",
+    "action_pct": 5.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 2.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 4100,
+    "action": "Upgraded",
+    "action_pct": 10.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 2800,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 3.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   }
+  ]
+ },
+ {
+  "slug": "voltaic",
+  "name": "Voltaic",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 2100,
+    "action": "Picked",
+    "action_pct": 37.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 8800,
+    "action": "Picked",
+    "action_pct": 25.0,
+    "act_winrate_delta": -8.0,
+    "run_winrate_delta": -7.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 4100,
+    "action": "Picked",
+    "action_pct": 21.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -9.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 1000,
+    "action": "Bought",
+    "action_pct": 15.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 560,
+    "action": "Bought",
+    "action_pct": 16.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 260,
+    "action": "Bought",
+    "action_pct": 13.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": null
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 45.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 1700,
+    "action": "Upgraded",
+    "action_pct": 46.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 1100,
+    "action": "Upgraded",
+    "action_pct": 41.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -4.0
+   }
+  ]
+ },
+ {
+  "slug": "white-noise",
+  "name": "White Noise",
+  "blocks": [
+   {
+    "section": "Card Reward",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 22000,
+    "action": "Picked",
+    "action_pct": 48.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 9800,
+    "action": "Picked",
+    "action_pct": 42.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Card Reward",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 3600,
+    "action": "Picked",
+    "action_pct": 38.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -3.0
+   },
+   {
+    "section": "Shop",
+    "act": 1,
+    "sample_verb": "offered",
+    "n": 4500,
+    "action": "Bought",
+    "action_pct": 28.0,
+    "act_winrate_delta": -5.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Shop",
+    "act": 2,
+    "sample_verb": "offered",
+    "n": 2900,
+    "action": "Bought",
+    "action_pct": 28.0,
+    "act_winrate_delta": -4.0,
+    "run_winrate_delta": -5.0
+   },
+   {
+    "section": "Shop",
+    "act": 3,
+    "sample_verb": "offered",
+    "n": 1500,
+    "action": "Bought",
+    "action_pct": 30.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": 0.0
+   },
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 7400,
+    "action": "Upgraded",
+    "action_pct": 35.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 6100,
+    "action": "Upgraded",
+    "action_pct": 20.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 3900,
+    "action": "Upgraded",
+    "action_pct": 13.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -6.0
+   }
+  ]
+ },
+ {
+  "slug": "zap",
+  "name": "Zap",
+  "blocks": [
+   {
+    "section": "Smith",
+    "act": 1,
+    "sample_verb": "seen",
+    "n": 100000,
+    "action": "Upgraded",
+    "action_pct": 18.0,
+    "act_winrate_delta": -2.0,
+    "run_winrate_delta": -2.0
+   },
+   {
+    "section": "Smith",
+    "act": 2,
+    "sample_verb": "seen",
+    "n": 36000,
+    "action": "Upgraded",
+    "action_pct": 4.0,
+    "act_winrate_delta": -1.0,
+    "run_winrate_delta": -4.0
+   },
+   {
+    "section": "Smith",
+    "act": 3,
+    "sample_verb": "seen",
+    "n": 17000,
+    "action": "Upgraded",
+    "action_pct": 2.0,
+    "act_winrate_delta": null,
+    "run_winrate_delta": -2.0
+   }
+  ]
+ }
+]
