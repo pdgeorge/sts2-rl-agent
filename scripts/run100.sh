@@ -1,8 +1,9 @@
 #!/bin/bash
 # THE live 100-run session. This is the only measurement that counts.
 #
-#   ./scripts/run100.sh            -> output/*_run100.jsonl
-#   ./scripts/run100.sh nightly    -> output/*_nightly.jsonl
+#   ./scripts/run100.sh                          -> output/*_run100.jsonl
+#   ./scripts/run100.sh nightly                  -> output/*_nightly.jsonl
+#   ./scripts/run100.sh cardprior v004_card_prior -> that policy, not v001
 #
 # STS2 must already be running with the bridge mod listening on 127.0.0.1:9002.
 # Ctrl-C stops early and still prints the summary.
@@ -69,6 +70,20 @@ set -u
 cd /media/Bucket_Drive/development/sts2-rl-agent
 
 TAG="${1:-run100}"
+
+# WHICH POLICY. Second argument, defaulting to the shipped v001.
+#
+# This was NOT passed through until 2026-08-20, and the omission is the exact
+# trap `PHASE_TWO.md` 3.1 records: `live_eval --policy` defaults to v001, so a
+# session run to confirm an A/B arm would have run the BASELINE for three hours
+# and reported it as confirmation. Caught while checking the plumbing before a
+# prediction-14 session, not after one.
+#
+# The version is stamped on every run in the journal (`policy_version_loaded`
+# and each `run_start`), so a session can always be checked afterwards -- but
+# checking afterwards costs a session, and this costs a line.
+POLICY="${2:-v001}"
+
 PY=.venv/bin/python
 MODEL=output/combat_v3_overnight/final_model.zip
 
@@ -85,7 +100,19 @@ for f in output/live_eval_${TAG}.jsonl output/live_journal_${TAG}.jsonl \
     fi
 done
 
-echo "100 live runs, tag '${TAG}'. Ctrl-C stops and still prints the summary."
+echo "100 live runs, tag '${TAG}', policy '${POLICY}'. Ctrl-C stops and still prints the summary."
+
+# Fail here rather than 40 minutes in. A typo'd policy name would otherwise
+# surface as a stack trace after the first decision, with the game already up.
+if ! $PY -c "
+import sys; sys.path.insert(0, '.')
+from sts2_env.policy_config import PolicyConfig
+p = PolicyConfig.load('${POLICY}')
+print(f'  policy {p.policy_version} loaded, card_prior_weight={p.card_prior_weight}, tie_break={p.tie_break}')
+"; then
+    echo "REFUSING: policy '${POLICY}' does not load." >&2
+    exit 1
+fi
 
 # NOT `exec` any more. The session is no longer the last thing this script
 # does -- the transcripts are rendered afterwards -- and dropping exec also
@@ -93,6 +120,7 @@ echo "100 live runs, tag '${TAG}'. Ctrl-C stops and still prints the summary."
 # summary and exits normally, and the shell carries on to the export.
 $PY -m sts2_env.bridge.live_eval \
     --model-path "$MODEL" \
+    --policy "$POLICY" \
     --runs 100 \
     --live-search \
     --restart-on-crash 4 \
