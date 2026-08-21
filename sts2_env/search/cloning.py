@@ -101,34 +101,62 @@ def _rebind_pending_turn_setup(clone: "CombatState") -> None:
     raise CloneError(f"Unknown pending turn-setup spec: {spec!r}")
 
 
+#: Run-level bookkeeping the SEARCH never reads. A turn of combat does not
+#: enter a room, resolve an event, or roll a card reward, so none of this can
+#: change during a search -- and copying it on every node was most of the cost.
+#: Measured per subtree on a healthy clone, as a share of the whole copy:
+#: visited_map_coords 12.0%, acts 10.5%, map_point_history 10.4%,
+#: unknown_odds 8.0%, card_rarity_odds 7.5%, visited_event_ids 7.1%,
+#: active_card_rewards 7.0%, current_act 6.5%.
+#:
+#: `player` and `players` are NOT here despite being the single biggest subtree
+#: at 39.2%: the run player owns the deck, the combat's piles hold those very
+#: card objects, and a search that mutated them would corrupt the real run.
+#: The rule is that a shared object must be one the search cannot touch, not
+#: merely one it usually does not.
+_SHARED_RUN_STATE_ATTRS = (
+    "map",
+    "acts",
+    "current_act",
+    "map_point_history",
+    "visited_map_coords",
+    "visited_event_ids",
+    "active_card_rewards",
+    "card_rarity_odds",
+    "unknown_odds",
+)
+
+
 def _shared_with_the_original(combat: "CombatState") -> list:
     """Objects the clone SHARES with the original instead of copying.
 
-    Only the act map, and only because copying it was catastrophic. Offline the
-    combat graph reaches `RunState.map`, so a plain `deepcopy` duplicated the
-    whole map on EVERY node of EVERY search -- and the duplicates were retained,
-    so each turn copied the previous turn's copies. Measured on seed 372's
-    Vantom fight: one clone cost 2.5 ms on turn 1 and 1,222 ms on turn 5, live
-    MapPoint objects went 65 -> 1,040 -> 4,160 -> 16,640 (quadrupling per turn),
-    the search managed 4 nodes in 64 seconds by boss turn 4, and one A/B worker
-    was OOM-killed at 15 GB.
+    Run-level state only -- the map, the act list, the run's history and its
+    reward odds. The search never reads any of it and cannot reach a code path
+    that writes it, because a searched turn never leaves the fight.
 
-    SAFE BECAUSE THE SEARCH NEVER TOUCHES THE MAP. Nothing under
-    `sts2_env/search/` and nothing in `core/combat.py` reads `.map`; a fight
-    does not know or care which room it is in. Shared here rather than given an
-    `ActMap.__deepcopy__`, which would change behaviour for every other
-    `deepcopy` in the codebase -- saving a run, rebuilding a situation -- none
-    of which asked for this and some of which may want a real copy.
+    THE MAP WAS THE ONE THAT MATTERED FOR CORRECTNESS, not just speed. Offline
+    the combat graph reaches `RunState.map`, so a plain `deepcopy` duplicated
+    the whole map on EVERY node of EVERY search, and the duplicates were
+    retained -- each turn copying the previous turn's copies. Measured on seed
+    372's Vantom fight: one clone cost 2.5 ms on turn 1 and 1,222 ms on turn 5,
+    live MapPoint objects went 65 -> 1,040 -> 4,160 -> 16,640, and one A/B
+    worker was OOM-killed at 15 GB.
 
     Live never had the problem: `CombatSituation.to_combat` builds a standalone
-    `RunState`, and the live journals show it -- options per boss turn are flat
-    at 6.2-6.4 from turn 1 to turn 12, with no collapse.
+    `RunState`, and the live journals agree -- options per boss turn are flat at
+    6.2-6.4 from turn 1 to turn 12.
     """
     state = getattr(combat, "_primary_player_state", None)
     player_state = getattr(state, "player_state", None)
     run_state = getattr(player_state, "run_state", None)
-    act_map = getattr(run_state, "map", None)
-    return [act_map] if act_map is not None else []
+    if run_state is None:
+        return []
+    shared = []
+    for attr in _SHARED_RUN_STATE_ATTRS:
+        value = getattr(run_state, attr, None)
+        if value is not None:
+            shared.append(value)
+    return shared
 
 
 def clone_combat(combat: "CombatState") -> "CombatState":
