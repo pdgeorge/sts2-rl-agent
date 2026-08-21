@@ -58,6 +58,12 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 ARMS: tuple[str, ...] = ("v001",)  # replaced by --arms at runtime
+
+
+def _room_map():
+    from sts2_env.core.enums import RoomType
+    return {RoomType.MONSTER: "monster", RoomType.ELITE: "elite",
+            RoomType.BOSS: "boss"}
 ACT1_BOSS_FLOOR = 17
 
 
@@ -118,6 +124,11 @@ def _walk(job) -> dict:
 
     agent = SearchAgent(time_budget=60.0, lookahead_turns=2, max_nodes=max_nodes,
                         weights=policy.eval_weights)
+    from sts2_env.core.enums import RoomType
+    room_of = {RoomType.MONSTER: "monster", RoomType.ELITE: "elite",
+               RoomType.BOSS: "boss"}
+
+    ROOM_OF = _room_map()
     rng = np.random.default_rng(seed)
     env = STS2RunEnv()
     env.reset(seed=seed)
@@ -130,6 +141,21 @@ def _walk(job) -> dict:
     deck_at_boss = None
     drawn = 0
     deck_card_slots = 0
+
+    # THE GATES PREDICTIONS 16 AND 17 ACTUALLY NAMED. This file was generalised
+    # from the card-prior harness and kept ITS gates -- picking and bloat -- so
+    # the first three-arm run produced outcomes with no mechanism behind them,
+    # which is precisely what prediction 11 taught us not to trust. Split by
+    # room because 16 claims boss fights get shorter and 17 claims CORRIDOR
+    # damage falls, and those are different rooms.
+    dmg = {"monster": 0, "elite": 0, "boss": 0}
+    fights = {"monster": 0, "elite": 0, "boss": 0}
+    boss_turns = 0
+    arrival_hp = None
+    arrival_max_hp = None
+    in_fight = False
+    fight_room = None
+    fight_start_hp = 0
 
     for _ in range(3000):
         mgr = env._mgr
@@ -152,6 +178,30 @@ def _walk(job) -> dict:
         if getattr(mgr, "_current_room_type", None) == RoomType.BOSS \
                 and deck_at_boss is None and floor <= ACT1_BOSS_FLOOR + 1:
             deck_at_boss = len(deck_now)
+
+        # -- the gates -------------------------------------------------------
+        # Damage TAKEN per fight, by room, and how long the act 1 boss fight
+        # ran. Measured by watching HP across the fight rather than summing
+        # events, for the same reason `evaluate.py` scores a state instead of
+        # predicting one: the difference is the truth whatever produced it.
+        room = ROOM_OF.get(getattr(mgr, "_current_room_type", None))
+        hp_now = int(getattr(player, "current_hp", 0) or 0)
+        combat_now = getattr(mgr, "_combat", None)
+        fighting = mgr.phase == RunManager.PHASE_COMBAT and combat_now is not None
+
+        if fighting and not in_fight and room:
+            in_fight, fight_room, fight_start_hp = True, room, hp_now
+            fights[room] = fights.get(room, 0) + 1
+            if room == "boss" and arrival_hp is None and floor <= ACT1_BOSS_FLOOR + 1:
+                arrival_hp = hp_now
+                arrival_max_hp = int(getattr(player, "max_hp", 0) or 0)
+        elif fighting and in_fight and fight_room == "boss" \
+                and floor <= ACT1_BOSS_FLOOR + 1:
+            boss_turns = max(boss_turns, int(getattr(combat_now, "turn_count", 0) or 0))
+        elif in_fight and not fighting:
+            if fight_room:
+                dmg[fight_room] = dmg.get(fight_room, 0) + max(0, fight_start_hp - hp_now)
+            in_fight, fight_room = False, None
 
         # The picking gate. Read BEFORE the action, from the same offer the
         # chooser is about to rank, so it describes the decision actually made.
@@ -210,6 +260,11 @@ def _walk(job) -> dict:
     run_state = getattr(env._mgr, "run_state", None)
     return {
         "seed": seed, "arm": arm,
+        "dmg_monster": dmg["monster"], "fights_monster": fights["monster"],
+        "dmg_elite": dmg["elite"], "fights_elite": fights["elite"],
+        "dmg_boss": dmg["boss"], "fights_boss": fights["boss"],
+        "boss_turns": boss_turns,
+        "arrival_hp": arrival_hp, "arrival_max_hp": arrival_max_hp,
         "floor": int(getattr(run_state, "total_floor", 0) or 0),
         "act": int(getattr(run_state, "current_act_index", 0) or 0) + 1,
         "deck_size": len(getattr(run_state, "deck", None) or []),
@@ -238,7 +293,9 @@ def _walk_safe(job) -> dict | None:
         return {"seed": seed, "arm": arm, "failed": "MemoryError"}
     except Exception as exc:  # noqa: BLE001
         seed, arm, _ = job
-        return {"seed": seed, "arm": arm, "failed": type(exc).__name__}
+        import traceback
+        return {"seed": seed, "arm": arm, "failed": type(exc).__name__,
+                "detail": f"{exc}", "where": traceback.format_exc().strip().split("\n")[-3:]}
 
 
 def _wilson(k: int, n: int) -> float:
@@ -300,24 +357,29 @@ def main() -> int:
               f"{statistics.mean(dab) if dab else 0:>14.1f}"
               f"{statistics.mean([r['deck_size'] for r in rs]):>11.1f}")
 
-    print("\nPICKING GATE -- prediction 14 says -0.28 -> above +1.5, and 40.2% -> above 65%")
-    print(f"  {'arm':<20}{'decisions':>10}{'mean taken':>12}{'mean best':>11}{'took best':>11}")
+    print("\nGATES -- prediction 16 says boss fights get SHORTER and corridor")
+    print("damage falls; prediction 17 says corridor damage falls and more")
+    print("arrivals land at 90-100% HP. Read these before the clear rate.")
+    print(f"  {'arm':<22}{'dmg/monster fight':>19}{'dmg/elite':>11}"
+          f"{'boss turns':>12}{'arrive HP':>11}{'>=90% HP':>10}")
     for arm in ARMS:
         rs = by_arm[arm]
-        n = sum(r["rated_decisions"] for r in rs)
-        taken = sum(r["taken_sum"] for r in rs) / n if n else 0.0
-        best = sum(r["best_sum"] for r in rs) / n if n else 0.0
-        tb = sum(r["took_best"] for r in rs)
-        sk = sum(r.get("skipped_offers", 0) for r in rs)
-        print(f"  {arm:<20}{n:>10}{taken:>+12.2f}{best:>+11.2f}"
-              f"{100 * tb / n if n else 0:>10.1f}%{sk:>9} skipped")
-
-    print("\nBLOAT GATE -- cards drawn per deck card. Falling means a diluted deck.")
-    for arm in ARMS:
-        rs = by_arm[arm]
-        d = sum(r["drawn"] for r in rs)
-        s = sum(r["deck_slots"] for r in rs)
-        print(f"  {arm:<20}{d / s if s else 0:>8.3f}")
+        if not rs:
+            continue
+        fm = sum(r.get("fights_monster", 0) for r in rs)
+        fe = sum(r.get("fights_elite", 0) for r in rs)
+        dm = sum(r.get("dmg_monster", 0) for r in rs)
+        de = sum(r.get("dmg_elite", 0) for r in rs)
+        bt = [r["boss_turns"] for r in rs if r.get("boss_turns")]
+        hp = [(r["arrival_hp"], r["arrival_max_hp"]) for r in rs
+              if r.get("arrival_hp") and r.get("arrival_max_hp")]
+        healthy = sum(1 for h, m in hp if h / m >= 0.9)
+        print(f"  {arm:<22}{dm / fm if fm else 0:>19.2f}{de / fe if fe else 0:>11.1f}"
+              f"{statistics.mean(bt) if bt else 0:>12.1f}"
+              f"{statistics.mean([h for h, _ in hp]) if hp else 0:>11.1f}"
+              f"{100 * healthy / len(hp) if hp else 0:>9.0f}%")
+    print("\n  baselines to beat: corridor 4.6 HP/fight, boss arrivals 46% at "
+          "90-100%,\n  and act 1 boss fights that losses drag to 13.4 turns.")
 
     base = {r["seed"]: r for r in by_arm[ARMS[0]]}
     print(f"\nPAIRED against {ARMS[0]}. Discordant pairs set the resolution, not n.")
