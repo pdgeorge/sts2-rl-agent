@@ -31,6 +31,15 @@ KNOWN LIMITS, stated so a clean run is not mistaken for a proven one:
     only sometimes debuffs will look like one that always does.
   * targets are not distinguished: applying Weak to the player and to itself
     both read as "applies WEAK".
+  * A POWER APPLIED BY A HOOK READS AS ONE APPLIED BY THE MOVE. Fossil
+    Stalker is the case: its Tackle, Latch and Lash all report "we apply
+    STRENGTH, game does not", and every one is correct behaviour --
+    `SuckPower.AfterAttack` grants `Amount * num` Strength whenever the
+    monster's attack lands unblocked, so performing any attacking move makes
+    Strength appear without the move method mentioning it. Three of the
+    fourteen findings from the first full run are this, and there is no way to
+    tell them apart without tracing which code applied the power. Check the
+    monster's POWERS before believing a Strength or Block finding.
 """
 
 from __future__ import annotations
