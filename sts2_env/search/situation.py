@@ -1039,6 +1039,11 @@ def _sync_combat_from_bridge(combat: CombatState, state: dict[str, Any]) -> None
 #: belongs to none of their state machines.
 _BRIDGE_STUNNED_MOVE_ID = "STUNNED"
 
+#: A monster's OWN stun state, when it has one. The game reports the synthesised
+#: "STUNNED" either way, so this is the only way to tell that a monster's state
+#: machine meant to route the stun somewhere specific.
+_OWN_STUN_MOVE_ID = "STUN_MOVE"
+
 #: IllusionPower's revive, built in `after_death` and therefore absent from any
 #: monster the simulator has not yet killed. Eye With Teeth and Parafright.
 _BRIDGE_REVIVE_MOVE_ID = "REVIVE_MOVE"
@@ -1206,6 +1211,33 @@ def _override_enemy_intent(
     # follow-up back to the previous move and must_perform_once. It simply had no
     # caller on the live path.
     if str(move_id) == _BRIDGE_STUNNED_MOVE_ID and str(move_id) not in ai.states:
+        # A MONSTER WITH ITS OWN STUN STATE KEEPS ITS OWN FOLLOW-UP.
+        #
+        # `stun_enemy` synthesises the game's generic stun, which returns to
+        # whatever the creature was doing before. That is right for a creature
+        # the player stunned mid-cycle, and wrong for one whose state machine
+        # OWNS a stun with a follow-up of its own. Ceremonial Beast is the case:
+        #
+        #     MoveState moveState3 = new MoveState("STUN_MOVE", StunnedMove, ...)
+        #         { MustPerformOnceBeforeTransitioning = true };
+        #     moveState3.FollowUpState = BeastCryState;
+        #
+        # It is stunned when its Plow armour comes off (`SetStunned`, which also
+        # sets IsInSecondPhase), and the fight then moves permanently into
+        # BEAST_CRY -> STOMP -> CRUSH -> BEAST_CRY. Returning it to the move it
+        # was on puts it back in phase one, which it never re-enters.
+        #
+        # Measured: the bridge reported STUNNED for this boss 26 times in one
+        # session and never reported its STUN_MOVE, and `audit_dynamics` caught
+        # the resulting `sim=STAMP_MOVE game=BEAST_CRY_MOVE` twice in 94 turns.
+        # A wrong next move on a boss is a whole lookahead planned against a
+        # hit that is not coming.
+        own_stun = ai.states.get(_OWN_STUN_MOVE_ID)
+        if own_stun is not None:
+            if getattr(own_stun, "intents", None) is not None:
+                own_stun.intents = [intent]
+            ai._current_state_id = _OWN_STUN_MOVE_ID
+            return
         if combat.stun_enemy(enemy):
             return
         report_disparity(

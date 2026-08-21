@@ -120,8 +120,6 @@ from sts2_env.monsters.act4 import (
     GAS_BOMB_MONSTER_ID,
     HAUNTED_SHIP_HAUNT_MOVE,
     HAUNTED_SHIP_MONSTER_ID,
-    HAUNTED_SHIP_RANDOM_STATE,
-    HAUNTED_SHIP_RAMMING_SPEED_MOVE,
     HAUNTED_SHIP_STOMP_MOVE,
     HAUNTED_SHIP_SWIPE_MOVE,
     LAGAVULIN_MATRIARCH_ASLEEP,
@@ -6193,22 +6191,19 @@ class TestFixedRotation:
         ship_combat.add_enemy(ship, ship_ai)
 
         assert ship.max_hp == HAUNTED_SHIP_A8_HP
-        assert ship_ai.current_move.state_id == HAUNTED_SHIP_RAMMING_SPEED_MOVE
+        # CORRECTED against HauntedShip.cs: SWIPE/STOMP/HAUNT in a fixed cycle
+        # starting on HAUNT. This asserted RAMMING_SPEED_MOVE and a four-way
+        # RandomBranchState; neither exists. `RAMMING_SPEED` appears NOWHERE in
+        # the decompile, and across a live session the bridge sent HAUNT 105
+        # times, STOMP 99 and SWIPE 152 -- and RAMMING_SPEED not once.
+        assert ship_ai.current_move.state_id == HAUNTED_SHIP_HAUNT_MOVE
         assert {
-            HAUNTED_SHIP_RANDOM_STATE,
-            HAUNTED_SHIP_RAMMING_SPEED_MOVE,
             HAUNTED_SHIP_SWIPE_MOVE,
             HAUNTED_SHIP_STOMP_MOVE,
             HAUNTED_SHIP_HAUNT_MOVE,
         }.issubset(ship_ai.states)
-        ramming_speed = ship_ai.states[HAUNTED_SHIP_RAMMING_SPEED_MOVE]
-        assert ramming_speed.intents[0].damage == HAUNTED_SHIP_RAMMING_SPEED_DAMAGE_A9
-        assert ramming_speed.intents[1].hits == HAUNTED_SHIP_RAMMING_SPEED_WOUNDS
-        ship_combat.discard_pile.clear()
-        player_hp_before_ramming = ship_combat.player.current_hp
-        ramming_speed.perform(ship_combat)
-        assert ship_combat.player.current_hp == player_hp_before_ramming - HAUNTED_SHIP_RAMMING_SPEED_DAMAGE_A9
-        assert [card.card_id for card in ship_combat.discard_pile] == [CardId.WOUND] * HAUNTED_SHIP_RAMMING_SPEED_WOUNDS
+        assert ship_ai.states[HAUNTED_SHIP_SWIPE_MOVE].follow_up_id == HAUNTED_SHIP_STOMP_MOVE
+        assert ship_ai.states[HAUNTED_SHIP_HAUNT_MOVE].follow_up_id == HAUNTED_SHIP_SWIPE_MOVE
 
         ship_combat = _make_combat(rng_seed)
         ship_combat.ascension_level = 9
@@ -6722,19 +6717,23 @@ class TestFixedRotation:
         ship_combat = _make_combat(70)
         ship_combat.add_enemy(ship, ship_ai)
         assert ship.max_hp == 63
-        assert ship_ai.current_move.state_id == "RAMMING_SPEED_MOVE"
-        assert {"RAND", "RAMMING_SPEED_MOVE", "SWIPE_MOVE", "STOMP_MOVE", "HAUNT_MOVE"}.issubset(
+        assert ship_ai.current_move.state_id == "HAUNT_MOVE"
+        assert {"SWIPE_MOVE", "STOMP_MOVE", "HAUNT_MOVE"}.issubset(
             ship_ai.states
         )
         ship_ai.current_move.perform(ship_combat)
-        assert ship_combat.player.current_hp == 70
-        assert [card.card_id for card in ship_combat.discard_pile] == [CardId.WOUND, CardId.WOUND]
+        # HAUNT is the opening move and it deals NO damage -- the decompile
+        # gives it `new DebuffIntent(), new StatusIntent(HauntDazed)`. The 10
+        # damage and two Wounds asserted here belonged to RAMMING_SPEED, a move
+        # that does not exist in the game.
+        assert ship_combat.player.current_hp == 80
+        assert ship_combat.player.get_power_amount(PowerId.WEAK) > 0
 
         lethal_ship, lethal_ship_ai = create_haunted_ship(Rng(170))
         lethal_ship_combat = _make_combat(170)
         lethal_ship_combat.add_enemy(lethal_ship, lethal_ship_ai)
         lethal_ship_combat.player.current_hp = 10
-        lethal_ship_ai.states["RAMMING_SPEED_MOVE"].perform(lethal_ship_combat)
+        lethal_ship_ai.states["SWIPE_MOVE"].perform(lethal_ship_combat)
         assert lethal_ship_combat.is_over
         assert lethal_ship_combat.player_won is False
         assert lethal_ship_combat.discard_pile == []
@@ -6742,11 +6741,15 @@ class TestFixedRotation:
         ship_combat.round_number = 2
         ship_ai.on_move_performed()
         ship_ai.roll_move(Rng(70))
-        assert ship_ai.current_move.state_id == "HAUNT_MOVE"
-        ship_ai.current_move.perform(ship_combat)
-        assert ship_combat.player.get_power_amount(PowerId.WEAK) == 2
-        assert ship_combat.player.get_power_amount(PowerId.FRAIL) == 2
-        assert ship_combat.player.get_power_amount(PowerId.VULNERABLE) == 2
+        # HAUNT -> SWIPE, per HauntedShip.cs. The old expectation of HAUNT
+        # again came from the four-way random branch that has been removed.
+        assert ship_ai.current_move.state_id == "SWIPE_MOVE"
+        ship_ai.states["HAUNT_MOVE"].perform(ship_combat)
+        # Second Haunt in this test, so the stacks are doubled. HAUNT is the
+        # opening move now, and it already fired once above.
+        assert ship_combat.player.get_power_amount(PowerId.WEAK) == 4
+        assert ship_combat.player.get_power_amount(PowerId.FRAIL) == 4
+        assert ship_combat.player.get_power_amount(PowerId.VULNERABLE) == 4
 
         ship_effect, ship_effect_ai = create_haunted_ship(Rng(71))
         ship_effect_combat = _make_combat(71)
@@ -6929,8 +6932,8 @@ class TestFixedRotation:
         rng_seed = 1245
         ally_hp = 100
         osty_hp = 100
-        ramming_speed_damage = 10
-        ramming_speed_wounds = 2
+        ramming_speed_damage = 0
+        ramming_speed_wounds = 0
         # Eye With Teeth's Distract, in place of Skulking Colony's Smash: the
         # colony has no Dazed move in the game, and this test only needs two
         # different status sources to show both land on the real players.
@@ -6954,7 +6957,9 @@ class TestFixedRotation:
         primary_hp_before = combat.primary_player.current_hp
         ally_hp_before = ally.current_hp
         osty_hp_before = osty.current_hp
-        ship_ai.states["RAMMING_SPEED_MOVE"].perform(combat)
+        # The ship's half of this used RAMMING_SPEED, which does not exist in
+        # the decompile. The Eye's Distract alone still shows status cards
+        # landing on the real players and not on the pet, which is the point.
         eye_ai.states["DISTRACT_MOVE"].perform(combat)
 
         assert combat.primary_player.current_hp == primary_hp_before

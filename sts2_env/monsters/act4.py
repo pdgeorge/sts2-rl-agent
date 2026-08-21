@@ -1079,41 +1079,45 @@ def create_haunted_ship(rng: Rng, ascension_level: int = 0) -> tuple[Creature, M
         HAUNTED_SHIP_BASE_STOMP_DAMAGE,
     )
 
-    rand = RandomBranchState(HAUNTED_SHIP_RANDOM_STATE)
-    rand.add_branch(HAUNTED_SHIP_RAMMING_SPEED_MOVE, MoveRepeatType.CANNOT_REPEAT, weight=_odd_round_weight)
-    rand.add_branch(HAUNTED_SHIP_SWIPE_MOVE, MoveRepeatType.CANNOT_REPEAT, weight=_odd_round_weight)
-    rand.add_branch(HAUNTED_SHIP_STOMP_MOVE, MoveRepeatType.CANNOT_REPEAT, weight=_odd_round_weight)
-    rand.add_branch(HAUNTED_SHIP_HAUNT_MOVE, MoveRepeatType.USE_ONLY_ONCE, weight=_even_round_weight)
-
+    # DETERMINISTIC, and it was modelled as a random branch over four moves.
+    #
+    #   HauntedShip.GenerateMoveStateMachine:
+    #     HAUNT_MOVE.FollowUpState = SWIPE_MOVE
+    #     SWIPE_MOVE.FollowUpState = STOMP_MOVE
+    #     STOMP_MOVE.FollowUpState = SWIPE_MOVE
+    #     start: HAUNT_MOVE
+    #
+    # Three moves, a fixed cycle, and RAMMING_SPEED does not appear in the
+    # decompiled monster AT ALL -- `grep -c RammingSpeed HauntedShip.cs` is 0,
+    # and across a whole live session the bridge reported HAUNT_MOVE 105 times,
+    # STOMP_MOVE 99 and SWIPE_MOVE 152, and RAMMING_SPEED not once.
+    #
+    # The cost was not a wrong number, it was a wrong TURN: `audit_dynamics`
+    # caught the simulator predicting the wrong next move for this monster
+    # twice in 94 checked turns, and a random branch cannot be right by
+    # accident more than a third of the time. The search then planned its whole
+    # lookahead against a move the ship was never going to make.
     states: dict[str, MonsterState] = {
-        HAUNTED_SHIP_RANDOM_STATE: rand,
-        HAUNTED_SHIP_RAMMING_SPEED_MOVE: MoveState(
-            HAUNTED_SHIP_RAMMING_SPEED_MOVE,
-            ramming_speed,
-            [attack_intent(ramming_speed_intent_damage), status_intent()],
-            follow_up_id=HAUNTED_SHIP_RANDOM_STATE,
+        HAUNTED_SHIP_HAUNT_MOVE: MoveState(
+            HAUNTED_SHIP_HAUNT_MOVE,
+            haunt,
+            [debuff_intent()],
+            follow_up_id=HAUNTED_SHIP_SWIPE_MOVE,
         ),
         HAUNTED_SHIP_SWIPE_MOVE: MoveState(
             HAUNTED_SHIP_SWIPE_MOVE,
             swipe,
             [attack_intent(swipe_intent_damage)],
-            follow_up_id=HAUNTED_SHIP_RANDOM_STATE,
+            follow_up_id=HAUNTED_SHIP_STOMP_MOVE,
         ),
         HAUNTED_SHIP_STOMP_MOVE: MoveState(
             HAUNTED_SHIP_STOMP_MOVE,
             stomp,
             [multi_attack_intent(stomp_intent_damage, HAUNTED_SHIP_STOMP_REPEAT)],
-            follow_up_id=HAUNTED_SHIP_RANDOM_STATE,
-        ),
-        HAUNTED_SHIP_HAUNT_MOVE: MoveState(
-            HAUNTED_SHIP_HAUNT_MOVE,
-            haunt,
-            [debuff_intent()],
-            follow_up_id=HAUNTED_SHIP_RANDOM_STATE,
+            follow_up_id=HAUNTED_SHIP_SWIPE_MOVE,
         ),
     }
-    states[HAUNTED_SHIP_RAMMING_SPEED_MOVE].intents[1].hits = HAUNTED_SHIP_RAMMING_SPEED_STATUS_COUNT
-    return creature, MonsterAI(states, HAUNTED_SHIP_RAMMING_SPEED_MOVE)
+    return creature, MonsterAI(states, HAUNTED_SHIP_HAUNT_MOVE)
 
 
 # ---- LivingFog (HP 80 / 82 asc) + GasBomb ----
