@@ -101,17 +101,53 @@ def _rebind_pending_turn_setup(clone: "CombatState") -> None:
     raise CloneError(f"Unknown pending turn-setup spec: {spec!r}")
 
 
+def _shared_with_the_original(combat: "CombatState") -> list:
+    """Objects the clone SHARES with the original instead of copying.
+
+    Only the act map, and only because copying it was catastrophic. Offline the
+    combat graph reaches `RunState.map`, so a plain `deepcopy` duplicated the
+    whole map on EVERY node of EVERY search -- and the duplicates were retained,
+    so each turn copied the previous turn's copies. Measured on seed 372's
+    Vantom fight: one clone cost 2.5 ms on turn 1 and 1,222 ms on turn 5, live
+    MapPoint objects went 65 -> 1,040 -> 4,160 -> 16,640 (quadrupling per turn),
+    the search managed 4 nodes in 64 seconds by boss turn 4, and one A/B worker
+    was OOM-killed at 15 GB.
+
+    SAFE BECAUSE THE SEARCH NEVER TOUCHES THE MAP. Nothing under
+    `sts2_env/search/` and nothing in `core/combat.py` reads `.map`; a fight
+    does not know or care which room it is in. Shared here rather than given an
+    `ActMap.__deepcopy__`, which would change behaviour for every other
+    `deepcopy` in the codebase -- saving a run, rebuilding a situation -- none
+    of which asked for this and some of which may want a real copy.
+
+    Live never had the problem: `CombatSituation.to_combat` builds a standalone
+    `RunState`, and the live journals show it -- options per boss turn are flat
+    at 6.2-6.4 from turn 1 to turn 12, with no collapse.
+    """
+    state = getattr(combat, "_primary_player_state", None)
+    player_state = getattr(state, "player_state", None)
+    run_state = getattr(player_state, "run_state", None)
+    act_map = getattr(run_state, "map", None)
+    return [act_map] if act_map is not None else []
+
+
 def clone_combat(combat: "CombatState") -> "CombatState":
     """An independent copy of `combat`.
 
     Raises `CloneError` rather than returning a copy that shares state with the
-    original, because the sharing is invisible afterwards.
+    original, because the sharing is invisible afterwards. The one deliberate
+    exception is the act map -- see `_shared_with_the_original`, which explains
+    why it is shared and why that cannot affect a fight.
     """
     blockers = clone_blockers(combat)
     if blockers:
         raise CloneError(
             "Cannot clone this combat: " + "; ".join(blockers) + "."
         )
-    clone = copy.deepcopy(combat)
+    # Pre-seeding the memo makes deepcopy return these objects as-is.
+    memo = {id(obj): obj for obj in _shared_with_the_original(combat)}
+
+    clone = copy.deepcopy(combat, memo)
+
     _rebind_pending_turn_setup(clone)
     return clone
