@@ -61,8 +61,28 @@ ARMS: tuple[str, ...] = ("v001",)  # replaced by --arms at runtime
 ACT1_BOSS_FLOOR = 17
 
 
+#: Per-worker address-space cap. A leaked clone chain can take a single run to
+#: 15 GB (measured, seed 372), and an OOM kill does not merely lose that run --
+#: multiprocessing.Pool then waits forever for a result that can never arrive.
+#: That has now cost three separate A/B nights: 10 hours of a hung pool on
+#: 2026-08-21 with two workers killed at 12.8 GB and 17.5 GB.
+#:
+#: With a soft cap the worker raises MemoryError instead, the job is caught
+#: below, and the pool carries on. One lost row rather than a lost night. The
+#: cap is deliberately generous -- a healthy run peaks far under it, so
+#: anything that trips this was never going to finish usefully.
+WORKER_MEMORY_CAP_GB = 6
+
+
 def _walk(job) -> dict:
     seed, arm, max_nodes = job
+
+    import resource
+    try:
+        cap = WORKER_MEMORY_CAP_GB * 1024 ** 3
+        resource.setrlimit(resource.RLIMIT_AS, (cap, cap))
+    except Exception:  # noqa: BLE001 - a cap we cannot set is not fatal
+        pass
 
     sys.path.insert(0, str(REPO))
     sys.path.insert(0, str(REPO / "scripts"))
@@ -204,6 +224,23 @@ def _walk(job) -> dict:
     }
 
 
+def _walk_safe(job) -> dict | None:
+    """`_walk`, but a run that blows its memory cap costs one row, not the night.
+
+    Returned as None rather than raised: `imap_unordered` propagates an
+    exception by tearing down the pool, which is the same lost night by another
+    route.
+    """
+    try:
+        return _walk(job)
+    except MemoryError:
+        seed, arm, _ = job
+        return {"seed": seed, "arm": arm, "failed": "MemoryError"}
+    except Exception as exc:  # noqa: BLE001
+        seed, arm, _ = job
+        return {"seed": seed, "arm": arm, "failed": type(exc).__name__}
+
+
 def _wilson(k: int, n: int) -> float:
     if not n:
         return 0.0
@@ -235,13 +272,22 @@ def main() -> int:
 
     rows: list[dict] = []
     with out.open("a", encoding="utf-8") as fh, mp.Pool(args.workers) as pool:
-        for i, row in enumerate(pool.imap_unordered(_walk, jobs, chunksize=1), 1):
+        for i, row in enumerate(pool.imap_unordered(_walk_safe, jobs, chunksize=1), 1):
             rows.append(row)
             fh.write(json.dumps(row) + "\n")
             fh.flush()
             if i % 25 == 0:
                 print(f"  {i}/{len(jobs)}", flush=True)
 
+    failed = [r for r in rows if r.get("failed")]
+    if failed:
+        import collections as _c
+        print(f"\n{len(failed)} runs FAILED and are excluded: "
+              f"{dict(_c.Counter(r['failed'] for r in failed))}")
+        print("  A capped worker loses one row instead of hanging the pool. "
+              "Excluded rather than\n  counted as a loss, because a crashed run "
+              "is not a lost run.")
+    rows = [r for r in rows if not r.get("failed")]
     by_arm = {arm: [r for r in rows if r["arm"] == arm] for arm in ARMS}
     print("\n" + "=" * 78)
     print(f"{'arm':<20}{'clear':>18}{'deck at boss':>15}{'deck end':>11}")
