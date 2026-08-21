@@ -106,6 +106,15 @@ class PolicyConfig:
     A policy field rather than a constant because prediction 14 is an A/B and
     the arms must not be able to see each other's value."""
 
+    random_branch: str = "sample"
+    """How the SEARCH resolves an enemy's `RandomBranchState`.
+
+    "sample" rolls for it, which is the shipped behaviour and is wrong roughly
+    as often as the branch count implies. "worst" assumes the hardest-hitting
+    branch, because the cost is asymmetric -- unblocked damage ends a run and
+    unnecessary block costs one card. Applies to the search's clones only; the
+    authoritative combat always rolls."""
+
     tie_break: str = "enumeration"
     """How an EXACT tie between two scored lines is settled.
 
@@ -139,6 +148,7 @@ class PolicyConfig:
             hold_potions_for_big_fights=tuple(
                 str(x) for x in data.get("hold_potions_for_big_fights", ())),
             tie_break=str(data.get("tie_break", "enumeration")),
+            random_branch=str(data.get("random_branch", "sample")),
             card_prior_weight=float(data.get("card_prior_weight", 0.0)),
         )
 
@@ -223,7 +233,8 @@ def _validate(data: dict[str, Any], source_path: str) -> None:
     #: written before the key existed still loads and still means what it meant;
     #: listed here so it is still rejected if misspelled, which is the whole
     #: point of the unknown-key check.
-    optional = {"hold_potions_for_big_fights", "tie_break", "card_prior_weight"}
+    optional = {"hold_potions_for_big_fights", "tie_break", "card_prior_weight",
+                "random_branch"}
 
     missing = required - set(data)
     if missing:
@@ -238,6 +249,10 @@ def _validate(data: dict[str, Any], source_path: str) -> None:
     if missing_w or unknown_w:
         raise ValueError(f"{source_path}: eval_weights missing {sorted(missing_w)} "
                          f"unknown {sorted(unknown_w)}")
+    rb = data.get("random_branch", "sample")
+    if rb not in {"sample", "worst"}:
+        raise ValueError(f"{source_path}: random_branch must be 'sample' or "
+                         f"'worst', not {rb!r}")
     tb = data.get("tie_break", "enumeration")
     if tb not in {"enumeration", "focus"}:
         raise ValueError(f"{source_path}: tie_break must be 'enumeration' or "

@@ -150,4 +150,23 @@ def clone_combat(combat: "CombatState") -> "CombatState":
     clone = copy.deepcopy(combat, memo)
 
     _rebind_pending_turn_setup(clone)
+    _apply_branch_policy(clone)
     return clone
+
+
+def _apply_branch_policy(clone: "CombatState") -> None:
+    """Make the CLONE plan against the worst random branch, if the policy says so.
+
+    Set here and only here, so the authoritative combat keeps rolling its
+    branches honestly. Offline that combat IS the game: biasing it would not be
+    pessimistic planning, it would be changing the fight. Prediction 17.
+    """
+    try:
+        from sts2_env.policy_config import active_policy
+        if getattr(active_policy(), "random_branch", "sample") != "worst":
+            return
+    except Exception:  # noqa: BLE001 - config must never break a clone
+        return
+    for ai in (getattr(clone, "enemy_ais", None) or {}).values():
+        if hasattr(ai, "assume_worst_branch"):
+            ai.assume_worst_branch = True

@@ -281,6 +281,12 @@ class MonsterAI:
         self.state_log: list[str] = []
         self._current_state_id = initial_state_id
         self._performed_first_move: bool = False
+        self.assume_worst_branch: bool = False
+        """Resolve `RandomBranchState` to its hardest-hitting branch instead of
+        rolling for it. Set ONLY on the search's own clones -- see
+        `search/cloning.py`. The authoritative combat must keep rolling, because
+        offline that combat IS the game and biasing it would be cheating rather
+        than planning."""
 
         # Resolve initial state to a MoveState (walk through branches)
         self._resolve_to_move(rng)
@@ -303,7 +309,10 @@ class MonsterAI:
             if rng is None:
                 from sts2_env.core.rng import Rng as RngClass
                 rng = RngClass(0)
-            self._current_state_id = state.get_next_state(self.state_log, rng)
+            worst = self._worst_branch(state)
+            self._current_state_id = (
+                worst if worst is not None
+                else state.get_next_state(self.state_log, rng))
 
     def roll_move(self, rng: Rng) -> MoveState:
         """Advance the state machine to the next move.
@@ -322,7 +331,9 @@ class MonsterAI:
             return current
 
         # Get next state ID from current state
-        next_id = current.get_next_state(self.state_log, rng)
+        worst = self._worst_branch(current)
+        next_id = (worst if worst is not None
+                   else current.get_next_state(self.state_log, rng))
         if current.is_move:
             current.on_exit_state()
         self._current_state_id = next_id
@@ -331,6 +342,50 @@ class MonsterAI:
         self._resolve_to_move(rng)
 
         return self.current_move
+
+    def _worst_branch(self, state: MonsterState) -> str | None:
+        """The hardest-hitting branch of a random state, or None to roll normally.
+
+        WHY THE SEARCH SHOULD NOT GAMBLE. Nine of the eleven remaining move
+        mispredictions `audit_dynamics` found live are `RandomBranchState`
+        monsters -- Mawler's three moves all follow up into
+        `new RandomBranchState("RAND")`, so there is genuinely no order to read
+        off. Drawing one branch and planning as though certain is wrong roughly
+        as often as the branch count implies, and the cost is ASYMMETRIC:
+        unblocked damage ends a run, and block that turned out to be unnecessary
+        costs one card.
+
+        It is also the offline/live gap. Offline the simulator is the game, so
+        the branch it draws is the branch that happens and the search is never
+        wrong; live it is a coin flip. `boss_counterfactuals` wins 62.5% of
+        live-LOST act 1 boss positions at identical settings -- free
+        information, not more thinking time.
+
+        Damage is read off the branch's own intents rather than assumed, so a
+        debuff or buff branch scores 0 and an attack branch scores what it
+        telegraphs. Branches whose weight has gone to zero are skipped, because
+        the game will not pick those either.
+        """
+        if not self.assume_worst_branch:
+            return None
+        branches = getattr(state, "branches", None)
+        if not branches:
+            return None
+        best_id, best_damage = None, -1.0
+        for branch in branches:
+            try:
+                if branch.get_weight(self.state_log) <= 0:
+                    continue
+            except Exception:  # noqa: BLE001 - a weight callback must not break search
+                continue
+            move = self.states.get(branch.state_id)
+            damage = 0.0
+            for intent in (getattr(move, "intents", None) or ()):
+                damage += ((getattr(intent, "damage", 0) or 0)
+                           * max(1, getattr(intent, "hits", 1) or 1))
+            if damage > best_damage:
+                best_id, best_damage = branch.state_id, damage
+        return best_id
 
     def on_move_performed(self) -> None:
         """Called after the current move has been executed."""
