@@ -853,7 +853,8 @@ PUNCH_CONSTRUCT_A8_HP = 60
 PUNCH_CONSTRUCT_STRONG_PUNCH_DAMAGE_A9 = 16
 PUNCH_CONSTRUCT_FAST_PUNCH_DAMAGE_A9 = 6
 PUNCH_CONSTRUCT_FAST_PUNCH_HITS = 2
-PUNCH_CONSTRUCT_FAST_PUNCH_WEAK = 1
+# CORRECTED: PunchConstruct.FastPunchMove applies FrailPower, not Weak.
+PUNCH_CONSTRUCT_FAST_PUNCH_FRAIL = 1
 PUNCH_CONSTRUCT_READY_BLOCK = 10
 PUNCH_CONSTRUCT_STARTING_HP_REDUCTION = 7
 TWO_TAILED_RAT_A8_HP_RANGE = (18, 22)
@@ -6346,7 +6347,7 @@ class TestFixedRotation:
         assert punch_combat.player.current_hp == (
             player_hp_before_fast - PUNCH_CONSTRUCT_FAST_PUNCH_DAMAGE_A9 * PUNCH_CONSTRUCT_FAST_PUNCH_HITS
         )
-        assert punch_combat.player.get_power_amount(PowerId.WEAK) == PUNCH_CONSTRUCT_FAST_PUNCH_WEAK
+        assert punch_combat.player.get_power_amount(PowerId.FRAIL) == PUNCH_CONSTRUCT_FAST_PUNCH_FRAIL
 
         strong_start_punch, strong_start_ai = create_punch_construct(
             Rng(rng_seed),
@@ -6694,7 +6695,7 @@ class TestFixedRotation:
         assert punch_combat.player.current_hp == 66
         punch_ai.states["FAST_PUNCH_MOVE"].perform(punch_combat)
         assert punch_combat.player.current_hp == 56
-        assert punch_combat.player.get_power_amount(PowerId.WEAK) == 1
+        assert punch_combat.player.get_power_amount(PowerId.FRAIL) == 1
 
         clam, clam_ai = create_sewer_clam(Rng(69))
         clam_combat = _make_combat(69)
@@ -6861,8 +6862,11 @@ class TestFixedRotation:
         screech_frail = 1
         giant_stomp_weak = 1
         no_debuff = 0
-        expected_weak = oil_spray_weak + double_smash_weak + haunt_debuff + fast_punch_weak + giant_stomp_weak
-        expected_frail = goop_frail + tackle_frail + haunt_debuff + screech_frail
+        # Punch Construct's Fast Punch applies FRAIL, not Weak
+        # (`PowerCmd.Apply<FrailPower>` in PunchConstruct.FastPunchMove), so it
+        # moved from the weak total to the frail one.
+        expected_weak = oil_spray_weak + double_smash_weak + haunt_debuff + giant_stomp_weak
+        expected_frail = goop_frail + tackle_frail + haunt_debuff + screech_frail + fast_punch_weak
         expected_vulnerable = haunt_debuff
         expected_smoggy = advanced_gas_smoggy
         expected_damage = (

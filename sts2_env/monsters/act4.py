@@ -1291,7 +1291,14 @@ PUNCH_CONSTRUCT_DEADLY_STRONG_PUNCH_DAMAGE = 16
 PUNCH_CONSTRUCT_BASE_FAST_PUNCH_DAMAGE = 5
 PUNCH_CONSTRUCT_DEADLY_FAST_PUNCH_DAMAGE = 6
 PUNCH_CONSTRUCT_FAST_PUNCH_REPEAT = 2
-PUNCH_CONSTRUCT_FAST_PUNCH_WEAK = 1
+PUNCH_CONSTRUCT_FAST_PUNCH_FRAIL = 1
+"""`PunchConstruct.FastPunchMove` applies `PowerCmd.Apply<FrailPower>(..., 1m)`.
+
+It was WEAK here. Not interchangeable: Frail cuts block gained by 25% and Weak
+cuts damage dealt by 25%, so an agent that blocks as heavily as this one was
+planning against the harmless one of the two. Found by
+`scripts/audit_move_effects.py`, which performs each move and compares the
+powers it actually applied against the decompiled method."""
 PUNCH_CONSTRUCT_READY_BLOCK = 10
 PUNCH_CONSTRUCT_ARTIFACT = 1
 PUNCH_CONSTRUCT_READY_MOVE = "READY_MOVE"
@@ -1340,8 +1347,8 @@ def create_punch_construct(
         _deal_damage_to_player(combat, creature, fast_punch_dmg, hits=PUNCH_CONSTRUCT_FAST_PUNCH_REPEAT)
         apply_power_to_living_player_targets(
             combat,
-            PowerId.WEAK,
-            PUNCH_CONSTRUCT_FAST_PUNCH_WEAK,
+            PowerId.FRAIL,
+            PUNCH_CONSTRUCT_FAST_PUNCH_FRAIL,
             applier=creature,
         )
 
