@@ -1,5 +1,5 @@
 {
-  "policy_version": "v004_card_prior",
+  "policy_version": "v005_threat_tempo",
   "eval_weights": {
     "player_hp": 1.0,
     "enemy_hp": 0.25,
@@ -10,7 +10,7 @@
     "powers": 1.0,
     "powers_cap": 0.25,
     "block_unused": -0.02,
-    "threat_tempo": 0.0,
+    "threat_tempo": 1.0,
     "threat_tempo_cap": 0.25
   },
   "room_min_hp_fraction": {
@@ -25,6 +25,5 @@
   "large_deck_size": 30,
   "scaling_bonus": 1.5,
   "block_need_bonus": 1.0,
-  "hold_potions_for_big_fights": [],
-  "card_prior_weight": 1.0
+  "hold_potions_for_big_fights": []
 }

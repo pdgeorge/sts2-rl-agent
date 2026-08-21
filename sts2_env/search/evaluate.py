@@ -141,12 +141,82 @@ class EvalWeights:
     to somebody's HP. Powers that matter beyond this turn are the horizon's
     problem, not a number to inflate here."""
 
+    threat_tempo: float = 0.0
+    """What the REST of the fight will still cost, which the horizon cannot see.
+
+    `evaluate` is called on the leaf after the enemies have replied, so damage
+    inside the 2-turn window is already in `player_hp`. The `turn` term below is
+    the only thing standing for everything past it -- and at a flat -0.02 it
+    prices a turn at 1.6 HP on an 80 HP character whether the enemy hits for 5
+    or for 25. Lagavulin's Slash alone is 19.
+
+    Measured across live act 1 boss fights, turns won against turns lost:
+    Waterfall 8.7 vs 13.4, Lagavulin 7.5 vs 10.5, Soul Fysh 8.4 vs 12.0,
+    Ceremonial Beast 7.7 vs 8.6. Four of six lose by taking longer. Vantom
+    (8.3 vs 8.1) and Kin (9.3 vs 8.7) do not, and Kin's losses are SHORTER --
+    so this is not expected to help everywhere, and pretending otherwise would
+    make the gate unfalsifiable.
+
+    0.0 is the shipped behaviour and makes the term inert."""
+
+    threat_tempo_cap: float = 0.25
+    """The most the tempo term may subtract. Same reasoning as `powers_cap`,
+    which exists because an uncapped term once scored a sleeping elite at -1.2
+    and made the searcher refuse to attack at all. A tempo signal is meant to
+    break a tie between lines of similar safety, not to outvote what actually
+    happened to somebody's HP."""
+
     block_unused: float = -0.02
     """Per fraction of max HP held as block at the moment the fight ends or is
     scored mid-turn. Block that was never needed was energy spent on nothing."""
 
 
 DEFAULT_WEIGHTS = EvalWeights()
+
+
+
+def _sustained_threat(combat: "CombatState") -> float:
+    """Damage per turn the living enemies deal ON AVERAGE over their move cycle.
+
+    NOT this turn's telegraph, which was the first version and oscillated
+    uselessly: Lagavulin asleep reads 0, Waterfall's Pressurize turn reads 0,
+    Vantom's Prepare turn reads 0 -- and a Pressurize turn is exactly when the
+    searcher should be hurrying, because it is banking eruption damage. A term
+    that says "no rush" on setup turns and panics on attack turns is noise.
+
+    Averaged over the monster's own move table instead, which is stable from
+    turn to turn and is what an extra turn actually costs in expectation. Read
+    off the intents the simulator already holds, so it stays correct across a
+    game update without anybody maintaining a damage table here.
+    """
+    total = 0.0
+    for enemy in combat.enemies:
+        if getattr(enemy, "is_dead", False) or not getattr(enemy, "is_alive", True):
+            continue
+        if cannot_be_killed(enemy):
+            # A billion-HP eruption phase is not a fight to hurry out of; it is
+            # one turn to survive. Counting it would tell the searcher to rush a
+            # creature it cannot kill.
+            continue
+        ai = (getattr(combat, "enemy_ais", None) or {}).get(enemy.combat_id)
+        states = getattr(ai, "states", None) or {}
+        damages = []
+        for move in states.values():
+            move_damage = 0
+            for intent in getattr(move, "intents", None) or ():
+                move_damage += ((getattr(intent, "damage", 0) or 0)
+                                * max(1, getattr(intent, "hits", 1) or 1))
+            damages.append(move_damage)
+        if damages:
+            total += sum(damages) / len(damages)
+        else:
+            # No move table to read (a scripted or bridge-rebuilt enemy): fall
+            # back to what it has announced rather than assuming it is harmless.
+            move = getattr(ai, "current_move", None)
+            for intent in getattr(move, "intents", None) or ():
+                total += ((getattr(intent, "damage", 0) or 0)
+                          * max(1, getattr(intent, "hits", 1) or 1))
+    return total
 
 
 def evaluate_components(
@@ -212,6 +282,19 @@ def evaluate_components(
 
     # -- tempo --------------------------------------------------------------
     parts["turn"] = weights.turn * combat.turn_count
+
+    # The fight's remaining cost, priced from the board rather than assumed.
+    # Telegraphed damage is read off the intents the simulator already holds --
+    # the same discipline as scoring a state instead of predicting one -- and
+    # scaled by how much of the fight is left, so a nearly-dead enemy stops
+    # counting and a full-health boss counts fully.
+    parts["threat_tempo"] = 0.0
+    if weights.threat_tempo and total_max:
+        threat = _sustained_threat(combat)
+        if threat:
+            fight_left = max(0.0, min(1.0, remaining / total_max))
+            raw = weights.threat_tempo * (threat / max_hp) * fight_left
+            parts["threat_tempo"] = -min(raw, weights.threat_tempo_cap)
     parts["block_unused"] = weights.block_unused * (player.block / max_hp)
 
     return parts
